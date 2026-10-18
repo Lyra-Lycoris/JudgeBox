@@ -63,12 +63,10 @@ CMAKE_BINARY_DIR = E:\JudgeBox\build
 
 # The main recursive "all" target.
 all: CMakeFiles/JudgeBox.dir/all
-all: CMakeFiles/ExitCode7.dir/all
 .PHONY : all
 
 # The main recursive "codegen" target.
 codegen: CMakeFiles/JudgeBox.dir/codegen
-codegen: CMakeFiles/ExitCode7.dir/codegen
 .PHONY : codegen
 
 # The main recursive "preinstall" target.
@@ -77,7 +75,6 @@ preinstall:
 
 # The main recursive "clean" target.
 clean: CMakeFiles/JudgeBox.dir/clean
-clean: CMakeFiles/ExitCode7.dir/clean
 .PHONY : clean
 
 #=============================================================================
@@ -87,7 +84,7 @@ clean: CMakeFiles/ExitCode7.dir/clean
 CMakeFiles/JudgeBox.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\JudgeBox.dir\build.make CMakeFiles/JudgeBox.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\JudgeBox.dir\build.make CMakeFiles/JudgeBox.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=E:\JudgeBox\build\CMakeFiles --progress-num=3,4,5 "Built target JudgeBox"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=E:\JudgeBox\build\CMakeFiles --progress-num=1,2,3 "Built target JudgeBox"
 .PHONY : CMakeFiles/JudgeBox.dir/all
 
 # Build rule for subdir invocation for target.
@@ -104,45 +101,13 @@ JudgeBox: CMakeFiles/JudgeBox.dir/rule
 # codegen rule for target.
 CMakeFiles/JudgeBox.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\JudgeBox.dir\build.make CMakeFiles/JudgeBox.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=E:\JudgeBox\build\CMakeFiles --progress-num=3,4,5 "Finished codegen for target JudgeBox"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=E:\JudgeBox\build\CMakeFiles --progress-num=1,2,3 "Finished codegen for target JudgeBox"
 .PHONY : CMakeFiles/JudgeBox.dir/codegen
 
 # clean rule for target.
 CMakeFiles/JudgeBox.dir/clean:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\JudgeBox.dir\build.make CMakeFiles/JudgeBox.dir/clean
 .PHONY : CMakeFiles/JudgeBox.dir/clean
-
-#=============================================================================
-# Target rules for target CMakeFiles/ExitCode7.dir
-
-# All Build rule for target.
-CMakeFiles/ExitCode7.dir/all:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\ExitCode7.dir\build.make CMakeFiles/ExitCode7.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\ExitCode7.dir\build.make CMakeFiles/ExitCode7.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=E:\JudgeBox\build\CMakeFiles --progress-num=1,2 "Built target ExitCode7"
-.PHONY : CMakeFiles/ExitCode7.dir/all
-
-# Build rule for subdir invocation for target.
-CMakeFiles/ExitCode7.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start E:\JudgeBox\build\CMakeFiles 2
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 CMakeFiles/ExitCode7.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start E:\JudgeBox\build\CMakeFiles 0
-.PHONY : CMakeFiles/ExitCode7.dir/rule
-
-# Convenience name for target.
-ExitCode7: CMakeFiles/ExitCode7.dir/rule
-.PHONY : ExitCode7
-
-# codegen rule for target.
-CMakeFiles/ExitCode7.dir/codegen:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\ExitCode7.dir\build.make CMakeFiles/ExitCode7.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=E:\JudgeBox\build\CMakeFiles --progress-num=1,2 "Finished codegen for target ExitCode7"
-.PHONY : CMakeFiles/ExitCode7.dir/codegen
-
-# clean rule for target.
-CMakeFiles/ExitCode7.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\ExitCode7.dir\build.make CMakeFiles/ExitCode7.dir/clean
-.PHONY : CMakeFiles/ExitCode7.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.
