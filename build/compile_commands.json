@@ -1,0 +1,20 @@
+[
+{
+  "directory": "E:/JudgeBox/build",
+  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe  @CMakeFiles/JudgeBox.dir/includes_CXX.rsp -g -std=c++20 -o CMakeFiles\\JudgeBox.dir\\src\\main.cpp.obj -c E:\\JudgeBox\\src\\main.cpp",
+  "file": "E:/JudgeBox/src/main.cpp",
+  "output": "CMakeFiles/JudgeBox.dir/src/main.cpp.obj"
+},
+{
+  "directory": "E:/JudgeBox/build",
+  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe  @CMakeFiles/JudgeBox.dir/includes_CXX.rsp -g -std=c++20 -o CMakeFiles\\JudgeBox.dir\\src\\process_win32.cpp.obj -c E:\\JudgeBox\\src\\process_win32.cpp",
+  "file": "E:/JudgeBox/src/process_win32.cpp",
+  "output": "CMakeFiles/JudgeBox.dir/src/process_win32.cpp.obj"
+},
+{
+  "directory": "E:/JudgeBox/build",
+  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe   -g -std=c++20 -o CMakeFiles\\ExitCode7.dir\\tests\\ExitCode7.cpp.obj -c E:\\JudgeBox\\tests\\ExitCode7.cpp",
+  "file": "E:/JudgeBox/tests/ExitCode7.cpp",
+  "output": "CMakeFiles/ExitCode7.dir/tests/ExitCode7.cpp.obj"
+}
+]
