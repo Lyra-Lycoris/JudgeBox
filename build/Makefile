@@ -128,19 +128,6 @@ JudgeBox/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\JudgeBox.dir\build.make CMakeFiles/JudgeBox.dir/build
 .PHONY : JudgeBox/fast
 
-#=============================================================================
-# Target rules for targets named ExitCode7
-
-# Build rule for target.
-ExitCode7: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 ExitCode7
-.PHONY : ExitCode7
-
-# fast build rule for target.
-ExitCode7/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\ExitCode7.dir\build.make CMakeFiles/ExitCode7.dir/build
-.PHONY : ExitCode7/fast
-
 src/main.obj: src/main.cpp.obj
 .PHONY : src/main.obj
 
@@ -189,30 +176,6 @@ src/process_win32.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\JudgeBox.dir\build.make CMakeFiles/JudgeBox.dir/src/process_win32.cpp.s
 .PHONY : src/process_win32.cpp.s
 
-tests/ExitCode7.obj: tests/ExitCode7.cpp.obj
-.PHONY : tests/ExitCode7.obj
-
-# target to build an object file
-tests/ExitCode7.cpp.obj:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\ExitCode7.dir\build.make CMakeFiles/ExitCode7.dir/tests/ExitCode7.cpp.obj
-.PHONY : tests/ExitCode7.cpp.obj
-
-tests/ExitCode7.i: tests/ExitCode7.cpp.i
-.PHONY : tests/ExitCode7.i
-
-# target to preprocess a source file
-tests/ExitCode7.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\ExitCode7.dir\build.make CMakeFiles/ExitCode7.dir/tests/ExitCode7.cpp.i
-.PHONY : tests/ExitCode7.cpp.i
-
-tests/ExitCode7.s: tests/ExitCode7.cpp.s
-.PHONY : tests/ExitCode7.s
-
-# target to generate assembly for a file
-tests/ExitCode7.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\ExitCode7.dir\build.make CMakeFiles/ExitCode7.dir/tests/ExitCode7.cpp.s
-.PHONY : tests/ExitCode7.cpp.s
-
 # Help Target
 help:
 	@echo The following are some of the valid targets for this Makefile:
@@ -221,7 +184,6 @@ help:
 	@echo ... depend
 	@echo ... edit_cache
 	@echo ... rebuild_cache
-	@echo ... ExitCode7
 	@echo ... JudgeBox
 	@echo ... src/main.obj
 	@echo ... src/main.i
@@ -229,9 +191,6 @@ help:
 	@echo ... src/process_win32.obj
 	@echo ... src/process_win32.i
 	@echo ... src/process_win32.s
-	@echo ... tests/ExitCode7.obj
-	@echo ... tests/ExitCode7.i
-	@echo ... tests/ExitCode7.s
 .PHONY : help
 
 

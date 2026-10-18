@@ -16,8 +16,7 @@
 					"source" : ".",
 					"targetIndexes" : 
 					[
-						0,
-						1
+						0
 					]
 				}
 			],
@@ -32,20 +31,12 @@
 					"name" : "JudgeBox",
 					"targetIndexes" : 
 					[
-						0,
-						1
+						0
 					]
 				}
 			],
 			"targets" : 
 			[
-				{
-					"directoryIndex" : 0,
-					"id" : "ExitCode7::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-ExitCode7-Debug-263b4817f392560a24f8.json",
-					"name" : "ExitCode7",
-					"projectIndex" : 0
-				},
 				{
 					"directoryIndex" : 0,
 					"id" : "JudgeBox::@6890427a1f51a3e7e1df",

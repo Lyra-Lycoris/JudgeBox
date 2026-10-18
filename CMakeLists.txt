@@ -14,7 +14,3 @@ add_executable(
 target_include_directories(JudgeBox PRIVATE # 头文件查找目录
     src
 )
-
-add_executable(ExitCode7
-    tests/ExitCode7.cpp
-)
