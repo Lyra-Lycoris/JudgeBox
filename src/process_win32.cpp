@@ -1,5 +1,6 @@
 #include <windows.h>
 #include "process.hpp"
+#include <chrono>
 
 runResult runTask(
     const std::wstring &launchPath,
@@ -28,6 +29,8 @@ runResult runTask(
     {
         commandLine += L" " + arguments; // 拼接命令行参数
     }
+
+    const auto startTime = std::chrono::steady_clock::now();//用单调时钟，计算经过时间 
 
     BOOL created = CreateProcessW( // 创建进程
         launchPath.c_str(),        //.exe 的启动路径，.c_str是指向字符串内容的字符指针
@@ -62,7 +65,13 @@ runResult runTask(
         CloseHandle(process.hThread); // 关掉句柄
         return result;
     }
-    else if (waitStatus == WAIT_TIMEOUT)
+    
+    //能走到这里就没有失败
+    //记录运行时间
+    const auto endTime = std::chrono::steady_clock::now();
+    result.runTimeMs=std::chrono::duration_cast<std::chrono::milliseconds>(endTime-startTime).count();
+
+    if (waitStatus == WAIT_TIMEOUT)
     {
         // 超时分支完善
         result.TLE = true;
@@ -85,6 +94,9 @@ runResult runTask(
                 //等待结束失败
                 const DWORD code = GetLastError();
                 result.errorMessage = "Waiting for termination failed: " + std::to_string(code);
+            }else if(stopStatus == WAIT_TIMEOUT){
+                //超时不是执行失败
+                result.errorMessage = "Waiting for termination Didn't Finish in time";
             }
         }
 
