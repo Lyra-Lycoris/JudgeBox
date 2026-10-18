@@ -42,8 +42,37 @@ runResult runTask(
 
     result.started=true;//成功启动
 
-    //补齐等待，退出码和资源释放
-    
+    //等待进程
+    const DWORD waitStatus=WaitForSingleObject(process.hProcess,1000);//限时1000ms
+    if(waitStatus== WAIT_FAILED){
+        const DWORD code = GetLastError();
+        result.errorMessage = "Wait Error: "+std::to_string(code);
+
+        CloseHandle(process.hProcess);
+        CloseHandle(process.hThread);//关掉句柄
+        return result;
+
+    }else if(waitStatus==WAIT_TIMEOUT){
+        const DWORD code = GetLastError();
+        result.errorMessage = "RunTimeOut Error: "+std::to_string (code);
+
+        CloseHandle(process.hProcess);
+        CloseHandle(process.hThread);
+        return result;
+
+    }
+
+    //退出码
+    DWORD exitCode=0;
+    if(GetExitCodeProcess(process.hProcess, &exitCode)){
+        result.exit = exitCode;
+    }else{
+        const DWORD code = GetLastError();
+        result.errorMessage ="GetExitCodeProcess failed: " + std::to_string(code);
+    }
+
+    CloseHandle(process.hProcess);
+    CloseHandle(process.hThread);
 
     return result;
 }
