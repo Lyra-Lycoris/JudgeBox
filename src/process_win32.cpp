@@ -2,6 +2,35 @@
 #include "process.hpp"
 #include <chrono>
 
+//创建输出管道函数
+static bool createOutPutPipe(HANDLE &readEnd,HANDLE &writeEnd,std::string &errorMessage){
+    //允许子程序继承管道句柄
+    SECURITY_ATTRIBUTES security{};//安全权限与继承规则结构体
+    security.nLength = sizeof(security);//显式存储结构体的内存
+    security.bInheritHandle = TRUE;//设置句柄控制权限
+
+    if(!CreatePipe(&readEnd,&writeEnd,&security,0)){
+        const DWORD code=GetLastError();
+        errorMessage = "CreatePipe Error: "+code;
+        return false;
+    }
+
+    //单独修改读端句柄，使其不被继承
+    if (!SetHandleInformation(readEnd, HANDLE_FLAG_INHERIT, 0))
+    {
+        const DWORD code = GetLastError();
+        errorMessage = "SetHandleInformation failed: " + std::to_string(code);
+        CloseHandle(readEnd);
+        CloseHandle(writeEnd);
+        readEnd = nullptr;
+        writeEnd = nullptr;
+        return false;
+    }
+
+    return true;
+
+}
+
 runResult runTask(
     const std::wstring &launchPath,
     const std::wstring &arguments,
