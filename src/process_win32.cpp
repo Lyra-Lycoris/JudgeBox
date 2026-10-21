@@ -6,12 +6,14 @@
 static bool createOutPutPipe(HANDLE &readEnd,HANDLE &writeEnd,std::string &errorMessage){
     //允许子程序继承管道句柄
     SECURITY_ATTRIBUTES security{};//安全权限与继承规则结构体
-    security.nLength = sizeof(security);//显式存储结构体的内存
-    security.bInheritHandle = TRUE;//设置句柄控制权限
+    security.nLength = sizeof(security);//结构体大小，单位是字节
+    security.bInheritHandle = TRUE;//允许子程序继承新建的管道句柄
 
     if(!CreatePipe(&readEnd,&writeEnd,&security,0)){
         const DWORD code=GetLastError();
-        errorMessage = "CreatePipe Error: "+code;
+        errorMessage = "CreatePipe Error: "+std::to_string(code);
+        readEnd = nullptr;
+        writeEnd = nullptr;
         return false;
     }
 
@@ -48,6 +50,45 @@ runResult runTask(
         return result;
     }
 
+    // 标准输出管道：子程序写入，JudgeBox 读取
+    HANDLE outRead = nullptr;  // JudgeBox 读取 stdout 的入口
+    HANDLE outWrite = nullptr; // 准备交给子程序，用来写入 stdout
+
+    // 标准错误管道：子程序写入，JudgeBox 读取
+    HANDLE errRead = nullptr;  // JudgeBox 读取 stderr 的入口
+    HANDLE errWrite = nullptr; // 准备交给子程序，用来写入 stderr
+
+    // 统一释放 JudgeBox 持有的管道句柄，避免提前返回时遗漏
+    auto closeOutputPipes = [&]() {
+        if (outRead != nullptr) {
+            CloseHandle(outRead);
+            outRead = nullptr;
+        }
+        if (outWrite != nullptr) {
+            CloseHandle(outWrite);
+            outWrite = nullptr;
+        }
+        if (errRead != nullptr) {
+            CloseHandle(errRead);
+            errRead = nullptr;
+        }
+        if (errWrite != nullptr) {
+            CloseHandle(errWrite);
+            errWrite = nullptr;
+        }
+    };
+
+    // 每次调用创建一条管道，并填入对应的读端、写端句柄
+    if (!createOutPutPipe(outRead, outWrite, result.errorMessage)) {
+        closeOutputPipes();
+        return result;
+    }
+
+    if (!createOutPutPipe(errRead, errWrite, result.errorMessage)) {
+        closeOutputPipes();
+        return result;
+    }
+
     STARTUPINFOW startup{};        // 程序启动配置的结构体
     startup.cb = sizeof(startup);  // 定内存大小
     PROCESS_INFORMATION process{}; // 保存进程创建后的返回信息
@@ -78,6 +119,7 @@ runResult runTask(
     {
         const DWORD code = GetLastError(); // 通过无符号32位整数(DWORD)读取错误返回
         result.errorMessage = "CreateProcessW Error: " + std::to_string(code);
+        closeOutputPipes();
         return result;
     }
 
@@ -92,6 +134,7 @@ runResult runTask(
 
         CloseHandle(process.hProcess);
         CloseHandle(process.hThread); // 关掉句柄
+        closeOutputPipes();
         return result;
     }
     
@@ -133,6 +176,7 @@ runResult runTask(
         {
             CloseHandle(process.hProcess);
             CloseHandle(process.hThread);
+            closeOutputPipes();
             return result;
         }
     }
@@ -151,6 +195,7 @@ runResult runTask(
 
     CloseHandle(process.hProcess);
     CloseHandle(process.hThread);
+    closeOutputPipes();
 
     return result;
 }
