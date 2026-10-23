@@ -86,32 +86,34 @@ CMakeFiles/JudgeBox.dir/src/main.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/JudgeBox.dir/src/main.cpp.s"
 	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S E:\JudgeBox\src\main.cpp -o CMakeFiles\JudgeBox.dir\src\main.cpp.s
 
-CMakeFiles/JudgeBox.dir/src/process_win32.cpp.obj: CMakeFiles/JudgeBox.dir/flags.make
-CMakeFiles/JudgeBox.dir/src/process_win32.cpp.obj: CMakeFiles/JudgeBox.dir/includes_CXX.rsp
-CMakeFiles/JudgeBox.dir/src/process_win32.cpp.obj: E:/JudgeBox/src/process_win32.cpp
-CMakeFiles/JudgeBox.dir/src/process_win32.cpp.obj: CMakeFiles/JudgeBox.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=E:\JudgeBox\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/JudgeBox.dir/src/process_win32.cpp.obj"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/JudgeBox.dir/src/process_win32.cpp.obj -MF CMakeFiles\JudgeBox.dir\src\process_win32.cpp.obj.d -o CMakeFiles\JudgeBox.dir\src\process_win32.cpp.obj -c E:\JudgeBox\src\process_win32.cpp
+CMakeFiles/JudgeBox.dir/src/server.cpp.obj: CMakeFiles/JudgeBox.dir/flags.make
+CMakeFiles/JudgeBox.dir/src/server.cpp.obj: CMakeFiles/JudgeBox.dir/includes_CXX.rsp
+CMakeFiles/JudgeBox.dir/src/server.cpp.obj: E:/JudgeBox/src/server.cpp
+CMakeFiles/JudgeBox.dir/src/server.cpp.obj: CMakeFiles/JudgeBox.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=E:\JudgeBox\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/JudgeBox.dir/src/server.cpp.obj"
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/JudgeBox.dir/src/server.cpp.obj -MF CMakeFiles\JudgeBox.dir\src\server.cpp.obj.d -o CMakeFiles\JudgeBox.dir\src\server.cpp.obj -c E:\JudgeBox\src\server.cpp
 
-CMakeFiles/JudgeBox.dir/src/process_win32.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/JudgeBox.dir/src/process_win32.cpp.i"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E E:\JudgeBox\src\process_win32.cpp > CMakeFiles\JudgeBox.dir\src\process_win32.cpp.i
+CMakeFiles/JudgeBox.dir/src/server.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/JudgeBox.dir/src/server.cpp.i"
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E E:\JudgeBox\src\server.cpp > CMakeFiles\JudgeBox.dir\src\server.cpp.i
 
-CMakeFiles/JudgeBox.dir/src/process_win32.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/JudgeBox.dir/src/process_win32.cpp.s"
-	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S E:\JudgeBox\src\process_win32.cpp -o CMakeFiles\JudgeBox.dir\src\process_win32.cpp.s
+CMakeFiles/JudgeBox.dir/src/server.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/JudgeBox.dir/src/server.cpp.s"
+	C:\msys64\ucrt64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S E:\JudgeBox\src\server.cpp -o CMakeFiles\JudgeBox.dir\src\server.cpp.s
 
 # Object files for target JudgeBox
 JudgeBox_OBJECTS = \
 "CMakeFiles/JudgeBox.dir/src/main.cpp.obj" \
-"CMakeFiles/JudgeBox.dir/src/process_win32.cpp.obj"
+"CMakeFiles/JudgeBox.dir/src/server.cpp.obj"
 
 # External object files for target JudgeBox
 JudgeBox_EXTERNAL_OBJECTS =
 
 JudgeBox.exe: CMakeFiles/JudgeBox.dir/src/main.cpp.obj
-JudgeBox.exe: CMakeFiles/JudgeBox.dir/src/process_win32.cpp.obj
+JudgeBox.exe: CMakeFiles/JudgeBox.dir/src/server.cpp.obj
 JudgeBox.exe: CMakeFiles/JudgeBox.dir/build.make
+JudgeBox.exe: libjudge_core.a
+JudgeBox.exe: libjudge_process.a
 JudgeBox.exe: CMakeFiles/JudgeBox.dir/linkLibs.rsp
 JudgeBox.exe: CMakeFiles/JudgeBox.dir/objects1.rsp
 JudgeBox.exe: CMakeFiles/JudgeBox.dir/link.txt

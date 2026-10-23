@@ -1,201 +1,173 @@
-#include <windows.h>
 #include "process.hpp"
+#include <windows.h>
+#include <algorithm>
 #include <chrono>
+#include <thread>
 
-//创建输出管道函数
-static bool createOutPutPipe(HANDLE &readEnd,HANDLE &writeEnd,std::string &errorMessage){
-    //允许子程序继承管道句柄
-    SECURITY_ATTRIBUTES security{};//安全权限与继承规则结构体
-    security.nLength = sizeof(security);//结构体大小，单位是字节
-    security.bInheritHandle = TRUE;//允许子程序继承新建的管道句柄
-
-    if(!CreatePipe(&readEnd,&writeEnd,&security,0)){
-        const DWORD code=GetLastError();
-        errorMessage = "CreatePipe Error: "+std::to_string(code);
-        readEnd = nullptr;
-        writeEnd = nullptr;
-        return false;
+namespace {
+struct Handle {
+    HANDLE h = nullptr;
+    explicit Handle(HANDLE value = nullptr) : h(value) {}
+    ~Handle() { reset(); }
+    Handle(const Handle&) = delete;
+    Handle& operator=(const Handle&) = delete;
+    void reset(HANDLE value = nullptr) { if (h && h != INVALID_HANDLE_VALUE) CloseHandle(h); h = value; }
+    explicit operator bool() const { return h && h != INVALID_HANDLE_VALUE; }
+};
+std::string winError(const char* what) { return std::string(what) + " (Windows error " + std::to_string(GetLastError()) + ")"; }
+std::vector<wchar_t> environmentBlock(const RunOptions& options) {
+    std::vector<std::wstring> entries;
+    auto original=GetEnvironmentStringsW();
+    if(!original) throw std::runtime_error("GetEnvironmentStringsW failed");
+    for(auto p=original;*p;p+=wcslen(p)+1) entries.emplace_back(p);
+    FreeEnvironmentStringsW(original);
+    auto set=[&](const std::wstring& name,const std::wstring& value) {
+        auto prefix=name+L"=";
+        for(auto& entry:entries) if(_wcsnicmp(entry.c_str(),prefix.c_str(),prefix.size())==0) { entry=prefix+value; return; }
+        entries.push_back(prefix+value);
+    };
+    std::wstring path;
+    for(const auto& entry:entries) if(_wcsnicmp(entry.c_str(),L"PATH=",5)==0) path=entry.substr(5);
+    std::wstring prepended; for(const auto& dir:options.pathEntries) prepended+=dir+L";";
+    set(L"PATH",prepended+path);
+    for(const auto& [name,value]:options.environment) {
+        if(value.empty()) {
+            auto prefix=name+L"=";
+            entries.erase(std::remove_if(entries.begin(),entries.end(),[&](const auto& entry){return _wcsnicmp(entry.c_str(),prefix.c_str(),prefix.size())==0;}),entries.end());
+        } else set(name,value);
     }
-
-    //单独修改读端句柄，使其不被继承
-    if (!SetHandleInformation(readEnd, HANDLE_FLAG_INHERIT, 0))
-    {
-        const DWORD code = GetLastError();
-        errorMessage = "SetHandleInformation failed: " + std::to_string(code);
-        CloseHandle(readEnd);
-        CloseHandle(writeEnd);
-        readEnd = nullptr;
-        writeEnd = nullptr;
-        return false;
-    }
-
-    return true;
-
+    std::sort(entries.begin(),entries.end(),[](const auto& a,const auto& b){return _wcsicmp(a.c_str(),b.c_str())<0;});
+    std::vector<wchar_t> block;
+    for(const auto& entry:entries) { block.insert(block.end(),entry.begin(),entry.end()); block.push_back(0); }
+    block.push_back(0); return block;
 }
-
-runResult runTask(
-    const std::wstring &launchPath,
-    const std::wstring &arguments,
-    const std::string &input,
-    const long long &timeLimitMs,
-    const long long &memoryLimit)
-{
-
-    runResult result{};
-
-    // 先检查时间限制是否合法
-    if (timeLimitMs <= 0 || timeLimitMs >= static_cast<long long>(INFINITE))
-    {
-        result.errorMessage = "TimeLimit is invalid";
-        return result;
+bool pipe(Handle& read, Handle& write, bool input, std::string& error) {
+    SECURITY_ATTRIBUTES sa{sizeof(sa), nullptr, TRUE};
+    if (!CreatePipe(&read.h, &write.h, &sa, 0) ||
+        !SetHandleInformation(input ? write.h : read.h, HANDLE_FLAG_INHERIT, 0)) {
+        error = winError("Create pipe"); return false;
     }
-
-    // 标准输出管道：子程序写入，JudgeBox 读取
-    HANDLE outRead = nullptr;  // JudgeBox 读取 stdout 的入口
-    HANDLE outWrite = nullptr; // 准备交给子程序，用来写入 stdout
-
-    // 标准错误管道：子程序写入，JudgeBox 读取
-    HANDLE errRead = nullptr;  // JudgeBox 读取 stderr 的入口
-    HANDLE errWrite = nullptr; // 准备交给子程序，用来写入 stderr
-
-    // 统一释放 JudgeBox 持有的管道句柄，避免提前返回时遗漏
-    auto closeOutputPipes = [&]() {
-        if (outRead != nullptr) {
-            CloseHandle(outRead);
-            outRead = nullptr;
-        }
-        if (outWrite != nullptr) {
-            CloseHandle(outWrite);
-            outWrite = nullptr;
-        }
-        if (errRead != nullptr) {
-            CloseHandle(errRead);
-            errRead = nullptr;
-        }
-        if (errWrite != nullptr) {
-            CloseHandle(errWrite);
-            errWrite = nullptr;
+    return true;
+}
+runResult execute(const std::wstring& exe, std::wstring command, const std::string& input, const RunOptions& opt) {
+    runResult result;
+    if (opt.timeMs <= 0 || opt.timeMs > 600000 || opt.memoryBytes < 1024*1024 || !opt.outputBytes) {
+        result.errorMessage = "Invalid time/memory/output limit"; return result;
+    }
+    if (opt.cancel && opt.cancel->load()) { result.cancelled = true; return result; }
+    Handle inRead, inWrite, outRead, outWrite, errRead, errWrite;
+    if (!pipe(inRead,inWrite,true,result.errorMessage) || !pipe(outRead,outWrite,false,result.errorMessage) || !pipe(errRead,errWrite,false,result.errorMessage)) return result;
+    Handle job(CreateJobObjectW(nullptr,nullptr));
+    Handle port(CreateIoCompletionPort(INVALID_HANDLE_VALUE,nullptr,0,1));
+    if (!job || !port) { result.errorMessage=winError("Create job/completion port"); return result; }
+    JOBOBJECT_EXTENDED_LIMIT_INFORMATION limits{};
+    limits.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE | JOB_OBJECT_LIMIT_DIE_ON_UNHANDLED_EXCEPTION | JOB_OBJECT_LIMIT_JOB_MEMORY;
+    limits.JobMemoryLimit = static_cast<SIZE_T>(opt.memoryBytes);
+    JOBOBJECT_ASSOCIATE_COMPLETION_PORT association{job.h,port.h};
+    if (!SetInformationJobObject(job.h,JobObjectExtendedLimitInformation,&limits,sizeof(limits)) ||
+        !SetInformationJobObject(job.h,JobObjectAssociateCompletionPortInformation,&association,sizeof(association))) {
+        result.errorMessage=winError("Set job limits"); return result;
+    }
+    SIZE_T size=0;
+    InitializeProcThreadAttributeList(nullptr,1,0,&size);
+    std::vector<unsigned char> storage(size);
+    auto attributes=reinterpret_cast<LPPROC_THREAD_ATTRIBUTE_LIST>(storage.data());
+    if (!InitializeProcThreadAttributeList(attributes,1,0,&size)) { result.errorMessage=winError("Initialize handle list"); return result; }
+    HANDLE inherited[]{inRead.h,outWrite.h,errWrite.h};
+    if (!UpdateProcThreadAttribute(attributes,0,PROC_THREAD_ATTRIBUTE_HANDLE_LIST,inherited,sizeof(inherited),nullptr,nullptr)) {
+        result.errorMessage=winError("Restrict handle inheritance"); DeleteProcThreadAttributeList(attributes); return result;
+    }
+    STARTUPINFOEXW si{}; si.StartupInfo.cb=sizeof(si); si.StartupInfo.dwFlags=STARTF_USESTDHANDLES;
+    si.StartupInfo.hStdInput=inRead.h; si.StartupInfo.hStdOutput=outWrite.h; si.StartupInfo.hStdError=errWrite.h; si.lpAttributeList=attributes;
+    PROCESS_INFORMATION pi{};
+    auto env=environmentBlock(opt);
+    BOOL ok=CreateProcessW(exe.c_str(),command.data(),nullptr,nullptr,TRUE,
+        CREATE_SUSPENDED|CREATE_NO_WINDOW|EXTENDED_STARTUPINFO_PRESENT|CREATE_UNICODE_ENVIRONMENT,env.data(),
+        opt.workingDirectory.empty()?nullptr:opt.workingDirectory.c_str(),&si.StartupInfo,&pi);
+    DeleteProcThreadAttributeList(attributes);
+    if (!ok) { result.errorMessage=winError("CreateProcessW"); return result; }
+    Handle process(pi.hProcess), mainThread(pi.hThread);
+    if (!AssignProcessToJobObject(job.h,process.h)) {
+        result.errorMessage=winError("Assign job"); TerminateProcess(process.h,1); WaitForSingleObject(process.h,INFINITE); return result;
+    }
+    result.started=true;
+    inRead.reset(); outWrite.reset(); errWrite.reset();
+    std::atomic_size_t captured{0};
+    auto readStream=[&](HANDLE h, std::string& target) {
+        char buffer[8192]; DWORD count;
+        while (ReadFile(h,buffer,sizeof(buffer),&count,nullptr) && count) {
+            auto before=captured.fetch_add(count);
+            if (before<opt.outputBytes) target.append(buffer,std::min<std::size_t>(count,opt.outputBytes-before));
         }
     };
-
-    // 每次调用创建一条管道，并填入对应的读端、写端句柄
-    if (!createOutPutPipe(outRead, outWrite, result.errorMessage)) {
-        closeOutputPipes();
-        return result;
-    }
-
-    if (!createOutPutPipe(errRead, errWrite, result.errorMessage)) {
-        closeOutputPipes();
-        return result;
-    }
-
-    STARTUPINFOW startup{};        // 程序启动配置的结构体
-    startup.cb = sizeof(startup);  // 定内存大小
-    PROCESS_INFORMATION process{}; // 保存进程创建后的返回信息
-
-    // 拼接命令行指令
-    std::wstring commandLine = L"\"" + launchPath + L"\""; // 处理路径
-    if (!arguments.empty())
-    {
-        commandLine += L" " + arguments; // 拼接命令行参数
-    }
-
-    const auto startTime = std::chrono::steady_clock::now();//用单调时钟，计算经过时间 
-
-    BOOL created = CreateProcessW( // 创建进程
-        launchPath.c_str(),        //.exe 的启动路径，.c_str是指向字符串内容的字符指针
-        commandLine.data(),        // 命令行的可修改字符缓冲区
-        nullptr,                   //
-        nullptr,                   // 进程线程的安全属性，采用默认设置
-        FALSE,                     // 不启用一般的可继承句柄传递
-        0,                         // 默认创建方式
-        nullptr,                   // 沿用JudgeBox的环境变量
-        nullptr,                   // 沿用↑ 的工作目录
-        &startup,                  // 启动柜配置地址交给Windows读取
-        &process);                 // 结果存放位置交给Windows填写
-
-    // 创建失败↓
-    if (!created)
-    {
-        const DWORD code = GetLastError(); // 通过无符号32位整数(DWORD)读取错误返回
-        result.errorMessage = "CreateProcessW Error: " + std::to_string(code);
-        closeOutputPipes();
-        return result;
-    }
-
-    result.started = true; // 成功启动
-
-    // 等待进程
-    const DWORD waitStatus = WaitForSingleObject(process.hProcess, static_cast<DWORD>(timeLimitMs));
-    if (waitStatus == WAIT_FAILED)
-    {
-        const DWORD code = GetLastError();
-        result.errorMessage = "Wait Error: " + std::to_string(code);
-
-        CloseHandle(process.hProcess);
-        CloseHandle(process.hThread); // 关掉句柄
-        closeOutputPipes();
-        return result;
-    }
-    
-    //能走到这里就没有失败
-    //记录运行时间
-    const auto endTime = std::chrono::steady_clock::now();
-    result.runTimeMs=std::chrono::duration_cast<std::chrono::milliseconds>(endTime-startTime).count();
-
-    if (waitStatus == WAIT_TIMEOUT)
-    {
-        // 超时分支完善
-        result.TLE = true;
-
-        if (!TerminateProcess(process.hProcess, 1))
-        { // 强制关闭进程，关闭发起失败走if分支
-            const DWORD code = GetLastError();
-
-            if (WaitForSingleObject(process.hProcess, 0) != WAIT_OBJECT_0)
-            {
-                // 检测线程运行时间，0代表仅检测程序是否已经被清理
-                result.errorMessage = "TerminateProcess Error: " + std::to_string(code);
+    std::thread readerOut,readerErr,writer;
+    auto start=std::chrono::steady_clock::now();
+    auto ended=std::chrono::steady_clock::time_point{};
+    try {
+        readerOut=std::thread(readStream,outRead.h,std::ref(result.stdOut));
+        readerErr=std::thread(readStream,errRead.h,std::ref(result.errOut));
+        writer=std::thread([&] {
+            std::size_t pos=0; DWORD count;
+            while (pos<input.size() && WriteFile(inWrite.h,input.data()+pos,static_cast<DWORD>(std::min<std::size_t>(8192,input.size()-pos)),&count,nullptr) && count) pos+=count;
+            inWrite.reset();
+        });
+        if (ResumeThread(mainThread.h)==static_cast<DWORD>(-1)) result.errorMessage=winError("ResumeThread");
+        auto messages=[&](DWORD wait) {
+            DWORD message; ULONG_PTR key; LPOVERLAPPED value;
+            while (GetQueuedCompletionStatus(port.h,&message,&key,&value,wait)) {
+                if (message==JOB_OBJECT_MSG_JOB_MEMORY_LIMIT || message==JOB_OBJECT_MSG_PROCESS_MEMORY_LIMIT) result.MLE=true;
+                wait=0;
             }
+        };
+        while (result.errorMessage.empty()) {
+            messages(0);
+            if (opt.cancel && opt.cancel->load()) result.cancelled=true;
+            if (captured.load()>opt.outputBytes) result.OLE=true;
+            if (result.MLE || result.OLE || result.cancelled) break;
+            DWORD state=WaitForSingleObject(process.h,5);
+            if (state==WAIT_OBJECT_0) { ended=std::chrono::steady_clock::now(); messages(20); break; }
+            if (state==WAIT_FAILED) { result.errorMessage=winError("WaitForSingleObject"); break; }
+            auto elapsed=std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now()-start).count();
+            if (elapsed>=opt.timeMs) { result.TLE=true; break; }
         }
-        else // 关闭成功
-        {
-            const DWORD stopStatus = WaitForSingleObject(process.hProcess, 1145); // 确认是否已经完全结束
-            if (stopStatus == WAIT_FAILED)
-            {
-                //等待结束失败
-                const DWORD code = GetLastError();
-                result.errorMessage = "Waiting for termination failed: " + std::to_string(code);
-            }else if(stopStatus == WAIT_TIMEOUT){
-                //超时不是执行失败
-                result.errorMessage = "Waiting for termination Didn't Finish in time";
-            }
-        }
-
-        if (!result.errorMessage.empty())
-        {
-            CloseHandle(process.hProcess);
-            CloseHandle(process.hThread);
-            closeOutputPipes();
-            return result;
-        }
+        if(ended==std::chrono::steady_clock::time_point{}) ended=std::chrono::steady_clock::now();
+        result.runTimeMs=std::chrono::duration_cast<std::chrono::milliseconds>(ended-start).count();
+        // Kill descendants even when the main process returns normally.
+        
+        TerminateJobObject(job.h,1);
+        WaitForSingleObject(process.h,INFINITE);
+        DWORD exitCode=0;
+        if (!GetExitCodeProcess(process.h,&exitCode)) result.errorMessage=winError("GetExitCodeProcess");
+        result.exit=exitCode;
+    } catch (const std::exception& e) {
+        result.errorMessage=e.what(); TerminateJobObject(job.h,1); WaitForSingleObject(process.h,INFINITE);
     }
-
-    // 退出码
-    DWORD exitCode = 0;
-    if (GetExitCodeProcess(process.hProcess, &exitCode))
-    {
-        result.exit = exitCode;
-    }
-    else
-    {
-        const DWORD code = GetLastError();
-        result.errorMessage = "GetExitCodeProcess failed: " + std::to_string(code);
-    }
-
-    CloseHandle(process.hProcess);
-    CloseHandle(process.hThread);
-    closeOutputPipes();
-
+    if (writer.joinable()) writer.join();
+    if (readerOut.joinable()) readerOut.join();
+    if (readerErr.joinable()) readerErr.join();
+    if (captured.load()>opt.outputBytes) result.OLE=true;
+    JOBOBJECT_EXTENDED_LIMIT_INFORMATION stats{};
+    if (QueryInformationJobObject(job.h,JobObjectExtendedLimitInformation,&stats,sizeof(stats),nullptr)) result.runMemory=static_cast<long long>(stats.PeakJobMemoryUsed);
     return result;
+}
+}
+
+std::wstring quoteArgument(const std::wstring& arg) {
+    std::wstring out=L"\""; std::size_t slashes=0;
+    for (auto c:arg) {
+        if (c==L'\\') { ++slashes; continue; }
+        if (c==L'"') { out.append(slashes*2+1,L'\\'); out+=c; }
+        else { out.append(slashes,L'\\'); out+=c; }
+        slashes=0;
+    }
+    out.append(slashes*2,L'\\'); return out+L'"';
+}
+runResult runProcess(const std::wstring& exe,const std::vector<std::wstring>& args,const std::string& input,const RunOptions& opt) {
+    auto command=quoteArgument(exe); for (const auto& arg:args) command+=L" "+quoteArgument(arg);
+    return execute(exe,std::move(command),input,opt);
+}
+runResult runTask(const std::wstring& exe,const std::wstring& arguments,const std::string& input,const long long& timeMs,const long long& memoryBytes) {
+    if(memoryBytes<=0) { runResult result; result.errorMessage="Invalid memory limit"; return result; }
+    RunOptions opt; opt.timeMs=timeMs; opt.memoryBytes=memoryBytes; opt.outputBytes=4*1024*1024;
+    return execute(exe,quoteArgument(exe)+(arguments.empty()?L"":L" "+arguments),input,opt);
 }
