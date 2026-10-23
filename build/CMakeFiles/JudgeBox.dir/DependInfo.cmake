@@ -9,7 +9,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "E:/JudgeBox/src/main.cpp" "CMakeFiles/JudgeBox.dir/src/main.cpp.obj" "gcc" "CMakeFiles/JudgeBox.dir/src/main.cpp.obj.d"
-  "E:/JudgeBox/src/process_win32.cpp" "CMakeFiles/JudgeBox.dir/src/process_win32.cpp.obj" "gcc" "CMakeFiles/JudgeBox.dir/src/process_win32.cpp.obj.d"
+  "E:/JudgeBox/src/server.cpp" "CMakeFiles/JudgeBox.dir/src/server.cpp.obj" "gcc" "CMakeFiles/JudgeBox.dir/src/server.cpp.obj.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

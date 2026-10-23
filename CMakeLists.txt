@@ -1,16 +1,46 @@
 cmake_minimum_required(VERSION 3.20)
-
 project(JudgeBox LANGUAGES CXX)
-
-set(CMAKE_CXX_STANDARD 20)#指定c++版本
+if(NOT WIN32)
+    message(FATAL_ERROR "JudgeBox requires Windows")
+endif()
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-
-add_executable(
-    JudgeBox src/main.cpp #主程序
-    src/process_win32.cpp #启动外部程序，传递输入，收集输出和错误信息
-    )
-
-target_include_directories(JudgeBox PRIVATE # 头文件查找目录
-    src
-)
+add_compile_definitions(UNICODE _UNICODE NOMINMAX WIN32_LEAN_AND_MEAN _WIN32_WINNT=0x0601)
+if(MINGW)
+    add_compile_options(-Wall -Wextra -Wpedantic -finput-charset=UTF-8 -fexec-charset=UTF-8)
+    add_link_options(-static -static-libgcc -static-libstdc++)
+endif()
+add_library(judge_process src/process_win32.cpp)
+target_include_directories(judge_process PUBLIC src third_party)
+add_library(judge_core src/generator.cpp src/checker.cpp src/compiler.cpp src/judge.cpp src/path_compat.cpp)
+target_link_libraries(judge_core PUBLIC judge_process shell32 ole32 advapi32)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS web/index.html web/style.css web/app.js)
+file(READ web/index.html JBOX_HTML)
+file(READ web/style.css JBOX_CSS)
+file(READ web/app.js JBOX_JS)
+configure_file(src/assets.hpp.in generated/assets.hpp @ONLY)
+add_executable(JudgeBox src/main.cpp src/server.cpp)
+target_include_directories(JudgeBox PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
+target_link_libraries(JudgeBox PRIVATE judge_core ws2_32 bcrypt shell32 ole32)
+if(MINGW)
+    target_link_options(JudgeBox PRIVATE -municode)
+endif()
+include(CTest)
+if(BUILD_TESTING)
+    add_executable(fixture tests/fixture.cpp)
+    add_executable(process_tests tests/process_tests.cpp)
+    target_link_libraries(process_tests PRIVATE judge_process)
+    add_test(NAME process COMMAND process_tests $<TARGET_FILE:fixture>)
+    add_executable(core_tests tests/core_tests.cpp)
+    target_link_libraries(core_tests PRIVATE judge_core)
+    add_test(NAME core COMMAND core_tests)
+    add_executable(toolchain_paths_tests tests/toolchain_paths_tests.cpp)
+    target_link_libraries(toolchain_paths_tests PRIVATE judge_core)
+    add_test(NAME toolchain_paths COMMAND toolchain_paths_tests)
+    find_package(Python3 COMPONENTS Interpreter)
+    if(Python3_Interpreter_FOUND)
+        add_test(NAME api COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/api_test.py" $<TARGET_FILE:JudgeBox>)
+        set_tests_properties(api PROPERTIES TIMEOUT 180)
+    endif()
+endif()

@@ -1,0 +1,8 @@
+/build/
+/runs/
+/.runtime/
+__pycache__/
+*.user
+/JudgeBox.exe
+/JudgeBox-portable.zip
+/dist/

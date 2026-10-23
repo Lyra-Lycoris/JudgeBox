@@ -1,8 +1,8 @@
 file(REMOVE_RECURSE
   "CMakeFiles/JudgeBox.dir/src/main.cpp.obj"
   "CMakeFiles/JudgeBox.dir/src/main.cpp.obj.d"
-  "CMakeFiles/JudgeBox.dir/src/process_win32.cpp.obj"
-  "CMakeFiles/JudgeBox.dir/src/process_win32.cpp.obj.d"
+  "CMakeFiles/JudgeBox.dir/src/server.cpp.obj"
+  "CMakeFiles/JudgeBox.dir/src/server.cpp.obj.d"
   "JudgeBox.exe"
   "JudgeBox.exe.manifest"
   "JudgeBox.pdb"
