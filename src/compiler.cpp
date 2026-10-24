@@ -18,21 +18,29 @@ const std::vector<std::pair<std::string,fs::path>>& runtimeLayout() {
         {"javac",L"jdk/bin/javac.exe"},{"cangjie",L"cangjie/bin/cjc.exe"}};
     return layout;
 }
+fs::path runtimeDirectory(const fs::path& applicationDirectory) {
+    auto accept=[&](const fs::path& path)->fs::path{
+        std::error_code ec;
+        if(!fs::is_directory(path,ec)) return {};
+        return asciiDirectory(path);
+    };
+    if(auto direct=accept(applicationDirectory/L"runtimes"); !direct.empty()) return direct;
+    if(auto staged=accept(applicationDirectory/L".runtime/stage/JudgeBox/runtimes"); !staged.empty()) return staged;
+    return accept(applicationDirectory.parent_path()/L".runtime/stage/JudgeBox/runtimes");
+}
 Json bundledTools(const fs::path& applicationDirectory) {
     Json tools=Json::object();
-    auto runtime=applicationDirectory/L"runtimes";
-    if(fs::is_directory(runtime)) runtime=asciiDirectory(runtime);
+    auto runtime=runtimeDirectory(applicationDirectory);
     for(const auto& [key,path]:runtimeLayout()) {
-        auto candidate=fs::is_directory(runtime)?runtime/path:fs::path();
+        auto candidate=runtime.empty()?fs::path():runtime/path;
         tools[key]=!candidate.empty() && fs::is_regular_file(candidate)?utf8(candidate.wstring()):"";
     }
     return tools;
 }
 Json detectTools(const fs::path& applicationDirectory) {
-    auto runtime=applicationDirectory/L"runtimes";
-    if(fs::is_directory(runtime)) runtime=asciiDirectory(runtime);
+    auto runtime=runtimeDirectory(applicationDirectory);
     Json tools=bundledTools(applicationDirectory);
-    if(fs::is_regular_file(runtime/L"manifest.json")) return tools;
+    if(!runtime.empty() && fs::is_regular_file(runtime/L"manifest.json")) return tools;
     Json installed={{"cpp",findTool(L"g++.exe",{L"C:\\msys64\\ucrt64\\bin\\g++.exe"})},
             {"python",findTool(L"python.exe")},{"java",findTool(L"java.exe")},
             {"javac",findTool(L"javac.exe")},{"cangjie",findTool(L"cjc.exe",{L"D:\\Cangjie\\cangjie\\bin\\cjc.exe"})}};
@@ -107,6 +115,7 @@ std::vector<Mark> parseCompilerLog(const std::string& log) {
     std::regex located(R"(:(\d+):(?:(\d+):)?[ \t]*(fatal error|error|warning):[ \t]*(.*)$)",std::regex::icase);
     std::regex bare(R"(^[ \t]*(error|warning):[ \t]*(.*)$)",std::regex::icase);
     std::regex arrow(R"(==>.*:(\d+):(\d+):[ \t]*$)");
+    std::regex pipeLine(R"(^[ \t]*\|(.*)$)");
     std::vector<Mark> marks; std::optional<Mark> pending; int open=-1;
     auto closePending=[&]() {
         if(!pending || pending->message.empty()) { pending.reset(); return; }
@@ -127,6 +136,17 @@ std::vector<Mark> parseCompilerLog(const std::string& log) {
             pending->line=std::stoi(found[1]); pending->column=std::stoi(found[2]); closePending(); continue;
         }
         if(std::regex_search(line,found,bare)) { closePending(); pending=Mark{}; pending->severity=lowerCopy(found[1])=="warning"?"warning":"error"; pending->message=found[2]; open=-1; continue; }
+        std::smatch frame;
+        if(open>=0 && std::regex_match(line,frame,pipeLine)) {
+            auto body=frame[1].str(); auto hat=body.find('^');
+            if(hat!=std::string::npos) {
+                int span=0; for(std::size_t i=hat;i<body.size() && (body[i]=='^' || body[i]=='~');++i) ++span;
+                auto& mark=marks[open];
+                if(mark.column<=0) mark.column=static_cast<int>(hat)+1;
+                if(span>0 && mark.column>0) mark.endColumn=mark.column+span;
+            }
+            continue;
+        }
         auto hat=line.find('^'); if(hat==std::string::npos || open<0) continue;
         if(line.find_first_not_of(" \t|^~0123456789")!=std::string::npos) continue;
         int tildes=0; for(std::size_t i=hat+1;i<line.size() && line[i]=='~';++i) ++tildes;
