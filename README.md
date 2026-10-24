@@ -3,6 +3,7 @@
 Windows 本地判题与随机对拍工具。C++20 执行引擎，双击启动，在浏览器里粘贴代码即可使用；页面资源全部随 exe 内置，使用时无需联网
 
 声明：纯手写部分大约占据30% 主要负责了src的工程目录初始化部分与时间判定逻辑，VibeCoding完成了剩余部分与前端工作
+要直接安装点https://github.com/Lyra-Lycoris/JudgeBox/releases/tag/v1.1.0
 
 完整离线发行版为 `dist/JudgeBox-Setup-1.1.0-x64.exe`。安装包内置 GCC 16.1.0、CPython 3.14.9、Temurin JDK 21.0.11+10、仓颉 SDK 1.2.0、CYaRon 0.7.0 及其依赖，目标机器不需要预装这些工具。此版本面向 Windows 11 x64，安装到当前用户目录，不改系统 PATH。安装目录约需 1.7 GiB 空间，安装时还需额外临时空间。
 仓库根目录仅含 `JudgeBox.exe` 的开发版仍依赖本机工具链
