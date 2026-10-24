@@ -15,7 +15,18 @@ add_library(judge_process src/process_win32.cpp)
 target_include_directories(judge_process PUBLIC src third_party)
 add_library(judge_core src/generator.cpp src/checker.cpp src/compiler.cpp src/judge.cpp src/path_compat.cpp)
 target_link_libraries(judge_core PUBLIC judge_process shell32 ole32 advapi32)
-set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS web/index.html web/style.css web/app.js)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS web/index.html web/style.css web/app.js web/editor.js)
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/web/editor.js" JBOX_EDITOR_JS)
+string(FIND "${JBOX_EDITOR_JS}" ")JBOXED\"" JBOX_EDITOR_COLLISION)
+if(NOT JBOX_EDITOR_COLLISION EQUAL -1)
+    message(FATAL_ERROR "web/editor.js contains the asset delimiter")
+endif()
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/generated")
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/editor_asset.hpp" "#pragma once
+namespace assets {
+inline const char* editorJs = R\"JBOXED(${JBOX_EDITOR_JS})JBOXED\";
+}
+")
 file(READ web/index.html JBOX_HTML)
 file(READ web/style.css JBOX_CSS)
 file(READ web/app.js JBOX_JS)

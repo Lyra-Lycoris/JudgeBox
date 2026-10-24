@@ -12,5 +12,7 @@ struct Program {
     std::string verdict="AC",message,log;
 };
 Json detectTools(const fs::path& applicationDirectory=executableDirectory());
+Json bundledTools(const fs::path& applicationDirectory);
 Program compileProgram(const std::string& source,const std::string& language,const fs::path& directory,
                        const Json& tools,const std::atomic_bool* cancel);
+Json diagnoseSource(const std::string& source,const std::string& language,const Json& tools,const fs::path& workspace);

@@ -8,6 +8,7 @@
   <title>JudgeBox</title>
   <link rel="icon" href="/favicon.svg">
   <link rel="stylesheet" href="/style.css">
+  <script defer src="/editor.js"></script>
   <script defer src="/app.js"></script>
 </head>
 <body>
@@ -15,17 +16,7 @@
 <header class="header">
   <div class="topbar">
     <h1>JudgeBox</h1>
-    <div class="top-actions">
-      <span id="saveState" class="saved" role="status">已保存</span>
-      <button id="importButton" class="text-button">导入</button>
-      <button id="exportButton" class="text-button">导出</button>
-      <button id="settingsButton" class="text-button">设置</button>
-      <button id="helpButton" class="text-button">说明</button>
-      <button id="quitButton" class="text-button">退出</button>
-    </div>
-  </div>
-  <div class="mode-bar">
-    <nav aria-label="测试模式">
+    <nav class="mode-bar" aria-label="测试模式">
       <button class="mode-btn active" data-mode="manual" aria-pressed="true">手动测试</button>
       <button class="mode-btn" data-mode="generated" aria-pressed="false">生成测试</button>
       <button class="mode-btn" data-mode="stress" aria-pressed="false">随机对拍</button>
@@ -37,24 +28,33 @@
       <option value="stress">随机对拍</option>
     </select>
     <span id="connectionState" class="connection-state" role="status">连接中</span>
+    <div class="top-actions">
+      <span id="saveState" class="saved" role="status">已保存</span>
+      <button id="importButton" class="text-button">导入</button>
+      <button id="exportButton" class="text-button">导出</button>
+      <button id="settingsButton" class="text-button">设置</button>
+      <button id="helpButton" class="text-button">说明</button>
+      <button id="quitButton" class="text-button">退出</button>
+    </div>
   </div>
 </header>
 <main id="main">
     <div id="notice" class="notice" role="alert" hidden></div>
-    <section class="workspace" aria-label="判题配置">
+    <div class="workbench">
+    <div class="compose">
       <section class="panel source-panel">
         <div class="panel-heading"><h2>源程序</h2><div class="panel-tools"><button id="sampleButton" class="text-button">示例</button><button id="sourceFileButton" class="text-button">打开文件</button></div></div>
-        <div class="editor-toolbar"><div class="file-tab"><span id="sourceFileName">Main.cpp</span></div><label for="language" class="language-label">语言</label><select id="language"><option value="cpp">C++ 20</option><option value="python">Python 3</option><option value="java">Java (Main)</option><option value="cangjie">Cangjie</option></select></div>
-        <div class="code-editor"><pre class="line-numbers" id="sourceLines" aria-hidden="true">1</pre><label class="sr-only" for="source">待测程序源码</label><textarea id="source" class="code" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="源程序" wrap="off"></textarea></div>
-        
-        <div class="limits"><label>时间限制 <span class="input-unit"><input id="timeMs" type="number" value="1000" min="10" max="60000" step="10"><span>ms</span></span></label><label>内存限制 <span class="input-unit"><input id="memoryMb" type="number" value="256" min="16" max="4096"><span>MiB</span></span></label><label>比较方式 <select id="checker"><option value="tokens">忽略空白 · Token</option><option value="exact">严格按字节比较</option><option value="float">浮点误差比较</option></select></label></div>
+        <div class="editor-toolbar"><div class="file-tab"><span id="sourceFileName">Main.cpp</span><span id="diagnosticState" role="status"></span></div><label for="language" class="language-label">语言</label><select id="language"><option value="cpp">C++ 20</option><option value="python">Python 3</option><option value="java">Java (Main)</option><option value="cangjie">Cangjie</option></select></div>
+        <div class="limits"><label>时间 <span class="input-unit"><input id="timeMs" type="number" value="1000" min="10" max="60000" step="10"><span>ms</span></span></label><label>内存 <span class="input-unit"><input id="memoryMb" type="number" value="256" min="16" max="4096"><span>MiB</span></span></label><label>比较 <select id="checker"><option value="tokens">忽略空白 · Token</option><option value="exact">严格按字节比较</option><option value="float">浮点误差比较</option></select></label></div>
         <div id="floatField" class="float-field" hidden><label for="tolerance">绝对 / 相对容差</label><input id="tolerance" type="number" value="0.000001" min="0" max="1" step="0.000001"><span class="muted">|实际 − 预期| ≤ ε × max(1, |预期|)</span></div>
+        <div class="code-editor" id="codeEditor"><label class="sr-only" for="source">待测程序源码</label><textarea id="source" class="code" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="源程序" wrap="off"></textarea></div>
       </section>
       <section class="panel data-panel">
         <div class="panel-heading"><h2><span id="dataTitle">测试数据</span></h2></div>
         <div id="manualPanel">
-          <div class="case-navigation"><div id="caseTabs" class="case-tabs" aria-label="测试点列表"></div><button id="addCase" class="small-button">＋ 添加</button></div>
-          <div class="manual-fields"><div class="field-title"><label for="caseInput">输入</label><button id="removeCase" class="text-button muted">删除这组</button></div><textarea id="caseInput" class="data-code" spellcheck="false" placeholder="输入"></textarea><div class="field-title"><label for="caseExpected">预期输出</label><label class="checkbox"><input id="hasExpected" type="checkbox" checked>比较答案</label></div><textarea id="caseExpected" class="data-code" spellcheck="false" placeholder="预期输出" aria-describedby="expectedHelp"></textarea><p id="expectedHelp" class="sr-only">空文本按空答案比较。</p></div>
+          <p id="caseEmpty" class="case-empty">还没有测试用例。新建一组后填写输入和预期输出，下一组会接在下面。</p>
+          <div id="caseList" class="case-list" aria-label="测试用例"></div>
+          <div class="add-case-row"><button id="addCase" type="button">＋ 新建测试用例</button></div>
           <div class="panel-foot"><button id="goGenerate" class="text-button">生成输入</button></div>
         </div>
         <div id="generationPanel" hidden>
@@ -70,12 +70,29 @@
           </div>
         </div>
       </section>
+    </div>
+    <section id="judgeDock" class="judge-dock" aria-labelledby="resultsTitle">
+      <div id="judgeSummary">
+        <div id="emptyResults" class="result-summary">
+          <span class="verdict">—</span>
+          <div><h2 id="resultsTitle">尚未评测</h2><p>运行后，每一组的状态会列在这里。</p></div>
+        </div>
+        <div id="resultContent" class="judge-body" hidden>
+          <div class="result-summary" role="status" aria-live="polite"><span id="overallBadge" class="verdict">READY</span><div><h3 id="resultPhase">就绪</h3><p id="resultMessage"></p></div><div class="progress-area"><span id="progressText">0 / 0</span><progress id="progress" value="0" max="1" aria-label="判题进度"></progress></div></div>
+          <div class="judge-scroll">
+            <p id="resultMeta" class="result-meta">未运行</p>
+            <details id="compileDetails" hidden><summary>编译日志</summary><pre id="compileLog" class="log"></pre></details>
+            <div class="result-table-wrap"><table><thead><tr><th scope="col">测试点</th><th scope="col">状态</th><th scope="col">耗时</th><th scope="col" title="作业峰值提交内存">内存</th><th scope="col">说明</th><th scope="col">详情</th></tr></thead><tbody id="resultRows"></tbody></table></div>
+            <div id="caseDetail" class="case-detail" hidden><div class="detail-heading"><h3 id="detailTitle">测试点详情</h3><div><button id="counterexampleButton" class="text-button">导出测试点</button><button id="retestButton" class="text-button">加入手动测试</button></div></div><p id="detailMessage" class="field-help"></p><div class="output-grid"><div><div class="output-title">输入 <button data-download="input" class="text-button">下载 .in</button></div><pre id="detailInput"></pre></div><div><div class="output-title">预期输出 <button data-download="expected" class="text-button">下载 .ans</button></div><pre id="detailExpected"></pre></div><div><div class="output-title">实际输出 <button data-download="stdout" class="text-button">下载 .out</button></div><pre id="detailOutput"></pre></div></div><details id="stderrDetails" hidden><summary>标准错误 / 参考程序日志</summary><pre id="detailStderr" class="log"></pre></details></div>
+          </div>
+        </div>
+      </div>
+      <div class="run-bar"><label class="checkbox"><input id="stopOnFailure" type="checkbox">遇到失败立即停止</label><div class="run-actions"><button id="cancelButton" class="secondary" hidden>停止运行</button><button id="runButton" class="primary" title="Ctrl+Enter"><span id="runLabel">运行</span></button></div></div>
     </section>
-    <div class="run-bar"><div><label class="checkbox"><input id="stopOnFailure" type="checkbox">遇到失败立即停止</label></div><div class="run-actions"><button id="cancelButton" class="secondary" hidden>停止运行</button><button id="runButton" class="primary" title="Ctrl+Enter"><span id="runLabel">运行</span></button></div></div>
-    <section class="panel results-panel" aria-labelledby="resultsTitle"><div class="panel-heading"><h2 id="resultsTitle">运行结果</h2><span id="resultMeta" class="muted">未运行</span></div><div id="emptyResults" hidden></div><div id="resultContent" hidden><div class="result-summary" role="status" aria-live="polite"><span id="overallBadge" class="verdict">READY</span><div><h3 id="resultPhase">就绪</h3><p id="resultMessage"></p></div><div class="progress-area"><span id="progressText">0 / 0</span><progress id="progress" value="0" max="1" aria-label="判题进度"></progress></div></div><details id="compileDetails" hidden><summary>编译日志</summary><pre id="compileLog" class="log"></pre></details><div class="result-table-wrap"><table><thead><tr><th scope="col">测试点</th><th scope="col">状态</th><th scope="col">耗时</th><th scope="col" title="作业峰值提交内存">内存</th><th scope="col">说明</th><th scope="col">详情</th></tr></thead><tbody id="resultRows"></tbody></table></div><div id="caseDetail" class="case-detail" hidden><div class="detail-heading"><h3 id="detailTitle">测试点详情</h3><div><button id="counterexampleButton" class="text-button">导出测试点</button><button id="retestButton" class="text-button">加入手动测试</button></div></div><p id="detailMessage" class="field-help"></p><div class="output-grid"><div><div class="output-title">输入 <button data-download="input" class="text-button">下载 .in</button></div><pre id="detailInput"></pre></div><div><div class="output-title">预期输出 <button data-download="expected" class="text-button">下载 .ans</button></div><pre id="detailExpected"></pre></div><div><div class="output-title">实际输出 <button data-download="stdout" class="text-button">下载 .out</button></div><pre id="detailOutput"></pre></div></div><details id="stderrDetails" hidden><summary>标准错误 / 参考程序日志</summary><pre id="detailStderr" class="log"></pre></details></div></div></section>
+    </div>
 </main>
 <dialog id="settingsDialog"><div class="dialog-title"><h2>工具链设置</h2><button class="close-dialog text-button" aria-label="关闭工具链设置">✕</button></div><p class="field-help">填写可执行文件的完整路径，无需加引号。</p><div id="toolFields"></div><div class="settings-grid"><label>单点输出上限（KiB）<input id="outputKb" type="number" value="1024" min="1" max="4096"></label></div><p class="field-help">上限包含 stdout 与 stderr。Java 最大堆会随内存上限调整并预留原生开销，进程总内存仍由 Job Object 限制；启动失败时可提高内存限制至 512 或 1024 MiB。</p><p id="dataDirectory" class="field-help"></p><button id="saveSettings" class="primary">保存设置</button></dialog>
-<dialog id="helpDialog"><div class="dialog-title"><h2>使用说明</h2><button class="close-dialog text-button" aria-label="关闭使用说明">✕</button></div><div class="help-content"><h3>01 / 手动测试</h3><p>粘贴代码，添加输入和正确答案。勾选“参与答案比较”时，空文本也代表一个有效的空答案；取消勾选时只运行，状态为 RUN。</p><h3>02 / 生成测试</h3><p>选择模板，调整数据规模与数值范围，预览格式。可以批量运行观察实际输出，或把预览数据加入手动测试并填写答案。</p><h3>03 / 随机对拍</h3><p>贴入正确的参考程序，自动为相同输入运行两个程序。首次发现差异或待测程序异常时停止，保留反例。参考程序失败会明确显示为判题错误。</p><h3>自定义输入格式</h3><p>模板会展示可编辑的 JSON。int 定义变量；array 的 count 可以引用 n；line 拼接一行多个值；repeat 重复嵌套步骤。复杂约束用 Python 脚本生成，CYaRon 可在安装后导入。</p><h3>状态与复现</h3><p>AC 正确 / WA 答案错误 / TLE 超时 / MLE 内存超限 / RE 运行异常 / CE 编译失败 / OLE 输出过量 / JE 工具、参考程序或生成器错误。对拍通过只表示本批数据一致。保留规则、随机种子和序号即可复现同一组数据。</p><h3>本地运行约定</h3><p>源码、草稿与运行记录保存在本机。请只运行可信代码；资源限制不提供文件与网络隔离。关闭浏览器不会结束引擎，可用右上角“退出”或终端 Ctrl+C 停止。</p></div></dialog>
+<dialog id="helpDialog"><div class="dialog-title"><h2>使用说明</h2><button class="close-dialog text-button" aria-label="关闭使用说明">✕</button></div><div class="help-content"><h3>01 / 手动测试</h3><p>一开始没有测试用例。点「新建测试用例」添加一组，下一组接在上一组下面。运行只提交这些用例。勾选“比较答案”时，空文本也是有效答案；取消勾选则只运行，状态为 RUN。源程序编辑区会按语言高亮。停顿后由安装目录里的工具链检查，不使用电脑上另外安装的编译器；错误处显示红色波浪线。</p><h3>02 / 生成测试</h3><p>选择模板，调整数据规模与数值范围，预览格式。可以批量运行观察实际输出，或把预览数据加入手动测试并填写答案。</p><h3>03 / 随机对拍</h3><p>贴入正确的参考程序，自动为相同输入运行两个程序。首次发现差异或待测程序异常时停止，保留反例。参考程序失败会明确显示为判题错误。</p><h3>自定义输入格式</h3><p>模板会展示可编辑的 JSON。int 定义变量；array 的 count 可以引用 n；line 拼接一行多个值；repeat 重复嵌套步骤。复杂约束用 Python 脚本生成，CYaRon 可在安装后导入。</p><h3>状态与复现</h3><p>AC 正确 / WA 答案错误 / TLE 超时 / MLE 内存超限 / RE 运行异常 / CE 编译失败 / OLE 输出过量 / JE 工具、参考程序或生成器错误。对拍通过只表示本批数据一致。保留规则、随机种子和序号即可复现同一组数据。</p><h3>本地运行约定</h3><p>源码、草稿与运行记录保存在本机。请只运行可信代码；资源限制不提供文件与网络隔离。关闭浏览器不会结束引擎，可用右上角“退出”或终端 Ctrl+C 停止。</p></div></dialog>
 <input id="sourceFile" class="sr-only" tabindex="-1" type="file" accept=".cpp,.cc,.cxx,.py,.java,.cj,.txt"><input id="workspaceFile" class="sr-only" tabindex="-1" type="file" accept=".json">
 </body>
 </html>

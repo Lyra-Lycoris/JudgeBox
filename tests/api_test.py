@@ -116,4 +116,12 @@ class API(unittest.TestCase):
         self.assertEqual(r['verdict'],'JE'); self.assertIn('参考程序 CE',r['message'])
         r=self.job('print(5)','python',mode='generated',generator={'steps':[{'type':'graph','nodes':2,'edges':99}]},count=1)
         self.assertEqual(r['verdict'],'JE')
+    def test_11_diagnostics_ignore_local_compiler(self):
+        local=self.call('/api/diagnostics',{'language':'cpp','source':'int main(){ return x; }\n','tools':{'cpp':r'C:\msys64\ucrt64\bin\g++.exe'}})
+        bundled=pathlib.Path(EXE).parent/'runtimes'/'gcc'/'bin'/'g++.exe'
+        if bundled.is_file():
+            self.assertTrue(any(item.get('severity')=='error' for item in local['diagnostics']),local)
+        else:
+            self.assertEqual(local['diagnostics'],[])
+            self.assertIn('工具链',local['status'])
 if __name__=='__main__': unittest.main(verbosity=2)

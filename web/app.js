@@ -2,7 +2,7 @@
 const $ = id => document.getElementById(id);
 const token = location.hash.slice(1) || sessionStorage.getItem('judgebox-token') || '';
 if (token) sessionStorage.setItem('judgebox-token', token);
-let mode = 'manual', cases = [{input:'5\n1 2 3 4 5\n', expected:'15\n'}], activeCase = 0;
+let mode = 'manual', cases = [], runCaseLabel = null;
 let loaded = false, running = false, tools = {}, currentResult = null, selectedDetail = null;
 let previewIndex = 0, previewInput = null, saveTimer, pollTimer, savePromise = Promise.resolve();
 const samples = {
@@ -37,28 +37,130 @@ function number(id, min, max) {
 }
 function make(tag, text, className) { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (className) e.className = className; return e; }
 function badge(v) { const e = make('span',v,'verdict'); e.dataset.verdict = v; return e; }
+let editorLanguage = '';
+function showDiagnostics(result, source) {
+  const state = $('diagnosticState');
+  const items = Array.isArray(result.diagnostics) ? result.diagnostics : [];
+  if (!source.trim()) { state.textContent = ''; state.classList.remove('diagnostic-bad'); return []; }
+  const errors = items.filter(item => item.severity !== 'warning');
+  if (!items.length) { state.textContent = result.status || '无错误'; state.classList.toggle('diagnostic-bad', Boolean(result.status)); return []; }
+  const first = errors[0] || items[0];
+  const count = errors.length || items.length;
+  state.textContent = `${count} 个${errors.length ? '错误' : '警告'} · 第 ${first.line} 行：${first.message}`;
+  state.classList.toggle('diagnostic-bad', errors.length > 0);
+  return items;
+}
 function syncSource() {
-  const lines = $('source').value.split('\n').length;
-  $('sourceLines').textContent = Array.from({length:Math.min(lines,10000)},(_,i) => i+1).join('\n');
+  if (window.JudgeEditor) {
+    JudgeEditor.pull();
+    const language = $('language').value;
+    if (language !== editorLanguage) { editorLanguage = language; JudgeEditor.setLanguage(language); }
+  }
+  const lines = $('sourceLines');
+  if (lines) lines.textContent = Array.from({length:Math.min($('source').value.split('\n').length,10000)},(_,i) => i+1).join('\n');
   $('sourceFileName').textContent = {cpp:'Main.cpp',python:'main.py',java:'Main.java',cangjie:'main.cj'}[$('language').value];
 }
-function rememberCase() {
-  if (!cases[activeCase]) return;
-  cases[activeCase] = {input:$('caseInput').value, expected:$('hasExpected').checked ? $('caseExpected').value : null};
+function mountEditor() {
+  if (!window.JudgeEditor || $('source').dataset.editor) return;
+  $('source').dataset.editor = '1';
+  JudgeEditor.mount($('source'), {
+    getLanguage: () => $('language').value,
+    lint: async (source, language) => {
+      if (!source.trim()) return showDiagnostics({diagnostics:[]}, '');
+      try {
+        const result = await api('/api/diagnostics', {source, language});
+        return showDiagnostics(result, source);
+      } catch (e) { return showDiagnostics({diagnostics:[], status:e.message || String(e)}, source); }
+    }
+  });
+  editorLanguage = $('language').value;
 }
-function renderCase() {
-  const list = $('caseTabs'); list.replaceChildren();
-  cases.forEach((c,i) => { const b = make('button',`#${String(i+1).padStart(2,'0')}`,`case-tab${i === activeCase ? ' active' : ''}`); b.setAttribute('aria-pressed',String(i === activeCase)); b.onclick = () => { rememberCase(); activeCase = i; renderCase(); }; list.append(b); });
-  const c = cases[activeCase]; $('caseInput').value = c.input; $('caseExpected').value = c.expected ?? ''; $('hasExpected').checked = c.expected !== null;
-  expectedState(); $('removeCase').disabled = cases.length <= 1; $('addCase').disabled = cases.length >= 200;
+function rememberCases() {
+  document.querySelectorAll('.case-card').forEach(card => {
+    const index = Number(card.dataset.index);
+    if (!cases[index]) return;
+    const compare = card.querySelector('.compare-answer').checked;
+    cases[index] = {input:card.querySelector('.case-input').value, expected:compare ? card.querySelector('.case-expected').value : null};
+  });
 }
-function expectedState() {
-  $('caseExpected').disabled = !$('hasExpected').checked;
-  $('expectedHelp').textContent = $('hasExpected').checked ? '空文本按空答案比较。' : '仅运行，不比较答案。';
+function caseCard(item, index) {
+  const card = make('article', undefined, 'case-card');
+  card.dataset.index = String(index);
+  const head = make('div', undefined, 'case-card-head');
+  head.append(make('h3', `样例 ${index + 1}`, 'case-card-title'));
+  const actions = make('div', undefined, 'case-card-actions');
+  const runOne = make('button', '运行这组', 'text-button run-one');
+  runOne.type = 'button';
+  runOne.setAttribute('aria-label', `只运行样例 ${index + 1}`);
+  runOne.disabled = running;
+  runOne.onclick = handle(() => submitRun(index));
+  const remove = make('button', '删除', 'text-button muted');
+  remove.type = 'button';
+  remove.setAttribute('aria-label', `删除样例 ${index + 1}`);
+  remove.onclick = () => { rememberCases(); cases.splice(index, 1); renderCases(); queueSave(); };
+  actions.append(runOne, remove);
+  head.append(actions);
+  const body = make('div', undefined, 'manual-fields');
+  const inputTitle = make('div', undefined, 'field-title');
+  const inputLabel = make('label', '输入');
+  const input = make('textarea', undefined, 'data-code case-input');
+  input.id = index === 0 ? 'caseInput' : `caseInput-${index}`;
+  inputLabel.htmlFor = input.id;
+  input.spellcheck = false;
+  input.placeholder = '输入';
+  input.value = item.input;
+  input.addEventListener('input', () => { cases[index].input = input.value; });
+  const copyInput = make('button', '复制', 'text-button muted');
+  copyInput.type = 'button';
+  copyInput.onclick = () => navigator.clipboard?.writeText(input.value);
+  inputTitle.append(inputLabel, copyInput);
+  const expectedTitle = make('div', undefined, 'field-title');
+  const expectedLabel = make('label', '预期输出');
+  const expected = make('textarea', undefined, 'data-code case-expected');
+  expected.id = index === 0 ? 'caseExpected' : `caseExpected-${index}`;
+  expectedLabel.htmlFor = expected.id;
+  expected.spellcheck = false;
+  expected.placeholder = '预期输出';
+  expected.value = item.expected ?? '';
+  expected.disabled = item.expected === null;
+  const compareLabel = make('label', undefined, 'checkbox');
+  const compare = make('input');
+  compare.type = 'checkbox';
+  compare.className = 'compare-answer';
+  if (index === 0) compare.id = 'hasExpected';
+  compare.checked = item.expected !== null;
+  compare.addEventListener('change', () => {
+    expected.disabled = !compare.checked;
+    cases[index].expected = compare.checked ? expected.value : null;
+  });
+  expected.addEventListener('input', () => { if (compare.checked) cases[index].expected = expected.value; });
+  compareLabel.append(compare, document.createTextNode('比较答案'));
+  const copyExpected = make('button', '复制', 'text-button muted');
+  copyExpected.type = 'button';
+  copyExpected.onclick = () => navigator.clipboard?.writeText(expected.value);
+  const expectedTools = make('div', undefined, 'case-card-actions');
+  expectedTools.append(compareLabel, copyExpected);
+  expectedTitle.append(expectedLabel, expectedTools);
+  body.append(inputTitle, input, expectedTitle, expected);
+  card.append(head, body);
+  return card;
+}
+function renderCases() {
+  const list = $('caseList');
+  list.replaceChildren();
+  cases.forEach((item, index) => list.append(caseCard(item, index)));
+  $('caseEmpty').hidden = cases.length > 0;
+  $('addCase').disabled = cases.length >= 200;
+}
+function focusCase(index, field) {
+  const card = document.querySelector(`.case-card[data-index="${index}"]`);
+  if (!card) return;
+  card.scrollIntoView({block:'nearest'});
+  card.querySelector(field).focus();
 }
 function switchMode(next, save = true) {
   if (!modeInfo[next]) return;
-  rememberCase(); mode = next;
+  rememberCases(); mode = next;
   $('mobileMode').value = next;
   document.querySelectorAll('.mode-btn').forEach(b => { const active = b.dataset.mode === mode; b.classList.toggle('active',active); b.setAttribute('aria-pressed',String(active)); });
   const info = modeInfo[mode];
@@ -103,17 +205,20 @@ function generatorPayload() {
 }
 function readTools() { const result = {...tools}; document.querySelectorAll('[data-tool]').forEach(e => { result[e.dataset.tool] = e.value.trim(); }); return result; }
 function payload() {
-  rememberCase();
+  rememberCases();
   const p = {source:$('source').value,language:$('language').value,mode,timeMs:number('timeMs',10,60000),memoryMb:number('memoryMb',16,4096),outputKb:number('outputKb',1,4096),checker:$('checker').value,tolerance:Number($('tolerance').value),stopOnFailure:$('stopOnFailure').checked,tools:readTools()};
   if (!p.source.trim()) { $('source').focus(); throw new Error('请先粘贴待测程序。'); }
   if (p.checker === 'float' && (!Number.isFinite(p.tolerance) || p.tolerance < 0 || p.tolerance > 1)) throw new Error('浮点容差须在 0 到 1 之间。');
-  if (mode === 'manual') p.cases = cases.map(c => ({...c}));
+  if (mode === 'manual') {
+    if (!cases.length) throw new Error('请先新建测试用例。');
+    p.cases = cases.map(c => ({...c}));
+  }
   else Object.assign(p,generatorPayload(),{count:number('count',1,1000)});
   if (mode === 'stress') { p.reference = $('reference').value; p.referenceLanguage = $('referenceLanguage').value; p.referenceTimeMs = number('referenceTimeMs',10,60000); if (!p.reference.trim()) { $('reference').focus(); throw new Error('请填写参考程序。'); } }
   return p;
 }
 function draft() {
-  rememberCase(); const fields = {}; inputIds.forEach(id => { fields[id] = $(id).type === 'checkbox' ? $(id).checked : $(id).value; });
+  rememberCases(); const fields = {}; inputIds.forEach(id => { fields[id] = $(id).type === 'checkbox' ? $(id).checked : $(id).value; });
   return {version:1,mode,fields,cases:cases.map(c => ({...c})),tools:readTools()};
 }
 async function saveDraft() {
@@ -129,22 +234,25 @@ async function saveDraft() {
 function queueSave() { if (!loaded) return; clearTimeout(saveTimer); saveTimer = setTimeout(() => saveDraft().catch(e => notice(e.message)),650); }
 function applyDraft(data) {
   if (!data || !data.fields) return;
-  if (Array.isArray(data.cases) && data.cases.length && data.cases.length <= 200) {
-    cases = data.cases.map(c => { if (typeof c.input !== 'string' || !(c.expected === null || typeof c.expected === 'string')) throw new Error('工作区测试点格式不正确。'); return {input:c.input,expected:c.expected}; });
+  if (Array.isArray(data.cases) && data.cases.length <= 200) {
+    cases = data.cases.map(c => { if (typeof c.input !== 'string' || !(c.expected === null || typeof c.expected === 'string')) throw new Error('工作区测试点格式不正确。'); return {input:c.input,expected:c.expected}; }).filter(c => c.input !== '' || (c.expected !== null && c.expected !== ''));
   }
   inputIds.forEach(id => { if (data.fields[id] !== undefined) { if ($(id).type === 'checkbox') $(id).checked = Boolean(data.fields[id]); else $(id).value = String(data.fields[id]); } });
   if (data.tools) { tools = {...tools,...data.tools}; renderTools(); }
-  activeCase = 0; renderCase(); templateState(); generatorState(); syncSource(); switchMode(data.mode || 'manual',false); $('floatField').hidden = $('checker').value !== 'float';
+  renderCases(); templateState(); generatorState(); syncSource(); switchMode(data.mode || 'manual',false); $('floatField').hidden = $('checker').value !== 'float';
 }
 function download(name, text, type = 'text/plain;charset=utf-8') { const url = URL.createObjectURL(new Blob([text],{type})); const a = make('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url),1000); }
 function addManual(input, expected = null) {
   if (cases.length >= 200) throw new Error('手动测试最多 200 组，请先删除一些测试点。');
-  rememberCase(); cases.push({input,expected}); activeCase = cases.length-1; renderCase(); switchMode('manual'); $('caseExpected').focus();
+  rememberCases(); cases.push({input,expected}); renderCases(); switchMode('manual'); focusCase(cases.length - 1, '.case-expected');
 }
-function setRunning(value) { running = value; $('runButton').disabled = value; $('cancelButton').hidden = !value; $('runLabel').textContent = value ? '运行中' : modeInfo[mode].run; $('connectionState').textContent = value ? '引擎运行中' : '本地引擎就绪'; $('resultsTitle').closest('section').setAttribute('aria-busy',String(value)); }
-async function run() {
+function setRunning(value) { running = value; $('runButton').disabled = value; $('cancelButton').hidden = !value; document.querySelectorAll('.run-one').forEach(button => { button.disabled = value; }); $('runLabel').textContent = value ? '运行中' : modeInfo[mode].run; $('connectionState').textContent = value ? '引擎运行中' : '本地引擎就绪'; $('resultsTitle').closest('section').setAttribute('aria-busy',String(value)); }
+async function submitRun(onlyIndex) {
   if (running) return;
-  notice(); const request = payload(); await saveDraft();
+  notice(); const request = payload();
+  runCaseLabel = Number.isInteger(onlyIndex) ? onlyIndex : null;
+  if (runCaseLabel !== null) request.cases = [cases[runCaseLabel]];
+  await saveDraft();
   await api('/api/run',request); selectedDetail = null; $('caseDetail').hidden = true; $('compileDetails').open = false; $('resultRows').replaceChildren(); currentResult = null;
   setRunning(true); await poll();
 }
@@ -162,7 +270,8 @@ function renderResult(state) {
     const rows = $('resultRows'); rows.replaceChildren();
     state.cases.forEach(row => {
       const tr = make('tr'); if (selectedDetail?.index === row.index) tr.classList.add('selected');
-      tr.append(make('td',`#${String(row.index+1).padStart(2,'0')}`)); const td = make('td'); td.append(badge(row.verdict)); tr.append(td);
+      const shown = runCaseLabel !== null && state.cases.length === 1 ? runCaseLabel : row.index;
+      tr.append(make('td',`#${String(shown+1).padStart(2,'0')}`)); const td = make('td'); td.append(badge(row.verdict)); tr.append(td);
       tr.append(make('td',`${row.timeMs} ms`),make('td',`${(row.memoryBytes/1048576).toFixed(2)} MiB`));
       const desc = make('td',row.message); desc.title = row.message; tr.append(desc);
       const action = make('td'),b = make('button','查看','text-button'); b.setAttribute('aria-label',`查看测试点 ${row.index+1}`); b.onclick = handle(() => showDetail(row.index)); action.append(b); tr.append(action); rows.append(tr);
@@ -181,7 +290,8 @@ async function poll() {
 function clip(text) { if (text === null || text === undefined) return '（未提供预期输出）'; if (!text.length) return '（空输出）'; return text.length > 80000 ? text.slice(0,80000)+'\n\n…界面仅展示前 80000 字符，下载可获取完整内容。' : text; }
 async function showDetail(index) {
   const detail = await api(`/api/case?index=${index}`); selectedDetail = detail; $('caseDetail').hidden = false;
-  $('detailTitle').textContent = `测试点 #${String(index+1).padStart(2,'0')} · ${detail.verdict}`;
+  const shown = runCaseLabel !== null && currentResult?.cases.length === 1 ? runCaseLabel : index;
+  $('detailTitle').textContent = `样例 #${String(shown+1).padStart(2,'0')} · ${detail.verdict}`;
   $('detailMessage').textContent = detail.message + (detail.exitCode !== undefined ? ` · 退出码 ${detail.exitCode}` : '') + (detail.referenceTimeMs !== undefined ? ` · 参考程序耗时 ${detail.referenceTimeMs} ms` : '');
   $('detailInput').textContent = clip(detail.input); $('detailExpected').textContent = clip(detail.expected); $('detailOutput').textContent = clip(detail.stdout);
   const stderr = [detail.stderr,detail.referenceStderr ? '[参考程序 stderr]\n'+detail.referenceStderr : '',detail.referenceStdout ? '[参考程序 stdout]\n'+detail.referenceStdout : ''].filter(Boolean).join('\n');
@@ -203,11 +313,12 @@ function editCode(event) {
 document.querySelectorAll('.mode-btn').forEach(b => { b.setAttribute('aria-label',modeInfo[b.dataset.mode].name); b.onclick = () => switchMode(b.dataset.mode); });
 $('mobileMode').onchange = () => switchMode($('mobileMode').value);
 $('goGenerate').onclick = () => switchMode('generated');
-$('addCase').onclick = () => { rememberCase(); cases.push({input:'',expected:''}); activeCase = cases.length-1; renderCase(); queueSave(); $('caseInput').focus(); };
-$('removeCase').onclick = () => { if (cases.length <= 1) return; cases.splice(activeCase,1); activeCase = Math.min(activeCase,cases.length-1); renderCase(); queueSave(); };
-$('hasExpected').onchange = () => { expectedState(); rememberCase(); queueSave(); };
+$('addCase').onclick = () => {
+  if (cases.length >= 200) return;
+  rememberCases(); cases.push({input:'',expected:''}); renderCases(); focusCase(cases.length - 1, '.case-input'); queueSave();
+};
 $('source').addEventListener('input',syncSource); $('language').onchange = syncSource;
-$('source').onscroll = () => { $('sourceLines').scrollTop = $('source').scrollTop; };
+if ($('sourceLines')) $('source').onscroll = () => { $('sourceLines').scrollTop = $('source').scrollTop; };
 ['source','reference','rule','generatorSource'].forEach(id => $(id).addEventListener('keydown',editCode));
 $('sampleButton').onclick = () => { $('source').value = samples[$('language').value]; syncSource(); queueSave(); };
 $('checker').onchange = () => { $('floatField').hidden = $('checker').value !== 'float'; };
@@ -221,9 +332,14 @@ $('previewButton').onclick = handle(async () => {
   finally { b.disabled = false; }
 });
 $('usePreviewButton').onclick = handle(() => { if (previewInput !== null) addManual(previewInput); });
-$('runButton').onclick = handle(run);
+$('runButton').onclick = handle(() => submitRun());
+$('judgeSummary').addEventListener('click', event => {
+  if (!window.matchMedia('(max-width: 800px)').matches) return;
+  if (event.target.closest('.judge-scroll, button, a, input, select, textarea')) return;
+  $('judgeDock').classList.toggle('expanded');
+});
 $('cancelButton').onclick = handle(async () => { await api('/api/cancel',{}); $('resultMessage').textContent = '正在终止进程并清理资源…'; });
-document.addEventListener('keydown',handle(async event => { if ((event.ctrlKey || event.metaKey) && event.key === 'Enter' && !document.querySelector('dialog[open]')) { event.preventDefault(); await run(); } }));
+document.addEventListener('keydown',handle(async event => { if ((event.ctrlKey || event.metaKey) && event.key === 'Enter' && !document.querySelector('dialog[open]')) { event.preventDefault(); await submitRun(); } }));
 document.addEventListener('input',queueSave); document.addEventListener('change',queueSave);
 $('sourceFileButton').onclick = () => $('sourceFile').click();
 $('sourceFile').onchange = handle(async () => { const file = $('sourceFile').files[0]; if (!file) return; if (file.size > 1024*1024) throw new Error('源码文件超过 1 MiB。'); $('source').value = await file.text(); const ext = file.name.split('.').pop().toLowerCase(); const lang = {cpp:'cpp',cc:'cpp',cxx:'cpp',py:'python',java:'java',cj:'cangjie'}[ext]; if (lang) $('language').value = lang; syncSource(); queueSave(); $('sourceFile').value = ''; });
@@ -238,7 +354,7 @@ document.querySelectorAll('.close-dialog').forEach(b => b.onclick = () => b.clos
 $('saveSettings').onclick = handle(async () => { number('outputKb',1,4096); tools = readTools(); await saveDraft(); $('settingsDialog').close(); });
 $('quitButton').onclick = handle(async () => { if (!confirm(running ? '停止当前任务并退出 JudgeBox？' : '退出 JudgeBox 本地引擎？')) return; await saveDraft(); await api('/api/shutdown',{}); clearTimeout(pollTimer); setRunning(false); $('runButton').disabled = true; $('connectionState').textContent = '引擎已退出'; notice('JudgeBox 已退出，草稿保存在本机。可以关闭这个页面。'); });
 async function init() {
-  $('source').value = samples.cpp; $('reference').value = samples.cpp; $('generatorSource').value = pythonExample; preset(); renderCase(); syncSource();
+  $('source').value = ''; $('reference').value = ''; $('generatorSource').value = pythonExample; preset(); renderCases(); mountEditor(); syncSource();
   try {
     const config = await api('/api/config'); tools = config.tools; renderTools(); $('dataDirectory').textContent = '数据目录：'+config.dataDirectory;
     const saved = await api('/api/draft'); applyDraft(saved); loaded = true; $('connectionState').textContent = '本地引擎就绪';
