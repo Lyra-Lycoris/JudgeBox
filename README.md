@@ -1,8 +1,12 @@
 # JudgeBox
 
-Windows 本地判题与随机对拍工具。C++20 执行引擎，双击启动，在浏览器里粘贴代码即可使用；页面资源全部随 exe 内置，使用时无需联网。
+Windows 本地判题与随机对拍工具。C++20 执行引擎，双击启动，在浏览器里粘贴代码即可使用；页面资源全部随 exe 内置，使用时无需联网
 
-完整离线发行版为 `dist/JudgeBox-Setup-1.1.0-x64.exe`。安装包内置 GCC 16.1.0、CPython 3.14.9、Temurin JDK 21.0.11+10、仓颉 SDK 1.2.0、CYaRon 0.7.0 及其依赖，目标机器不需要预装这些工具。此版本面向 Windows 11 x64，安装到当前用户目录，不改系统 PATH。安装目录约需 1.7 GiB 空间，安装时还需额外临时空间。仓库根目录仅含 `JudgeBox.exe` 的开发版仍依赖本机工具链，不能只复制那个小 exe 就获得四种语言的离线工具。
+声明：纯手写部分大约占据30% 主要负责了src的工程目录初始化部分与时间判定逻辑，VibeCoding完成了剩余部分与前端工作
+
+完整离线发行版为 `dist/JudgeBox-Setup-1.1.0-x64.exe`。安装包内置 GCC 16.1.0、CPython 3.14.9、Temurin JDK 21.0.11+10、仓颉 SDK 1.2.0、CYaRon 0.7.0 及其依赖，目标机器不需要预装这些工具。此版本面向 Windows 11 x64，安装到当前用户目录，不改系统 PATH。安装目录约需 1.7 GiB 空间，安装时还需额外临时空间。
+仓库根目录仅含 `JudgeBox.exe` 的开发版仍依赖本机工具链
+不能只复制那个exe 就获得四种语言的离线工具
 
 离线版安装后可运行开始菜单的 `Check Toolchains` 或安装目录的 `Check-Toolchains.cmd`；它调用 `JudgeBox.exe --self-test`，使用内置 Python 验证全部四语言及 CYaRon，不依赖系统 Python。报告保存在当前数据目录的 `toolchain-self-test.json`。安装包的 SHA-256 在同目录 `.sha256` 文件中。打包脚本还会把安装包静默装到带中文和空格的目录，复测后把 `toolchain-installed-unicode-report.json` 放在安装包旁边。
 
