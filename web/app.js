@@ -41,13 +41,18 @@ let editorLanguage = '';
 function showDiagnostics(result, source) {
   const state = $('diagnosticState');
   const items = Array.isArray(result.diagnostics) ? result.diagnostics : [];
-  if (!source.trim()) { state.textContent = ''; state.classList.remove('diagnostic-bad'); return []; }
+  state.classList.remove('diagnostic-bad', 'diagnostic-warn');
+  if (!source.trim()) { state.textContent = ''; return []; }
   const errors = items.filter(item => item.severity !== 'warning');
+  const warnings = items.filter(item => item.severity === 'warning');
   if (!items.length) { state.textContent = result.status || '无错误'; state.classList.toggle('diagnostic-bad', Boolean(result.status)); return []; }
-  const first = errors[0] || items[0];
-  const count = errors.length || items.length;
-  state.textContent = `${count} 个${errors.length ? '错误' : '警告'} · 第 ${first.line} 行：${first.message}`;
+  const parts = [];
+  if (errors.length) parts.push(`${errors.length} 个错误`);
+  if (warnings.length) parts.push(`${warnings.length} 个警告`);
+  const first = errors[0] || warnings[0];
+  state.textContent = `${parts.join('，')} · 第 ${first.line} 行：${first.message}`;
   state.classList.toggle('diagnostic-bad', errors.length > 0);
+  state.classList.toggle('diagnostic-warn', errors.length === 0);
   return items;
 }
 function syncSource() {

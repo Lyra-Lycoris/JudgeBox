@@ -41,14 +41,7 @@
 <main id="main">
     <div id="notice" class="notice" role="alert" hidden></div>
     <div class="workbench">
-    <div class="compose">
-      <section class="panel source-panel">
-        <div class="panel-heading"><h2>源程序</h2><div class="panel-tools"><button id="sampleButton" class="text-button">示例</button><button id="sourceFileButton" class="text-button">打开文件</button></div></div>
-        <div class="editor-toolbar"><div class="file-tab"><span id="sourceFileName">Main.cpp</span><span id="diagnosticState" role="status"></span></div><label for="language" class="language-label">语言</label><select id="language"><option value="cpp">C++ 20</option><option value="python">Python 3</option><option value="java">Java (Main)</option><option value="cangjie">Cangjie</option></select></div>
-        <div class="limits"><label>时间 <span class="input-unit"><input id="timeMs" type="number" value="1000" min="10" max="60000" step="10"><span>ms</span></span></label><label>内存 <span class="input-unit"><input id="memoryMb" type="number" value="256" min="16" max="4096"><span>MiB</span></span></label><label>比较 <select id="checker"><option value="tokens">忽略空白 · Token</option><option value="exact">严格按字节比较</option><option value="float">浮点误差比较</option></select></label></div>
-        <div id="floatField" class="float-field" hidden><label for="tolerance">绝对 / 相对容差</label><input id="tolerance" type="number" value="0.000001" min="0" max="1" step="0.000001"><span class="muted">|实际 − 预期| ≤ ε × max(1, |预期|)</span></div>
-        <div class="code-editor" id="codeEditor"><label class="sr-only" for="source">待测程序源码</label><textarea id="source" class="code" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="源程序" wrap="off"></textarea></div>
-      </section>
+    <div class="side">
       <section class="panel data-panel">
         <div class="panel-heading"><h2><span id="dataTitle">测试数据</span></h2></div>
         <div id="manualPanel">
@@ -70,7 +63,6 @@
           </div>
         </div>
       </section>
-    </div>
     <section id="judgeDock" class="judge-dock" aria-labelledby="resultsTitle">
       <div id="judgeSummary">
         <div id="emptyResults" class="result-summary">
@@ -90,9 +82,15 @@
       <div class="run-bar"><label class="checkbox"><input id="stopOnFailure" type="checkbox">遇到失败立即停止</label><div class="run-actions"><button id="cancelButton" class="secondary" hidden>停止运行</button><button id="runButton" class="primary" title="Ctrl+Enter"><span id="runLabel">运行</span></button></div></div>
     </section>
     </div>
+    <section class="panel source-panel">
+      <div class="editor-toolbar"><div class="file-tab"><span id="sourceFileName">Main.cpp</span><span id="diagnosticState" role="status"></span></div><div class="panel-tools"><button id="sampleButton" class="text-button">示例</button><button id="sourceFileButton" class="text-button">打开文件</button></div><label for="language" class="language-label">语言</label><select id="language"><option value="cpp">C++ 20</option><option value="python">Python 3</option><option value="java">Java (Main)</option><option value="cangjie">Cangjie</option></select></div>
+      <div class="code-editor" id="codeEditor"><label class="sr-only" for="source">待测程序源码</label><textarea id="source" class="code" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="源程序" wrap="off"></textarea></div>
+      <div class="editor-status"><div class="limits"><label>时间 <span class="input-unit"><input id="timeMs" type="number" value="1000" min="10" max="60000" step="10"><span>ms</span></span></label><label>内存 <span class="input-unit"><input id="memoryMb" type="number" value="256" min="16" max="4096"><span>MiB</span></span></label><label>比较 <select id="checker"><option value="tokens">忽略空白 · Token</option><option value="exact">严格按字节比较</option><option value="float">浮点误差比较</option></select></label></div><div id="floatField" class="float-field" hidden><label for="tolerance">绝对 / 相对容差</label><input id="tolerance" type="number" value="0.000001" min="0" max="1" step="0.000001"><span class="muted">|实际 − 预期| ≤ ε × max(1, |预期|)</span></div></div>
+    </section>
+    </div>
 </main>
 <dialog id="settingsDialog"><div class="dialog-title"><h2>工具链设置</h2><button class="close-dialog text-button" aria-label="关闭工具链设置">✕</button></div><p class="field-help">填写可执行文件的完整路径，无需加引号。</p><div id="toolFields"></div><div class="settings-grid"><label>单点输出上限（KiB）<input id="outputKb" type="number" value="1024" min="1" max="4096"></label></div><p class="field-help">上限包含 stdout 与 stderr。Java 最大堆会随内存上限调整并预留原生开销，进程总内存仍由 Job Object 限制；启动失败时可提高内存限制至 512 或 1024 MiB。</p><p id="dataDirectory" class="field-help"></p><button id="saveSettings" class="primary">保存设置</button></dialog>
-<dialog id="helpDialog"><div class="dialog-title"><h2>使用说明</h2><button class="close-dialog text-button" aria-label="关闭使用说明">✕</button></div><div class="help-content"><h3>01 / 手动测试</h3><p>一开始没有测试用例。点「新建测试用例」添加一组，下一组接在上一组下面。运行只提交这些用例。勾选“比较答案”时，空文本也是有效答案；取消勾选则只运行，状态为 RUN。源程序编辑区会按语言高亮。停顿后由安装目录里的工具链检查，不使用电脑上另外安装的编译器；错误处显示红色波浪线。</p><h3>02 / 生成测试</h3><p>选择模板，调整数据规模与数值范围，预览格式。可以批量运行观察实际输出，或把预览数据加入手动测试并填写答案。</p><h3>03 / 随机对拍</h3><p>贴入正确的参考程序，自动为相同输入运行两个程序。首次发现差异或待测程序异常时停止，保留反例。参考程序失败会明确显示为判题错误。</p><h3>自定义输入格式</h3><p>模板会展示可编辑的 JSON。int 定义变量；array 的 count 可以引用 n；line 拼接一行多个值；repeat 重复嵌套步骤。复杂约束用 Python 脚本生成，CYaRon 可在安装后导入。</p><h3>状态与复现</h3><p>AC 正确 / WA 答案错误 / TLE 超时 / MLE 内存超限 / RE 运行异常 / CE 编译失败 / OLE 输出过量 / JE 工具、参考程序或生成器错误。对拍通过只表示本批数据一致。保留规则、随机种子和序号即可复现同一组数据。</p><h3>本地运行约定</h3><p>源码、草稿与运行记录保存在本机。请只运行可信代码；资源限制不提供文件与网络隔离。关闭浏览器不会结束引擎，可用右上角“退出”或终端 Ctrl+C 停止。</p></div></dialog>
+<dialog id="helpDialog"><div class="dialog-title"><h2>使用说明</h2><button class="close-dialog text-button" aria-label="关闭使用说明">✕</button></div><div class="help-content"><h3>01 / 手动测试</h3><p>一开始没有测试用例。点「新建测试用例」添加一组，下一组接在上一组下面。运行只提交这些用例。勾选“比较答案”时，空文本也是有效答案；取消勾选则只运行，状态为 RUN。源程序编辑区会按语言高亮。停顿后由评测机自带的工具链检查：安装版使用安装目录中的 runtimes，开发版使用仓库里已暂存的 .runtime/stage/JudgeBox/runtimes。错误处显示红色波浪线。</p><h3>02 / 生成测试</h3><p>选择模板，调整数据规模与数值范围，预览格式。可以批量运行观察实际输出，或把预览数据加入手动测试并填写答案。</p><h3>03 / 随机对拍</h3><p>贴入正确的参考程序，自动为相同输入运行两个程序。首次发现差异或待测程序异常时停止，保留反例。参考程序失败会明确显示为判题错误。</p><h3>自定义输入格式</h3><p>模板会展示可编辑的 JSON。int 定义变量；array 的 count 可以引用 n；line 拼接一行多个值；repeat 重复嵌套步骤。复杂约束用 Python 脚本生成，CYaRon 可在安装后导入。</p><h3>状态与复现</h3><p>AC 正确 / WA 答案错误 / TLE 超时 / MLE 内存超限 / RE 运行异常 / CE 编译失败 / OLE 输出过量 / JE 工具、参考程序或生成器错误。对拍通过只表示本批数据一致。保留规则、随机种子和序号即可复现同一组数据。</p><h3>本地运行约定</h3><p>源码、草稿与运行记录保存在本机。请只运行可信代码；资源限制不提供文件与网络隔离。关闭浏览器不会结束引擎，可用右上角“退出”或终端 Ctrl+C 停止。</p></div></dialog>
 <input id="sourceFile" class="sr-only" tabindex="-1" type="file" accept=".cpp,.cc,.cxx,.py,.java,.cj,.txt"><input id="workspaceFile" class="sr-only" tabindex="-1" type="file" accept=".json">
 </body>
 </html>
