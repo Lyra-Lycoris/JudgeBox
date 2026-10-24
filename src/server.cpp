@@ -4,7 +4,9 @@
 #include <shellapi.h>
 #include "server.hpp"
 #include "judge.hpp"
+#include "compiler.hpp"
 #include "assets.hpp"
+#include "editor_asset.hpp"
 #include <algorithm>
 #include <array>
 #include <iostream>
@@ -56,7 +58,7 @@ Request receive(SOCKET s) {
     return r;
 }
 void respond(SOCKET s,int code,const std::string& content,const std::string& mime="application/json; charset=utf-8") {
-    std::string response="HTTP/1.1 "+std::to_string(code)+(code==200?" OK":code==403?" Forbidden":code==404?" Not Found":" Bad Request")+"\r\nContent-Type: "+mime+"\r\nContent-Length: "+std::to_string(content.size())+"\r\nConnection: close\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\nReferrer-Policy: no-referrer\r\nContent-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'\r\n\r\n"+content;
+    std::string response="HTTP/1.1 "+std::to_string(code)+(code==200?" OK":code==403?" Forbidden":code==404?" Not Found":" Bad Request")+"\r\nContent-Type: "+mime+"\r\nContent-Length: "+std::to_string(content.size())+"\r\nConnection: close\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\nReferrer-Policy: no-referrer\r\nContent-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'\r\n\r\n"+content;
     std::size_t offset=0; while(offset<response.size()) { auto n=send(s,response.data()+offset,static_cast<int>(std::min<std::size_t>(response.size()-offset,1024*1024)),0); if(n<=0) break; offset+=n; }
 }
 }
@@ -98,12 +100,14 @@ int serve(const fs::path& dataDirectory,bool openBrowser,unsigned short requeste
                 else if(r.path=="/api/draft" && r.method=="GET") { auto path=dataDirectory/"draft.json"; result=fs::exists(path)?Json::parse(readFile(path)):Json::object(); }
                 else if(r.path=="/api/draft" && r.method=="POST") { writeFile(dataDirectory/"draft.json",dump(body)); result={{"ok",true}}; }
                 else if(r.path=="/api/shutdown" && r.method=="POST") { stopping=true; engine.stop(); result={{"ok",true}}; }
+                else if(r.path=="/api/diagnostics" && r.method=="POST") result=diagnoseSource(body.value("source",std::string()),body.value("language",std::string("cpp")),bundledTools(executableDirectory()),fs::absolute(dataDirectory));
                 else { respond(client.value,404,dump({{"error","接口不存在"}})); continue; }
                 respond(client.value,200,dump(result));
             } else if(r.method=="GET") {
                 if(r.path=="/" || r.path=="/index.html") respond(client.value,200,assets::html,"text/html; charset=utf-8");
                 else if(r.path=="/style.css") respond(client.value,200,assets::css,"text/css; charset=utf-8");
                 else if(r.path=="/app.js") respond(client.value,200,assets::js,"text/javascript; charset=utf-8");
+                else if(r.path=="/editor.js") respond(client.value,200,assets::editorJs,"text/javascript; charset=utf-8");
                 else if(r.path=="/favicon.svg") respond(client.value,200,assets::icon,"image/svg+xml");
                 else respond(client.value,404,"Not found","text/plain");
             } else respond(client.value,404,dump({{"error","接口不存在"}}));

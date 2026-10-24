@@ -11,6 +11,9 @@ int main(){
         for(const auto& file:{L"gcc/bin/g++.exe",L"python/python.exe",L"jdk/bin/java.exe",L"jdk/bin/javac.exe",L"cangjie/bin/cjc.exe"}) {
             auto p=root/L"runtimes"/file;fs::create_directories(p.parent_path());writeFile(p,"");
         }
+        auto bundled=bundledTools(root);
+        check(fs::equivalent(fs::path(wide(bundled.at("cpp"))),root/L"runtimes/gcc/bin/g++.exe"),"language service must use the installed GCC");
+        check(bundledTools(root/L"not-installed").at("cpp")=="","language service must not use a compiler outside the install");
         writeFile(root/L"runtimes/manifest.json","{}");
         auto tools=detectTools(root);
         check(fs::equivalent(fs::path(wide(tools.at("cpp"))),root/L"runtimes/gcc/bin/g++.exe"),"bundled GCC must win over PATH");
@@ -18,6 +21,7 @@ int main(){
         check(fs::equivalent(fs::path(wide(tools.at("java"))),root/L"runtimes/jdk/bin/java.exe"),"bundled JVM");
         fs::remove(root/L"runtimes/gcc/bin/g++.exe");
         check(detectTools(root).at("cpp")=="","damaged bundle must not silently use developer GCC");
+        check(bundledTools(root).at("cpp")=="","language service must not replace a missing bundled compiler");
         auto unicodeDirectory=fs::current_path()/(L"JudgeBox 中文 concurrent "+std::to_wstring(GetTickCount64()));
         fs::create_directories(unicodeDirectory);
         std::barrier ready(8);std::vector<std::future<fs::path>> aliases;
