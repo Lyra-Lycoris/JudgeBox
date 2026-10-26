@@ -4,11 +4,12 @@
 #include <string>
 #include <vector>
 
-// Wall time: milliseconds; memory: peak job committed bytes.
+// Reported time: user-mode job CPU time in milliseconds; limits use wall time. Memory: peak job committed bytes.
 struct runResult {
     std::uint32_t exit = 0;
     std::string stdOut, errOut, errorMessage;
-    long long runTimeMs = 0, runMemory = 0;
+    double runTimeMs = 0;
+    long long runMemory = 0;
     bool started = false, TLE = false, MLE = false, OLE = false, cancelled = false;
 };
 struct RunOptions {

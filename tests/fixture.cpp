@@ -9,6 +9,7 @@ int main(int argc, char** argv) {
     SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
     std::string mode = argc > 1 ? argv[1] : "echo";
     if (mode == "exit") return 7;
+    if (mode == "sleep") { Sleep(250); return 0; }
     if (mode == "loop") { for (;;) Sleep(10); }
     if (mode == "memory") {
         std::vector<void*> blocks;

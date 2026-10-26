@@ -102,7 +102,6 @@ runResult execute(const std::wstring& exe, std::wstring command, const std::stri
     };
     std::thread readerOut,readerErr,writer;
     auto start=std::chrono::steady_clock::now();
-    auto ended=std::chrono::steady_clock::time_point{};
     try {
         readerOut=std::thread(readStream,outRead.h,std::ref(result.stdOut));
         readerErr=std::thread(readStream,errRead.h,std::ref(result.errOut));
@@ -125,15 +124,13 @@ runResult execute(const std::wstring& exe, std::wstring command, const std::stri
             if (captured.load()>opt.outputBytes) result.OLE=true;
             if (result.MLE || result.OLE || result.cancelled) break;
             DWORD state=WaitForSingleObject(process.h,5);
-            if (state==WAIT_OBJECT_0) { ended=std::chrono::steady_clock::now(); messages(20); break; }
+            if (state==WAIT_OBJECT_0) { messages(20); break; }
             if (state==WAIT_FAILED) { result.errorMessage=winError("WaitForSingleObject"); break; }
             auto elapsed=std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now()-start).count();
             if (elapsed>=opt.timeMs) { result.TLE=true; break; }
         }
-        if(ended==std::chrono::steady_clock::time_point{}) ended=std::chrono::steady_clock::now();
-        result.runTimeMs=std::chrono::duration_cast<std::chrono::milliseconds>(ended-start).count();
-        // Kill descendants even when the main process returns normally.
-        
+        // Wall-clock limits still include scheduling and I/O waits, but reported time
+        // uses job CPU accounting so process startup overhead does not dominate short runs.
         TerminateJobObject(job.h,1);
         WaitForSingleObject(process.h,INFINITE);
         DWORD exitCode=0;
@@ -146,6 +143,11 @@ runResult execute(const std::wstring& exe, std::wstring command, const std::stri
     if (readerOut.joinable()) readerOut.join();
     if (readerErr.joinable()) readerErr.join();
     if (captured.load()>opt.outputBytes) result.OLE=true;
+    JOBOBJECT_BASIC_ACCOUNTING_INFORMATION accounting{};
+    if (QueryInformationJobObject(job.h,JobObjectBasicAccountingInformation,&accounting,sizeof(accounting),nullptr)) {
+        auto ticks=accounting.TotalUserTime.QuadPart;
+        result.runTimeMs=static_cast<double>(ticks)/10000.0; // User-mode CPU time; Windows FILETIME uses 100 ns units.
+    }
     JOBOBJECT_EXTENDED_LIMIT_INFORMATION stats{};
     if (QueryInformationJobObject(job.h,JobObjectExtendedLimitInformation,&stats,sizeof(stats),nullptr)) result.runMemory=static_cast<long long>(stats.PeakJobMemoryUsed);
     return result;
