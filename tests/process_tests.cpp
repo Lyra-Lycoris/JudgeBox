@@ -19,6 +19,7 @@ int main(int, char** argv) {
         r=runTask(exe,L"memory","",2000,32*1024*1024); require(r.MLE,"real MLE");
         r=runTask(L"Z:\\__missing__.exe",L"","",1000,256*1024*1024); require(!r.started && !r.errorMessage.empty(),"launch failure");
         r=runTask(exe,L"","",1000,256*1024*1024); require(r.stdOut.empty() && r.exit==0 && !r.TLE,"empty input EOF");
+        r=runTask(exe,L"sleep","",1000,256*1024*1024); require(!r.TLE && r.runTimeMs<100,"reported CPU time excludes wall-clock sleep");
         RunOptions opt; opt.outputBytes=8192;
         r=runProcess(exe,{L"flood"},"",opt); require(r.OLE && r.stdOut.size()+r.errOut.size()<=8192,"OLE bounded capture");
         std::atomic_bool cancel{false}; opt.cancel=&cancel; opt.timeMs=5000;

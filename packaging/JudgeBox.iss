@@ -7,7 +7,7 @@
 [Setup]
 AppId={{B5AE8D65-EB14-44CB-81CF-8653D73B62F3}
 AppName=JudgeBox
-AppVersion=1.1.0
+AppVersion=1.1.1
 AppPublisher=JudgeBox
 DefaultDirName={localappdata}\Programs\JudgeBox
 DefaultGroupName=JudgeBox
@@ -18,7 +18,7 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0.22000
 OutputDir={#OutputDir}
-OutputBaseFilename=JudgeBox-Setup-1.1.0-x64
+OutputBaseFilename=JudgeBox-Setup-1.1.1-x64
 Compression=lzma2/fast
 SolidCompression=yes
 LZMAUseSeparateProcess=yes

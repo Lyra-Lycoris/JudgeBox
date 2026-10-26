@@ -4,22 +4,39 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="light">
-  <meta name="description" content="JudgeBox">
-  <title>JudgeBox</title>
+  <meta name="description" content="JudgeBox 本地判题工作台">
+  <title>JudgeBox · 本地判题工作台</title>
   <link rel="icon" href="/favicon.svg">
   <link rel="stylesheet" href="/style.css">
   <script defer src="/editor.js"></script>
   <script defer src="/app.js"></script>
 </head>
 <body>
+<svg class="icon-defs" aria-hidden="true">
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="m9 6 9 6-9 6Z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24"><path d="m8 7-5 5 5 5m8-10 5 5-5 5m-2-13-4 16"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4m-4 4 4-4 4 4M5 14v5h14v-5"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v12m-4-4 4 4 4-4M5 14v5h14v-5"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21h-4v-.08A1.7 1.7 0 0 0 9 19.37a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.63 15 1.7 1.7 0 0 0 3.08 14H3v-4h.08A1.7 1.7 0 0 0 4.63 9a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.63h.01A1.7 1.7 0 0 0 10 3.08V3h4v.08A1.7 1.7 0 0 0 15 4.63a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.37 9v.01A1.7 1.7 0 0 0 20.92 10H21v4h-.08A1.7 1.7 0 0 0 19.4 15Z"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.7 9a2.4 2.4 0 0 1 4.65.8c0 1.7-2.35 2-2.35 3.7m0 3.2h.01"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7h7l2 2h9v10H3Z"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 1.5 5.5L19 10l-5.5 1.5L12 17l-1.5-5.5L5 10l5.5-1.5ZM19 16l.7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7Z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="i-terminal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3m6 0h4"/></symbol>
+</svg>
 <a class="skip" href="#main">跳转到内容</a>
 <header class="header">
   <div class="topbar">
-    <h1>JudgeBox</h1>
+    <div class="brand" aria-label="JudgeBox 本地判题工作台">
+      <span class="brand-mark"><svg><use href="#i-code"/></svg></span>
+      <div><h1>JudgeBox</h1><span>本地判题工作台</span></div>
+    </div>
     <nav class="mode-bar" aria-label="测试模式">
-      <button class="mode-btn active" data-mode="manual" aria-pressed="true">手动测试</button>
-      <button class="mode-btn" data-mode="generated" aria-pressed="false">生成测试</button>
-      <button class="mode-btn" data-mode="stress" aria-pressed="false">随机对拍</button>
+      <button class="mode-btn active" data-mode="manual" aria-pressed="true"><span class="mode-number">01</span>手动测试</button>
+      <button class="mode-btn" data-mode="generated" aria-pressed="false"><span class="mode-number">02</span>生成测试</button>
+      <button class="mode-btn" data-mode="stress" aria-pressed="false"><span class="mode-number">03</span>随机对拍</button>
     </nav>
     <label class="sr-only" for="mobileMode">测试模式</label>
     <select id="mobileMode" class="mobile-mode">
@@ -27,70 +44,100 @@
       <option value="generated">生成测试</option>
       <option value="stress">随机对拍</option>
     </select>
-    <span id="connectionState" class="connection-state" role="status">连接中</span>
     <div class="top-actions">
-      <span id="saveState" class="saved" role="status">已保存</span>
-      <button id="importButton" class="text-button">导入</button>
-      <button id="exportButton" class="text-button">导出</button>
-      <button id="settingsButton" class="text-button">设置</button>
-      <button id="helpButton" class="text-button">说明</button>
-      <button id="quitButton" class="text-button">退出</button>
+      <span id="saveState" class="saved" role="status"><svg><use href="#i-check"/></svg>已保存</span>
+      <span class="action-divider"></span>
+      <button id="importButton" class="icon-button" title="导入工作区"><svg><use href="#i-upload"/></svg><span>导入</span></button>
+      <button id="exportButton" class="icon-button" title="导出工作区"><svg><use href="#i-download"/></svg><span>导出</span></button>
+      <button id="settingsButton" class="icon-button" title="工具链设置"><svg><use href="#i-settings"/></svg><span>设置</span></button>
+      <button id="helpButton" class="icon-button" title="使用说明"><svg><use href="#i-help"/></svg><span>说明</span></button>
+      <button id="quitButton" class="icon-button quit-button" title="退出本地引擎">退出</button>
     </div>
   </div>
 </header>
 <main id="main">
-    <div id="notice" class="notice" role="alert" hidden></div>
-    <div class="workbench">
+  <div id="notice" class="notice" role="alert" hidden></div>
+  <div class="workbench">
     <div class="side">
-      <section class="panel data-panel">
-        <div class="panel-heading"><h2><span id="dataTitle">测试数据</span></h2></div>
-        <div id="manualPanel">
-          <p id="caseEmpty" class="case-empty">还没有测试用例。新建一组后填写输入和预期输出，下一组会接在下面。</p>
-          <div id="caseList" class="case-list" aria-label="测试用例"></div>
-          <div class="add-case-row"><button id="addCase" type="button">＋ 新建测试用例</button></div>
-          <div class="panel-foot"><button id="goGenerate" class="text-button">生成输入</button></div>
+      <section class="panel data-panel" aria-labelledby="dataTitle">
+        <div class="panel-heading">
+          <div class="section-heading"><span class="step-chip">1</span><div><h2 id="dataTitle">测试数据</h2><p id="modeDescription">填写输入与答案，快速验证程序</p></div></div>
+          <span id="connectionState" class="connection-state" role="status"><span class="status-dot"></span>连接中</span>
         </div>
-        <div id="generationPanel" hidden>
-          <div id="referencePanel" class="reference-block" hidden><div class="reference-title"><label for="reference">参考程序</label><label for="referenceLanguage" class="language-label">语言</label><select id="referenceLanguage"><option value="cpp">C++ 20</option><option value="python">Python 3</option><option value="java">Java</option><option value="cangjie">仓颉</option></select></div><textarea id="reference" class="reference-code" spellcheck="false" placeholder="参考程序" wrap="off"></textarea><div class="reference-limit"><label for="referenceTimeMs">参考程序时间上限</label><input id="referenceTimeMs" type="number" value="5000" min="10" max="60000"><span>ms</span></div></div>
-          <div class="generator-controls"><div class="generator-top"><label for="generatorMode">输入生成方式</label><select id="generatorMode"><option value="rules">规则模板</option><option value="python">Python / CYaRon 脚本</option></select></div>
-            <div id="ruleControls"><label class="template-label" for="template">数据模板</label><select id="template"><option value="array">数组 · n + 一行整数</option><option value="pair">整数对 · a b</option><option value="matrix">矩阵 · n m + n 行数据</option><option value="string">字符串 · n + 字符串</option><option value="tree">树 · n + n−1 条边</option><option value="graph">简单图 · n m + m 条边</option><option value="multi">多组数组 · T + 每组 n 与数组</option><option value="custom">自定义 JSON 规则</option></select>
+        <div id="manualPanel" class="panel-content">
+          <div id="caseEmpty" class="case-empty">
+            <span class="empty-icon"><svg><use href="#i-terminal"/></svg></span>
+            <h3>从一组测试用例开始</h3>
+            <p>填入程序输入和预期输出，运行后即可在这里查看每个测试点的结果。</p>
+          </div>
+          <div id="caseList" class="case-list" aria-label="测试用例"></div>
+          <div class="add-case-row"><button id="addCase" type="button"><svg><use href="#i-plus"/></svg>新建测试用例</button></div>
+          <div class="panel-foot"><span>没有现成数据？</span><button id="goGenerate" class="text-button">试试输入生成器<svg><use href="#i-chevron"/></svg></button></div>
+        </div>
+        <div id="generationPanel" class="panel-content" hidden>
+          <div id="referencePanel" class="reference-block" hidden>
+            <div class="reference-title"><label for="reference">参考程序</label><label for="referenceLanguage" class="language-label">语言</label><select id="referenceLanguage"><option value="cpp">C++ 20</option><option value="python">Python 3</option><option value="java">Java</option><option value="cangjie">仓颉</option></select></div>
+            <textarea id="reference" class="reference-code" spellcheck="false" placeholder="粘贴一份正确的参考程序" wrap="off"></textarea>
+            <div class="reference-limit"><label for="referenceTimeMs">参考程序时间上限</label><input id="referenceTimeMs" type="number" value="5000" min="10" max="60000"><span>ms</span></div>
+          </div>
+          <div class="generator-controls">
+            <div class="generator-top"><label for="generatorMode">输入生成方式</label><select id="generatorMode"><option value="rules">规则模板</option><option value="python">Python / CYaRon 脚本</option></select></div>
+            <div id="ruleControls">
+              <label class="template-label" for="template">数据模板</label>
+              <select id="template"><option value="array">数组 · n + 一行整数</option><option value="pair">整数对 · a b</option><option value="matrix">矩阵 · n m + n 行数据</option><option value="string">字符串 · n + 字符串</option><option value="tree">树 · n + n−1 条边</option><option value="graph">简单图 · n m + m 条边</option><option value="multi">多组数组 · T + 每组 n 与数组</option><option value="custom">自定义 JSON 规则</option></select>
               <div id="visualParams"><div class="param-grid"><label><span id="sizeMinLabel">n 最小值</span><input id="sizeMin" type="number" value="1" min="1" max="1000"></label><label><span id="sizeMaxLabel">n 最大值</span><input id="sizeMax" type="number" value="8" min="1" max="1000"></label><label>数值最小值<input id="valueMin" type="number" value="-10" min="-1000000000" max="1000000000"></label><label>数值最大值<input id="valueMax" type="number" value="10" min="-1000000000" max="1000000000"></label></div><label id="alphabetField" hidden>字符集<input id="alphabet" value="abcxyz" maxlength="256"></label><label id="weightField" class="checkbox" hidden><input id="weighted" type="checkbox">带权边</label></div>
               <details id="ruleDetails"><summary>生成规则 (JSON)</summary><label class="sr-only" for="rule">JSON 输入生成规则</label><textarea id="rule" class="rule-code" spellcheck="false" aria-describedby="ruleHelp"></textarea><p id="ruleHelp" class="field-help">支持 int / line / array / matrix / string / tree / graph / repeat / literal。</p></details>
             </div>
             <div id="pythonControls" hidden><label for="generatorSource">Python 生成器源码</label><textarea id="generatorSource" class="rule-code" spellcheck="false" wrap="off"></textarea><p class="field-help">sys.argv[1]：种子；sys.argv[2]：序号（从 0 开始）。stdout 为输入。</p></div>
             <div class="generator-options"><label>测试组数<input id="count" type="number" value="20" min="1" max="1000"></label><label>随机种子<input id="seed" type="number" value="42" min="0" max="9007199254740991"></label><label>取值策略<select id="strategy"><option value="random">随机取值</option><option value="boundary">边界与随机交替</option><option value="min">全部取最小值</option><option value="max">全部取最大值</option></select></label></div>
-            <div class="preview-actions"><button id="previewButton" class="small-button">预览</button><span id="previewIndex" class="muted">种子 42 · 第 1 组</span><button id="usePreviewButton" class="text-button" disabled>加入手动测试</button></div><pre id="preview" class="preview" aria-label="生成数据预览">未生成</pre>
+            <div class="preview-actions"><button id="previewButton" class="small-button"><svg><use href="#i-spark"/></svg>生成预览</button><span id="previewIndex" class="muted">种子 42 · 第 1 组</span><button id="usePreviewButton" class="text-button" disabled>加入手动测试</button></div>
+            <pre id="preview" class="preview" aria-label="生成数据预览">点击「生成预览」，在这里检查输入格式</pre>
           </div>
         </div>
       </section>
-    <section id="judgeDock" class="judge-dock" aria-labelledby="resultsTitle">
-      <div id="judgeSummary">
-        <div id="emptyResults" class="result-summary">
-          <span class="verdict">—</span>
-          <div><h2 id="resultsTitle">尚未评测</h2><p>运行后，每一组的状态会列在这里。</p></div>
-        </div>
-        <div id="resultContent" class="judge-body" hidden>
-          <div class="result-summary" role="status" aria-live="polite"><span id="overallBadge" class="verdict">READY</span><div><h3 id="resultPhase">就绪</h3><p id="resultMessage"></p></div><div class="progress-area"><span id="progressText">0 / 0</span><progress id="progress" value="0" max="1" aria-label="判题进度"></progress></div></div>
-          <div class="judge-scroll">
-            <p id="resultMeta" class="result-meta">未运行</p>
-            <details id="compileDetails" hidden><summary>编译日志</summary><pre id="compileLog" class="log"></pre></details>
-            <div class="result-table-wrap"><table><thead><tr><th scope="col">测试点</th><th scope="col">状态</th><th scope="col">耗时</th><th scope="col" title="作业峰值提交内存">内存</th><th scope="col">说明</th><th scope="col">详情</th></tr></thead><tbody id="resultRows"></tbody></table></div>
-            <div id="caseDetail" class="case-detail" hidden><div class="detail-heading"><h3 id="detailTitle">测试点详情</h3><div><button id="counterexampleButton" class="text-button">导出测试点</button><button id="retestButton" class="text-button">加入手动测试</button></div></div><p id="detailMessage" class="field-help"></p><div class="output-grid"><div><div class="output-title">输入 <button data-download="input" class="text-button">下载 .in</button></div><pre id="detailInput"></pre></div><div><div class="output-title">预期输出 <button data-download="expected" class="text-button">下载 .ans</button></div><pre id="detailExpected"></pre></div><div><div class="output-title">实际输出 <button data-download="stdout" class="text-button">下载 .out</button></div><pre id="detailOutput"></pre></div></div><details id="stderrDetails" hidden><summary>标准错误 / 参考程序日志</summary><pre id="detailStderr" class="log"></pre></details></div>
+      <section id="judgeDock" class="judge-dock" aria-labelledby="resultsTitle">
+        <div id="judgeSummary">
+          <div id="emptyResults" class="result-summary">
+            <span class="result-icon"><svg><use href="#i-check"/></svg></span>
+            <div><h2 id="resultsTitle">等待运行</h2><p>评测结果与运行详情会显示在这里</p></div>
+            <span class="verdict">—</span>
+          </div>
+          <div id="resultContent" class="judge-body" hidden>
+            <div class="result-summary" role="status" aria-live="polite"><span id="overallBadge" class="verdict">READY</span><div class="result-phase"><h3 id="resultPhase">就绪</h3><p id="resultMessage"></p></div><div id="overallTime" class="overall-time" hidden><span>最终 CPU 耗时</span><strong id="overallTimeValue">—</strong><small id="overallTimeBasis"></small></div><div id="progressArea" class="progress-area"><span id="progressText">0 / 0</span><progress id="progress" value="0" max="1" aria-label="判题进度"></progress></div></div>
+            <div class="judge-scroll">
+              <p id="resultMeta" class="result-meta">未运行</p>
+              <details id="compileDetails" hidden><summary>编译日志</summary><pre id="compileLog" class="log"></pre></details>
+              <div class="result-table-wrap"><table><thead><tr><th scope="col">测试点</th><th scope="col">状态</th><th scope="col" title="用户态 CPU 时间，不含墙钟等待、系统调度与内核态开销">CPU 耗时</th><th scope="col" title="作业峰值提交内存">内存</th><th scope="col">说明</th><th scope="col">详情</th></tr></thead><tbody id="resultRows"></tbody></table></div>
+              <div id="caseDetail" class="case-detail" hidden><div class="detail-heading"><h3 id="detailTitle">测试点详情</h3><div><button id="counterexampleButton" class="text-button">导出测试点</button><button id="retestButton" class="text-button">加入手动测试</button></div></div><p id="detailMessage" class="field-help"></p><div class="output-grid"><div><div class="output-title">输入 <button data-download="input" class="text-button">下载 .in</button></div><pre id="detailInput"></pre></div><div><div class="output-title">预期输出 <button data-download="expected" class="text-button">下载 .ans</button></div><pre id="detailExpected"></pre></div><div><div class="output-title">实际输出 <button data-download="stdout" class="text-button">下载 .out</button></div><pre id="detailOutput"></pre></div></div><details id="stderrDetails" hidden><summary>标准错误 / 参考程序日志</summary><pre id="detailStderr" class="log"></pre></details></div>
+            </div>
           </div>
         </div>
+        <div class="run-bar">
+          <label class="checkbox"><input id="stopOnFailure" type="checkbox">遇到失败立即停止</label>
+          <div class="run-actions"><button id="cancelButton" class="secondary" hidden>停止运行</button><button id="runButton" class="primary" title="Ctrl+Enter"><svg><use href="#i-play"/></svg><span id="runLabel">运行判题</span><kbd>Ctrl ↵</kbd></button></div>
+        </div>
+      </section>
+    </div>
+    <section class="panel source-panel" aria-labelledby="sourceTitle">
+      <div class="source-heading">
+        <div class="section-heading"><span class="step-chip">2</span><div><h2 id="sourceTitle">编写待测程序</h2><p>粘贴代码，或从本机打开源文件</p></div></div>
+        <span class="privacy-badge"><span class="status-dot"></span>代码仅在本机运行</span>
       </div>
-      <div class="run-bar"><label class="checkbox"><input id="stopOnFailure" type="checkbox">遇到失败立即停止</label><div class="run-actions"><button id="cancelButton" class="secondary" hidden>停止运行</button><button id="runButton" class="primary" title="Ctrl+Enter"><span id="runLabel">运行</span></button></div></div>
+      <div class="editor-toolbar">
+        <div class="file-tab"><span class="file-dot"></span><span id="sourceFileName">Main.cpp</span><span id="diagnosticState" role="status"></span></div>
+        <div class="panel-tools"><button id="sampleButton" class="text-button"><svg><use href="#i-spark"/></svg>填入示例</button><button id="sourceFileButton" class="text-button"><svg><use href="#i-folder"/></svg>打开文件</button></div>
+        <label for="language" class="language-label">语言</label><select id="language"><option value="cpp">C++ 20</option><option value="python">Python 3</option><option value="java">Java (Main)</option><option value="cangjie">Cangjie</option></select>
+      </div>
+      <div class="code-editor" id="codeEditor"><label class="sr-only" for="source">待测程序源码</label><textarea id="source" class="code" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="在这里粘贴你的代码，或点击右上角「填入示例」快速开始…" wrap="off"></textarea></div>
+      <div class="editor-status">
+        <div class="limits"><label>时间限制<span class="input-unit"><input id="timeMs" type="number" value="1000" min="10" max="60000" step="10"><span>ms</span></span></label><label>内存限制<span class="input-unit"><input id="memoryMb" type="number" value="256" min="16" max="4096"><span>MiB</span></span></label><label>答案比较<select id="checker"><option value="tokens">忽略空白 · Token</option><option value="exact">严格按字节比较</option><option value="float">浮点误差比较</option></select></label></div>
+        <div id="floatField" class="float-field" hidden><label for="tolerance">绝对 / 相对容差</label><input id="tolerance" type="number" value="0.000001" min="0" max="1" step="0.000001"><span class="muted">|实际 − 预期| ≤ ε × max(1, |预期|)</span></div>
+      </div>
     </section>
-    </div>
-    <section class="panel source-panel">
-      <div class="editor-toolbar"><div class="file-tab"><span id="sourceFileName">Main.cpp</span><span id="diagnosticState" role="status"></span></div><div class="panel-tools"><button id="sampleButton" class="text-button">示例</button><button id="sourceFileButton" class="text-button">打开文件</button></div><label for="language" class="language-label">语言</label><select id="language"><option value="cpp">C++ 20</option><option value="python">Python 3</option><option value="java">Java (Main)</option><option value="cangjie">Cangjie</option></select></div>
-      <div class="code-editor" id="codeEditor"><label class="sr-only" for="source">待测程序源码</label><textarea id="source" class="code" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="源程序" wrap="off"></textarea></div>
-      <div class="editor-status"><div class="limits"><label>时间 <span class="input-unit"><input id="timeMs" type="number" value="1000" min="10" max="60000" step="10"><span>ms</span></span></label><label>内存 <span class="input-unit"><input id="memoryMb" type="number" value="256" min="16" max="4096"><span>MiB</span></span></label><label>比较 <select id="checker"><option value="tokens">忽略空白 · Token</option><option value="exact">严格按字节比较</option><option value="float">浮点误差比较</option></select></label></div><div id="floatField" class="float-field" hidden><label for="tolerance">绝对 / 相对容差</label><input id="tolerance" type="number" value="0.000001" min="0" max="1" step="0.000001"><span class="muted">|实际 − 预期| ≤ ε × max(1, |预期|)</span></div></div>
-    </section>
-    </div>
+  </div>
 </main>
-<dialog id="settingsDialog"><div class="dialog-title"><h2>工具链设置</h2><button class="close-dialog text-button" aria-label="关闭工具链设置">✕</button></div><p class="field-help">填写可执行文件的完整路径，无需加引号。</p><div id="toolFields"></div><div class="settings-grid"><label>单点输出上限（KiB）<input id="outputKb" type="number" value="1024" min="1" max="4096"></label></div><p class="field-help">上限包含 stdout 与 stderr。Java 最大堆会随内存上限调整并预留原生开销，进程总内存仍由 Job Object 限制；启动失败时可提高内存限制至 512 或 1024 MiB。</p><p id="dataDirectory" class="field-help"></p><button id="saveSettings" class="primary">保存设置</button></dialog>
-<dialog id="helpDialog"><div class="dialog-title"><h2>使用说明</h2><button class="close-dialog text-button" aria-label="关闭使用说明">✕</button></div><div class="help-content"><h3>01 / 手动测试</h3><p>一开始没有测试用例。点「新建测试用例」添加一组，下一组接在上一组下面。运行只提交这些用例。勾选“比较答案”时，空文本也是有效答案；取消勾选则只运行，状态为 RUN。源程序编辑区会按语言高亮。停顿后由评测机自带的工具链检查：安装版使用安装目录中的 runtimes，开发版使用仓库里已暂存的 .runtime/stage/JudgeBox/runtimes。错误处显示红色波浪线。</p><h3>02 / 生成测试</h3><p>选择模板，调整数据规模与数值范围，预览格式。可以批量运行观察实际输出，或把预览数据加入手动测试并填写答案。</p><h3>03 / 随机对拍</h3><p>贴入正确的参考程序，自动为相同输入运行两个程序。首次发现差异或待测程序异常时停止，保留反例。参考程序失败会明确显示为判题错误。</p><h3>自定义输入格式</h3><p>模板会展示可编辑的 JSON。int 定义变量；array 的 count 可以引用 n；line 拼接一行多个值；repeat 重复嵌套步骤。复杂约束用 Python 脚本生成，CYaRon 可在安装后导入。</p><h3>状态与复现</h3><p>AC 正确 / WA 答案错误 / TLE 超时 / MLE 内存超限 / RE 运行异常 / CE 编译失败 / OLE 输出过量 / JE 工具、参考程序或生成器错误。对拍通过只表示本批数据一致。保留规则、随机种子和序号即可复现同一组数据。</p><h3>本地运行约定</h3><p>源码、草稿与运行记录保存在本机。请只运行可信代码；资源限制不提供文件与网络隔离。关闭浏览器不会结束引擎，可用右上角“退出”或终端 Ctrl+C 停止。</p></div></dialog>
+<dialog id="settingsDialog"><div class="dialog-title"><div><span class="dialog-eyebrow">环境配置</span><h2>工具链设置</h2></div><button class="close-dialog icon-button" aria-label="关闭工具链设置">✕</button></div><p class="field-help">填写可执行文件的完整路径，无需加引号。</p><div id="toolFields"></div><div class="settings-grid"><label>单点输出上限（KiB）<input id="outputKb" type="number" value="1024" min="1" max="4096"></label></div><p class="field-help">上限包含 stdout 与 stderr。Java 最大堆会随内存上限调整并预留原生开销，进程总内存仍由 Job Object 限制；启动失败时可提高内存限制至 512 或 1024 MiB。</p><p id="dataDirectory" class="field-help"></p><button id="saveSettings" class="primary">保存设置</button></dialog>
+<dialog id="helpDialog"><div class="dialog-title"><div><span class="dialog-eyebrow">快速上手</span><h2>使用说明</h2></div><button class="close-dialog icon-button" aria-label="关闭使用说明">✕</button></div><div class="help-content"><h3><span>01</span>手动测试</h3><p>点击「新建测试用例」，填写输入和预期输出。勾选“比较答案”时，空文本也是有效答案；取消勾选则只运行，状态为 RUN。源程序编辑区会按语言高亮，并在停顿后检查语法错误。</p><h3><span>02</span>生成测试</h3><p>选择模板，调整数据规模与数值范围，预览格式。可以批量运行观察实际输出，或把预览数据加入手动测试并填写答案。</p><h3><span>03</span>随机对拍</h3><p>贴入正确的参考程序，自动为相同输入运行两个程序。首次发现差异或待测程序异常时停止，保留反例。参考程序失败会明确显示为判题错误。</p><h3>自定义输入格式</h3><p>模板会展示可编辑的 JSON。int 定义变量；array 的 count 可以引用 n；line 拼接一行多个值；repeat 重复嵌套步骤。复杂约束用 Python 脚本生成，CYaRon 可在安装后导入。</p><h3>状态与复现</h3><p>AC 正确 / WA 答案错误 / TLE 超时 / MLE 内存超限 / RE 运行异常 / CE 编译失败 / OLE 输出过量 / JE 工具、参考程序或生成器错误。保留规则、随机种子和序号即可复现同一组数据。</p><h3>本地运行约定</h3><p>源码、草稿与运行记录保存在本机。请只运行可信代码；资源限制不提供文件与网络隔离。关闭浏览器不会结束引擎，可用右上角“退出”或终端 Ctrl+C 停止。</p></div></dialog>
 <input id="sourceFile" class="sr-only" tabindex="-1" type="file" accept=".cpp,.cc,.cxx,.py,.java,.cj,.txt"><input id="workspaceFile" class="sr-only" tabindex="-1" type="file" accept=".json">
 </body>
 </html>

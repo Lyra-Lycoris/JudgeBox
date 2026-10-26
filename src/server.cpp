@@ -91,7 +91,7 @@ int serve(const fs::path& dataDirectory,bool openBrowser,unsigned short requeste
                     body=Json::parse(r.body); if(!body.is_object()) throw std::runtime_error("请求应为 JSON 对象");
                 }
                 Json result;
-                if(r.path=="/api/config" && r.method=="GET") result={{"tools",tools},{"version","1.1.0"},{"dataDirectory",utf8(fs::absolute(dataDirectory).wstring())}};
+                if(r.path=="/api/config" && r.method=="GET") result={{"tools",tools},{"version","1.1.1"},{"dataDirectory",utf8(fs::absolute(dataDirectory).wstring())}};
                 else if(r.path=="/api/status" && r.method=="GET") result=engine.status();
                 else if(r.path=="/api/run" && r.method=="POST") result=engine.start(body);
                 else if(r.path=="/api/cancel" && r.method=="POST") { engine.stop(); result={{"ok",true}}; }

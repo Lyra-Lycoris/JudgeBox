@@ -14,9 +14,9 @@ const samples = {
 const pythonExample = 'import sys, random\n\nseed = int(sys.argv[1])\nindex = int(sys.argv[2])\nrng = random.Random(seed + index)\nn = rng.randint(1, 8)\nprint(n)\nprint(*[rng.randint(-10, 10) for _ in range(n)])\n\n# 安装 CYaRon 后可以：from cyaron import Graph\n# 再用 print(Graph.tree(n)) 输出树的边\n';
 const inputIds = ['language','source','referenceLanguage','reference','timeMs','memoryMb','checker','tolerance','outputKb','referenceTimeMs','count','seed','strategy','template','sizeMin','sizeMax','valueMin','valueMax','alphabet','weighted','rule','generatorMode','generatorSource','stopOnFailure'];
 const modeInfo = {
-  manual: {name:'手动测试', data:'测试数据', run:'运行'},
-  generated: {name:'生成测试', data:'输入生成器', run:'运行'},
-  stress: {name:'随机对拍', data:'参考程序与输入', run:'开始对拍'}
+  manual: {name:'手动测试', data:'测试数据', description:'填写输入与答案，快速验证程序', run:'运行判题'},
+  generated: {name:'生成测试', data:'输入生成器', description:'选择模板，批量构造边界与随机数据', run:'运行判题'},
+  stress: {name:'随机对拍', data:'参考程序与输入', description:'用正确程序自动发现答案差异', run:'开始对拍'}
 };
 function notice(message = '') { $('notice').textContent = message; $('notice').hidden = !message; }
 async function api(path, body) {
@@ -37,6 +37,12 @@ function number(id, min, max) {
 }
 function make(tag, text, className) { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (className) e.className = className; return e; }
 function badge(v) { const e = make('span',v,'verdict'); e.dataset.verdict = v; return e; }
+function formatTime(value) {
+  const ms = Number(value);
+  if (!Number.isFinite(ms)) return '—';
+  if (ms < 1) return '<1 ms';
+  return `${ms.toFixed(ms < 10 ? 2 : ms < 100 ? 1 : 0)} ms`;
+}
 let editorLanguage = '';
 function showDiagnostics(result, source) {
   const state = $('diagnosticState');
@@ -170,6 +176,7 @@ function switchMode(next, save = true) {
   document.querySelectorAll('.mode-btn').forEach(b => { const active = b.dataset.mode === mode; b.classList.toggle('active',active); b.setAttribute('aria-pressed',String(active)); });
   const info = modeInfo[mode];
   $('dataTitle').textContent = info.data;
+  $('modeDescription').textContent = info.description;
   $('runLabel').textContent = running ? '运行中' : info.run;
   $('manualPanel').hidden = mode !== 'manual'; $('generationPanel').hidden = mode === 'manual'; $('referencePanel').hidden = mode !== 'stress';
   $('stopOnFailure').disabled = mode === 'stress';
@@ -267,6 +274,14 @@ function renderResult(state) {
   $('resultPhase').textContent = state.done ? ({AC:'全部测试通过',WA:'发现答案差异',CE:'编译失败',TLE:'超过时间限制',MLE:'超过内存限制',RE:'程序运行异常',OLE:'超过输出限制',JE:'判题流程出错',RUN:'运行完成 · 部分测试点未比较答案',CANCELLED:'任务已停止',READY:'就绪'}[v] || v) : state.phase;
   $('resultMessage').textContent = state.message || '';
   $('progressText').textContent = `${state.completed} / ${state.total}`; $('progress').max = state.total || 1; $('progress').value = state.completed;
+  const hasFinalTime = state.done && state.cases.length > 0;
+  $('overallTime').hidden = !hasFinalTime; $('progressArea').hidden = hasFinalTime;
+  if (hasFinalTime) {
+    const average = state.cases.reduce((sum, row) => sum + Number(row.timeMs || 0), 0) / state.cases.length;
+    $('overallTimeValue').textContent = formatTime(average);
+    $('overallTimeBasis').textContent = state.cases.length > 1 ? `${state.cases.length} 组算术平均` : '单组 CPU 耗时';
+    $('overallTime').title = state.cases.length < state.total ? '仅统计停止前实际运行的测试点' : '全部测试点的用户态 CPU 耗时算术平均值';
+  }
   $('resultMeta').textContent = `${state.completed} / ${state.total} 组${state.seed !== undefined ? ` · 种子 ${state.seed}` : ''}`;
   $('compileLog').textContent = state.compileLog || '';
   $('compileDetails').hidden = !state.compileLog;
@@ -277,7 +292,7 @@ function renderResult(state) {
       const tr = make('tr'); if (selectedDetail?.index === row.index) tr.classList.add('selected');
       const shown = runCaseLabel !== null && state.cases.length === 1 ? runCaseLabel : row.index;
       tr.append(make('td',`#${String(shown+1).padStart(2,'0')}`)); const td = make('td'); td.append(badge(row.verdict)); tr.append(td);
-      tr.append(make('td',`${row.timeMs} ms`),make('td',`${(row.memoryBytes/1048576).toFixed(2)} MiB`));
+      tr.append(make('td',formatTime(row.timeMs)),make('td',`${(row.memoryBytes/1048576).toFixed(2)} MiB`));
       const desc = make('td',row.message); desc.title = row.message; tr.append(desc);
       const action = make('td'),b = make('button','查看','text-button'); b.setAttribute('aria-label',`查看测试点 ${row.index+1}`); b.onclick = handle(() => showDetail(row.index)); action.append(b); tr.append(action); rows.append(tr);
     });
@@ -297,7 +312,7 @@ async function showDetail(index) {
   const detail = await api(`/api/case?index=${index}`); selectedDetail = detail; $('caseDetail').hidden = false;
   const shown = runCaseLabel !== null && currentResult?.cases.length === 1 ? runCaseLabel : index;
   $('detailTitle').textContent = `样例 #${String(shown+1).padStart(2,'0')} · ${detail.verdict}`;
-  $('detailMessage').textContent = detail.message + (detail.exitCode !== undefined ? ` · 退出码 ${detail.exitCode}` : '') + (detail.referenceTimeMs !== undefined ? ` · 参考程序耗时 ${detail.referenceTimeMs} ms` : '');
+  $('detailMessage').textContent = detail.message + (detail.exitCode !== undefined ? ` · 退出码 ${detail.exitCode}` : '') + (detail.referenceTimeMs !== undefined ? ` · 参考程序耗时 ${formatTime(detail.referenceTimeMs)}` : '');
   $('detailInput').textContent = clip(detail.input); $('detailExpected').textContent = clip(detail.expected); $('detailOutput').textContent = clip(detail.stdout);
   const stderr = [detail.stderr,detail.referenceStderr ? '[参考程序 stderr]\n'+detail.referenceStderr : '',detail.referenceStdout ? '[参考程序 stdout]\n'+detail.referenceStdout : ''].filter(Boolean).join('\n');
   $('stderrDetails').hidden = !stderr; $('detailStderr').textContent = clip(stderr);
