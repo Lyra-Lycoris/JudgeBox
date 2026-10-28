@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="color-scheme" content="light">
+  <meta name="color-scheme" content="dark">
   <meta name="description" content="JudgeBox 本地判题工作台">
   <title>JudgeBox · 本地判题工作台</title>
   <link rel="icon" href="/favicon.svg">
@@ -48,6 +48,7 @@
       <span id="saveState" class="saved" role="status"><svg><use href="#i-check"/></svg>已保存</span>
       <span class="action-divider"></span>
       <button id="importButton" class="icon-button" title="导入工作区"><svg><use href="#i-upload"/></svg><span>导入</span></button>
+      <button id="datasetButton" class="icon-button" title="快速导入 .in / .ans 数据目录，不加载文件内容"><svg><use href="#i-folder"/></svg><span>数据目录</span></button>
       <button id="exportButton" class="icon-button" title="导出工作区"><svg><use href="#i-download"/></svg><span>导出</span></button>
       <button id="settingsButton" class="icon-button" title="工具链设置"><svg><use href="#i-settings"/></svg><span>设置</span></button>
       <button id="helpButton" class="icon-button" title="使用说明"><svg><use href="#i-help"/></svg><span>说明</span></button>
@@ -107,17 +108,18 @@
             <div class="judge-scroll">
               <p id="resultMeta" class="result-meta">未运行</p>
               <details id="compileDetails" hidden><summary>编译日志</summary><pre id="compileLog" class="log"></pre></details>
-              <div class="result-table-wrap"><table><thead><tr><th scope="col">测试点</th><th scope="col">状态</th><th scope="col" title="用户态 CPU 时间，不含墙钟等待、系统调度与内核态开销">CPU 耗时</th><th scope="col" title="作业峰值提交内存">内存</th><th scope="col">说明</th><th scope="col">详情</th></tr></thead><tbody id="resultRows"></tbody></table></div>
+              <div class="result-table-wrap"><div class="result-cards-heading"><h3>测试点信息</h3><span>点击测试点查看详情</span></div><div id="resultRows" class="result-cards" aria-label="测试点结果"></div></div>
               <div id="caseDetail" class="case-detail" hidden><div class="detail-heading"><h3 id="detailTitle">测试点详情</h3><div><button id="counterexampleButton" class="text-button">导出测试点</button><button id="retestButton" class="text-button">加入手动测试</button></div></div><p id="detailMessage" class="field-help"></p><div class="output-grid"><div><div class="output-title">输入 <button data-download="input" class="text-button">下载 .in</button></div><pre id="detailInput"></pre></div><div><div class="output-title">预期输出 <button data-download="expected" class="text-button">下载 .ans</button></div><pre id="detailExpected"></pre></div><div><div class="output-title">实际输出 <button data-download="stdout" class="text-button">下载 .out</button></div><pre id="detailOutput"></pre></div></div><details id="stderrDetails" hidden><summary>标准错误 / 参考程序日志</summary><pre id="detailStderr" class="log"></pre></details></div>
             </div>
           </div>
         </div>
         <div class="run-bar">
-          <label class="checkbox"><input id="stopOnFailure" type="checkbox">遇到失败立即停止</label>
+          <div class="result-navigation"><button id="editCasesButton" class="text-button" hidden>← 返回测试数据</button><label class="checkbox"><input id="stopOnFailure" type="checkbox">遇到失败立即停止</label></div>
           <div class="run-actions"><button id="cancelButton" class="secondary" hidden>停止运行</button><button id="runButton" class="primary" title="Ctrl+Enter"><svg><use href="#i-play"/></svg><span id="runLabel">运行判题</span><kbd>Ctrl ↵</kbd></button></div>
         </div>
       </section>
     </div>
+    <div id="splitter" class="splitter" role="separator" aria-label="调整测试区与代码区宽度" aria-orientation="vertical" aria-valuemin="28" aria-valuemax="72" aria-valuenow="40" tabindex="0"><span aria-hidden="true"></span></div>
     <section class="panel source-panel" aria-labelledby="sourceTitle">
       <div class="source-heading">
         <div class="section-heading"><span class="step-chip">2</span><div><h2 id="sourceTitle">编写待测程序</h2><p>粘贴代码，或从本机打开源文件</p></div></div>
@@ -126,7 +128,7 @@
       <div class="editor-toolbar">
         <div class="file-tab"><span class="file-dot"></span><span id="sourceFileName">Main.cpp</span><span id="diagnosticState" role="status"></span></div>
         <div class="panel-tools"><button id="sampleButton" class="text-button"><svg><use href="#i-spark"/></svg>填入示例</button><button id="sourceFileButton" class="text-button"><svg><use href="#i-folder"/></svg>打开文件</button></div>
-        <label for="language" class="language-label">语言</label><select id="language"><option value="cpp">C++ 20</option><option value="python">Python 3</option><option value="java">Java (Main)</option><option value="cangjie">Cangjie</option></select>
+        <div class="editor-preferences"><label for="keybinding" class="language-label">键位</label><select id="keybinding"><option value="vscode">VS Code</option><option value="vim">Vim</option></select><span id="vimMode" class="vim-mode" hidden>NORMAL</span><label for="language" class="language-label">语言</label><select id="language"><option value="cpp">C++ 20</option><option value="python">Python 3</option><option value="java">Java (Main)</option><option value="cangjie">Cangjie</option></select></div>
       </div>
       <div class="code-editor" id="codeEditor"><label class="sr-only" for="source">待测程序源码</label><textarea id="source" class="code" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="在这里粘贴你的代码，或点击右上角「填入示例」快速开始…" wrap="off"></textarea></div>
       <div class="editor-status">
@@ -136,8 +138,8 @@
     </section>
   </div>
 </main>
-<dialog id="settingsDialog"><div class="dialog-title"><div><span class="dialog-eyebrow">环境配置</span><h2>工具链设置</h2></div><button class="close-dialog icon-button" aria-label="关闭工具链设置">✕</button></div><p class="field-help">填写可执行文件的完整路径，无需加引号。</p><div id="toolFields"></div><div class="settings-grid"><label>单点输出上限（KiB）<input id="outputKb" type="number" value="1024" min="1" max="4096"></label></div><p class="field-help">上限包含 stdout 与 stderr。Java 最大堆会随内存上限调整并预留原生开销，进程总内存仍由 Job Object 限制；启动失败时可提高内存限制至 512 或 1024 MiB。</p><p id="dataDirectory" class="field-help"></p><button id="saveSettings" class="primary">保存设置</button></dialog>
-<dialog id="helpDialog"><div class="dialog-title"><div><span class="dialog-eyebrow">快速上手</span><h2>使用说明</h2></div><button class="close-dialog icon-button" aria-label="关闭使用说明">✕</button></div><div class="help-content"><h3><span>01</span>手动测试</h3><p>点击「新建测试用例」，填写输入和预期输出。勾选“比较答案”时，空文本也是有效答案；取消勾选则只运行，状态为 RUN。源程序编辑区会按语言高亮，并在停顿后检查语法错误。</p><h3><span>02</span>生成测试</h3><p>选择模板，调整数据规模与数值范围，预览格式。可以批量运行观察实际输出，或把预览数据加入手动测试并填写答案。</p><h3><span>03</span>随机对拍</h3><p>贴入正确的参考程序，自动为相同输入运行两个程序。首次发现差异或待测程序异常时停止，保留反例。参考程序失败会明确显示为判题错误。</p><h3>自定义输入格式</h3><p>模板会展示可编辑的 JSON。int 定义变量；array 的 count 可以引用 n；line 拼接一行多个值；repeat 重复嵌套步骤。复杂约束用 Python 脚本生成，CYaRon 可在安装后导入。</p><h3>状态与复现</h3><p>AC 正确 / WA 答案错误 / TLE 超时 / MLE 内存超限 / RE 运行异常 / CE 编译失败 / OLE 输出过量 / JE 工具、参考程序或生成器错误。保留规则、随机种子和序号即可复现同一组数据。</p><h3>本地运行约定</h3><p>源码、草稿与运行记录保存在本机。请只运行可信代码；资源限制不提供文件与网络隔离。关闭浏览器不会结束引擎，可用右上角“退出”或终端 Ctrl+C 停止。</p></div></dialog>
+<dialog id="settingsDialog"><div class="dialog-title"><div><span class="dialog-eyebrow">环境配置</span><h2>工具链设置</h2></div><button class="close-dialog icon-button" aria-label="关闭工具链设置">✕</button></div><p class="field-help">填写可执行文件的完整路径，无需加引号。</p><div id="toolFields"></div><div class="settings-grid"><label>单点输出上限（KiB）<input id="outputKb" type="number" value="1024" min="1" max="16777216"></label></div><p class="field-help">上限包含 stdout 与 stderr。Java 最大堆会随内存上限调整并预留原生开销，进程总内存仍由 Job Object 限制；启动失败时可提高内存限制至 512 或 1024 MiB。</p><p id="dataDirectory" class="field-help"></p><button id="saveSettings" class="primary">保存设置</button></dialog>
+<dialog id="helpDialog"><div class="dialog-title"><div><span class="dialog-eyebrow">快速上手</span><h2>使用说明</h2></div><button class="close-dialog icon-button" aria-label="关闭使用说明">✕</button></div><div class="help-content"><h3><span>01</span>手动测试</h3><p>点击「新建测试用例」，填写输入和预期输出。勾选“比较答案”时，空文本也是有效答案；取消勾选则只运行，状态为 RUN。源程序编辑区会按语言高亮，并在停顿后检查语法错误。</p><h3><span>02</span>生成测试</h3><p>选择模板，调整数据规模与数值范围，预览格式。可以批量运行观察实际输出，或把预览数据加入手动测试并填写答案。</p><h3><span>03</span>随机对拍</h3><p>贴入正确的参考程序，自动为相同输入运行两个程序。首次发现差异或待测程序异常时停止，保留反例。参考程序失败会明确显示为判题错误。</p><h3>自定义输入格式</h3><p>模板会展示可编辑的 JSON。int 定义变量；array 的 count 可以引用 n；line 拼接一行多个值；repeat 重复嵌套步骤。复杂约束用 Python 脚本生成，CYaRon 可在安装后导入。</p><h3>状态与复现</h3><p>AC 正确 / WA 答案错误 / TLE 超时 / MLE 内存超限 / RE 运行异常 / CE 编译失败 / OLE 输出过量 / JE 工具、参考程序或生成器错误。保留规则、随机种子和序号即可复现同一组数据。</p><h3>阅读答案差异</h3><p>WA 详情会逐行对照预期与实际输出。空格显示为 ·，Tab 显示为 →，行尾显示为 ¶；字符差异会额外标红。下载文件仍保留原始内容。</p><h3>编辑器键位</h3><p>可在编辑器右上角切换 VS Code 或 Vim。VS Code 支持 Ctrl+D 多选、Ctrl+/ 注释、Alt+↑/↓ 移动行等常用键位；Vim 支持普通、插入、可视模式及常用移动、删除、复制和粘贴命令。拖动左右分栏的分割线即可调整宽度，刷新后仍会保留。</p><h3>本地运行约定</h3><p>源码、草稿与运行记录保存在本机。请只运行可信代码；资源限制不提供文件与网络隔离。关闭浏览器不会结束引擎，可用右上角“退出”或终端 Ctrl+C 停止。</p></div></dialog>
 <input id="sourceFile" class="sr-only" tabindex="-1" type="file" accept=".cpp,.cc,.cxx,.py,.java,.cj,.txt"><input id="workspaceFile" class="sr-only" tabindex="-1" type="file" accept=".json">
 </body>
 </html>

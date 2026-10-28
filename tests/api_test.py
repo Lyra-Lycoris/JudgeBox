@@ -116,7 +116,29 @@ class API(unittest.TestCase):
         self.assertEqual(r['verdict'],'JE'); self.assertIn('参考程序 CE',r['message'])
         r=self.job('print(5)','python',mode='generated',generator={'steps':[{'type':'graph','nodes':2,'edges':99}]},count=1)
         self.assertEqual(r['verdict'],'JE')
-    def test_11_diagnostics_ignore_local_compiler(self):
+    def test_11_large_dataset(self):
+        directory=pathlib.Path(self.temp.name)/'large-dataset'
+        directory.mkdir()
+        content='1 '*1000000
+        (directory/'01-large.in').write_text(content,encoding='utf-8')
+        (directory/'01-large.ans').write_text(content,encoding='utf-8')
+        started=time.monotonic()
+        imported=self.call('/api/dataset/import',{'directory':str(directory)})
+        self.assertLess(time.monotonic()-started,5)
+        self.assertEqual(imported['cases'][0]['inputBytes'],len(content.encode()))
+        self.assertNotIn('input',imported['cases'][0])
+        code='#include <iostream>\nint main(){std::cout<<std::cin.rdbuf();}'
+        result=self.job(code,dataset={'directory':str(directory)},timeMs=10000,outputKb=16*1024*1024)
+        self.assertEqual(result['verdict'],'AC',str(result))
+        detail=self.call('/api/case?index=0')
+        self.assertTrue(detail['fileBacked'])
+        self.assertTrue(detail['inputTruncated'])
+        self.assertEqual(len(detail['input']),80000)
+        self.assertEqual(len(detail['stdout']),80000)
+        overflowing='#include <cstdio>\nint main(){for(;;) puts("xxxxxxxxxxxxxxxx");}'
+        result=self.job(overflowing,dataset={'directory':str(directory)},timeMs=10000,outputKb=1)
+        self.assertEqual(result['verdict'],'OLE',str(result))
+    def test_12_diagnostics_ignore_local_compiler(self):
         local=self.call('/api/diagnostics',{'language':'cpp','source':'int main(){ return x; }\n','tools':{'cpp':r'C:\msys64\ucrt64\bin\g++.exe'}})
         bundled=pathlib.Path(EXE).parent/'runtimes'/'gcc'/'bin'/'g++.exe'
         if bundled.is_file():

@@ -9,6 +9,7 @@ import {cpp} from "@codemirror/lang-cpp";
 import {python} from "@codemirror/lang-python";
 import {java} from "@codemirror/lang-java";
 import {classHighlighter} from "@lezer/highlight";
+import {keybindingExtension} from "./keybindings.js";
 
 const cangjieLanguage = StreamLanguage.define({
   startState: () => ({block: false}),
@@ -52,7 +53,9 @@ function toMark(view, item) {
 
 function mount(textarea, options) {
   const languageConf = new Compartment();
+  const keybindingConf = new Compartment();
   let applying = false;
+  const onVimMode = mode => { const badge = document.getElementById("vimMode"); if (badge) badge.textContent = mode; };
   const view = new EditorView({
     parent: textarea.parentElement,
     state: EditorState.create({
@@ -62,6 +65,7 @@ function mount(textarea, options) {
         drawSelection(), dropCursor(), EditorState.allowMultipleSelections.of(true), indentOnInput(),
         indentUnit.of("    "), EditorState.tabSize.of(4), bracketMatching(), closeBrackets(), autocompletion(),
         rectangularSelection(), crosshairCursor(), highlightActiveLine(), highlightSelectionMatches(),
+        keybindingConf.of(keybindingExtension(document.getElementById("keybinding")?.value || "vscode", onVimMode)),
         keymap.of([indentWithTab, ...closeBracketsKeymap, ...defaultKeymap, ...searchKeymap, ...historyKeymap, ...foldKeymap, ...completionKeymap, ...lintKeymap]),
         syntaxHighlighting(classHighlighter),
         languageConf.of(languageSupport(options.getLanguage())),
@@ -102,6 +106,10 @@ function mount(textarea, options) {
     setLanguage(language) {
       view.dispatch({effects: languageConf.reconfigure(languageSupport(language))});
       forceLinting(view);
+    },
+    setKeybinding(name) {
+      view.dispatch({effects: keybindingConf.reconfigure(keybindingExtension(name, onVimMode))});
+      view.focus();
     }
   };
 }
@@ -110,5 +118,6 @@ let current = null;
 window.JudgeEditor = {
   mount(textarea, options) { current = mount(textarea, options); },
   pull() { if (current) current.pull(); },
-  setLanguage(language) { if (current) current.setLanguage(language); }
+  setLanguage(language) { if (current) current.setLanguage(language); },
+  setKeybinding(name) { if (current) current.setKeybinding(name); }
 };

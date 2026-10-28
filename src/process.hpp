@@ -17,6 +17,8 @@ struct RunOptions {
     std::uint64_t memoryBytes = 256ULL * 1024 * 1024;
     std::size_t outputBytes = 1024 * 1024;
     std::wstring workingDirectory;
+    // File paths enable constant-memory judging for large datasets. Empty paths use pipes.
+    std::wstring inputPath, stdoutPath;
     const std::atomic_bool* cancel = nullptr;
     std::vector<std::wstring> pathEntries;
     std::vector<std::pair<std::wstring,std::wstring>> environment; // Empty value removes an inherited variable.

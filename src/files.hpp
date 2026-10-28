@@ -28,3 +28,10 @@ inline std::string readFile(const fs::path& path) {
     std::ifstream f(path,std::ios::binary); if(!f) throw std::runtime_error("无法读取文件："+utf8(path.wstring()));
     return {std::istreambuf_iterator<char>(f),{}};
 }
+inline std::string readFilePreview(const fs::path& path,std::size_t maxBytes=80000) {
+    std::ifstream f(path,std::ios::binary); if(!f) throw std::runtime_error("无法读取文件："+utf8(path.wstring()));
+    std::string content(maxBytes,'\0'); f.read(content.data(),static_cast<std::streamsize>(maxBytes));
+    content.resize(static_cast<std::size_t>(f.gcount()));
+    if(f.bad()) throw std::runtime_error("无法读取文件："+utf8(path.wstring()));
+    return content;
+}
