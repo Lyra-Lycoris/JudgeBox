@@ -4,6 +4,7 @@
 #include <shellapi.h>
 #include "server.hpp"
 #include "judge.hpp"
+#include "dataset.hpp"
 #include "compiler.hpp"
 #include "assets.hpp"
 #include "editor_asset.hpp"
@@ -91,11 +92,12 @@ int serve(const fs::path& dataDirectory,bool openBrowser,unsigned short requeste
                     body=Json::parse(r.body); if(!body.is_object()) throw std::runtime_error("请求应为 JSON 对象");
                 }
                 Json result;
-                if(r.path=="/api/config" && r.method=="GET") result={{"tools",tools},{"version","1.1.1"},{"dataDirectory",utf8(fs::absolute(dataDirectory).wstring())}};
+                if(r.path=="/api/config" && r.method=="GET") result={{"tools",tools},{"version","1.1.2"},{"dataDirectory",utf8(fs::absolute(dataDirectory).wstring())}};
                 else if(r.path=="/api/status" && r.method=="GET") result=engine.status();
                 else if(r.path=="/api/run" && r.method=="POST") result=engine.start(body);
                 else if(r.path=="/api/cancel" && r.method=="POST") { engine.stop(); result={{"ok",true}}; }
                 else if(r.path=="/api/generate" && r.method=="POST") result=engine.preview(body);
+                else if(r.path=="/api/dataset/import" && r.method=="POST") result=datasetSummary(loadDataset(body.value("directory",std::string())));
                 else if(r.path.starts_with("/api/case?index=") && r.method=="GET") { auto id=r.path.substr(16); std::size_t used; int i=std::stoi(id,&used); if(used!=id.size()) throw std::runtime_error("无效测试点编号"); result=engine.detail(i); }
                 else if(r.path=="/api/draft" && r.method=="GET") { auto path=dataDirectory/"draft.json"; result=fs::exists(path)?Json::parse(readFile(path)):Json::object(); }
                 else if(r.path=="/api/draft" && r.method=="POST") { writeFile(dataDirectory/"draft.json",dump(body)); result={{"ok",true}}; }

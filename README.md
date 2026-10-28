@@ -1,6 +1,6 @@
 # JudgeBox
 
-[JudgeBox-Setup-1.1.1-x64.exe](https://github.com/Lyra-Lycoris/JudgeBox/releases/download/v1.1.1/JudgeBox-Setup-1.1.1-x64.exe) · [SHA-256](https://github.com/Lyra-Lycoris/JudgeBox/releases/download/v1.1.1/JudgeBox-Setup-1.1.1-x64.exe.sha256)
+[JudgeBox-Setup-1.1.2-x64.exe](https://github.com/Lyra-Lycoris/JudgeBox/releases/download/v1.1.2/JudgeBox-Setup-1.1.2-x64.exe) · [SHA-256](https://github.com/Lyra-Lycoris/JudgeBox/releases/download/v1.1.2/JudgeBox-Setup-1.1.2-x64.exe.sha256)
 
 上面是 Windows 11 x64 离线安装包，自带 C++、Python、Java、仓颉。安装后从开始菜单打开。
 

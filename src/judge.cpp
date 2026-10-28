@@ -1,5 +1,6 @@
 #include "judge.hpp"
 #include "checker.hpp"
+#include "dataset.hpp"
 #include "generator.hpp"
 #include <chrono>
 
@@ -77,26 +78,43 @@ Json JudgeEngine::start(const Json& request) {
     if(mode!="manual" && mode!="generated" && mode!="stress") throw std::runtime_error("无效运行模式");
     if(request.value("source",std::string()).empty()) throw std::runtime_error("请粘贴待测源码");
     if(mode=="stress" && request.value("reference",std::string()).empty()) throw std::runtime_error("请粘贴参考程序");
-    integer(request,"timeMs",1000,10,60000); integer(request,"memoryMb",256,16,4096); integer(request,"outputKb",1024,1,4096);
+    integer(request,"timeMs",1000,10,60000); integer(request,"memoryMb",256,16,4096); integer(request,"outputKb",1024,1,16*1024*1024);
     integer(request,"seed",42,0,9007199254740991LL);
-    if(mode=="manual") {
+    const bool datasetMode=request.contains("dataset");
+    std::size_t total=0;
+    if(datasetMode) {
+        if(mode!="manual" || !request.at("dataset").is_object() || !request.at("dataset").value("directory",std::string()).size()) throw std::runtime_error("数据目录参数不正确");
+        total=loadDataset(request.at("dataset").at("directory").get<std::string>()).cases.size();
+    } else if(mode=="manual") {
         if(!request.contains("cases") || !request.at("cases").is_array() || request.at("cases").empty() || request.at("cases").size()>200) throw std::runtime_error("请提供 1..200 组测试点");
         for(const auto& c:request.at("cases")) if(!c.at("input").is_string() || c.at("input").get_ref<const std::string&>().size()>1024*1024 || (c.contains("expected") && !c.at("expected").is_null() && !c.at("expected").is_string())) throw std::runtime_error("测试输入须为文本且不超过 1 MiB；答案须为文本或 null");
-    } else integer(request,"count",20,1,1000);
+        total=request.at("cases").size();
+    } else { integer(request,"count",20,1,1000); total=static_cast<std::size_t>(request.value("count",20)); }
     compareOutput("","",request.value("checker",std::string("tokens")),request.value("tolerance",1e-6));
     if(worker.joinable()) worker.join();
     auto now=std::chrono::system_clock::now().time_since_epoch();
     current=root/(std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(now).count())+"-"+std::to_string(GetTickCount64()));
     fs::create_directories(current); writeFile(current/"request.json",safeDump(request));
     cancel=false;
-    update({{"done",false},{"verdict","RUNNING"},{"phase","准备编译"},{"message",""},{"cases",Json::array()},{"completed",0},{"total",mode=="manual"?request.at("cases").size():static_cast<std::size_t>(request.value("count",20))},{"compileLog",""},{"directory",utf8(current.wstring())},{"seed",request.value("seed",42LL)}});
+    update({{"done",false},{"verdict","RUNNING"},{"phase","准备编译"},{"message",""},{"cases",Json::array()},{"completed",0},{"total",total},{"compileLog",""},{"directory",utf8(current.wstring())},{"seed",request.value("seed",42LL)}});
     worker=std::thread(&JudgeEngine::execute,this,request,current);
     return {{"ok",true}};
 }
 Json JudgeEngine::detail(int index) {
     std::lock_guard lock(mutex);
     if(index<0 || static_cast<std::size_t>(index)>=state.at("cases").size()) throw std::runtime_error("测试点不存在");
-    return Json::parse(readFile(current/("case-"+std::to_string(index)+".json")));
+    auto detail=Json::parse(readFile(current/("case-"+std::to_string(index)+".json")));
+    if(detail.value("fileBacked",false)) {
+        for(const char* key:{"input","expected","stdout"}) {
+            std::string pathKey=std::string(key)+"Path";
+            if(detail.at(pathKey).is_string()) {
+                auto path=fs::path(wide(detail.at(pathKey).get<std::string>()));
+                detail[key]=readFilePreview(path);
+                detail[std::string(key)+"Truncated"]=fs::file_size(path)>detail.at(key).get_ref<const std::string&>().size();
+            } else detail[key]=nullptr;
+        }
+    }
+    return detail;
 }
 Json JudgeEngine::preview(const Json& request) {
     auto seed=integer(request,"seed",42,0,9007199254740991LL); auto index=integer(request,"index",0,0,999);
@@ -113,22 +131,27 @@ void JudgeEngine::execute(Json request,fs::path directory) {
         if(program.verdict!="AC") { overall=program.verdict; message=program.message; }
         else {
             Program reference; auto mode=request.value("mode",std::string("manual"));
+            const bool datasetMode=request.contains("dataset");
+            Dataset dataset;
+            if(datasetMode) dataset=loadDataset(request.at("dataset").at("directory").get<std::string>());
             if(mode=="stress") {
                 update({{"phase","编译参考程序"}});
                 reference=compileProgram(request.at("reference"),request.value("referenceLanguage",std::string("cpp")),directory/"reference",tools,&cancel);
                 update({{"compileLog",program.log+"\n[参考程序]\n"+reference.log}});
                 if(reference.verdict!="AC") { overall=reference.verdict=="CANCELLED"?"CANCELLED":"JE"; message="参考程序 "+reference.verdict+"："+reference.message; }
             }
-            RunOptions opts; opts.cancel=&cancel; opts.timeMs=request.value("timeMs",1000LL); opts.memoryBytes=request.value("memoryMb",256ULL)*1024*1024; opts.outputBytes=request.value("outputKb",1024U)*1024;
-            int total=mode=="manual"?static_cast<int>(request.at("cases").size()):request.value("count",20);
+            RunOptions opts; opts.cancel=&cancel; opts.timeMs=request.value("timeMs",1000LL); opts.memoryBytes=request.value("memoryMb",256ULL)*1024*1024; opts.outputBytes=request.value("outputKb",1024ULL)*1024;
+            if(datasetMode) opts.outputBytes=std::max(opts.outputBytes,static_cast<std::size_t>(dataset.maxExpectedBytes+1024*1024));
+            int total=datasetMode?static_cast<int>(dataset.cases.size()):mode=="manual"?static_cast<int>(request.at("cases").size()):request.value("count",20);
             bool noAnswer=false;
             for(int i=0;i<total && overall!="JE" && overall!="CANCELLED";++i) {
                 if(cancel.load()) { overall="CANCELLED"; message="已停止"; break; }
                 update({{"phase","运行测试点 "+std::to_string(i+1)+" / "+std::to_string(total)}});
                 auto caseDir=directory/("test-"+std::to_string(i+1)); fs::create_directories(caseDir);
-                std::string input=mode=="manual"?request.at("cases").at(i).at("input").get<std::string>():generate(request,tools,request.value("seed",42ULL),i,caseDir/"generator",&cancel);
+                const DatasetCase* test=datasetMode?&dataset.cases[i]:nullptr;
+                std::string input=datasetMode?std::string():mode=="manual"?request.at("cases").at(i).at("input").get<std::string>():generate(request,tools,request.value("seed",42ULL),i,caseDir/"generator",&cancel);
                 Json expected=nullptr; runResult refRun;
-                if(mode=="manual") expected=request.at("cases").at(i).value("expected",Json(nullptr));
+                if(mode=="manual" && !datasetMode) expected=request.at("cases").at(i).value("expected",Json(nullptr));
                 if(mode=="stress") {
                     prepareRuntime(reference,caseDir/"reference"); auto refOpt=opts; refOpt.workingDirectory=(caseDir/"reference").wstring();
                     refOpt.pathEntries=reference.pathEntries; refOpt.environment=reference.environment;
@@ -144,13 +167,21 @@ void JudgeEngine::execute(Json request,fs::path directory) {
                     }
                     expected=refRun.stdOut;
                 }
-                prepareRuntime(program,caseDir/"submission"); opts.workingDirectory=(caseDir/"submission").wstring();
-                opts.pathEntries=program.pathEntries; opts.environment=program.environment;
-                auto run=runProcess(program.exe,runtimeArgs(program,opts.memoryBytes),input,opts); auto v=verdict(run); auto why=reason(run);
-                if(v=="RUN" && !expected.is_null()) { auto c=compareOutput(run.stdOut,expected.get<std::string>(),request.value("checker",std::string("tokens")),request.value("tolerance",1e-6)); v=c.equal?"AC":"WA"; why=c.message; }
+                prepareRuntime(program,caseDir/"submission");
+                auto runOpts=opts; runOpts.workingDirectory=(caseDir/"submission").wstring();
+                runOpts.pathEntries=program.pathEntries; runOpts.environment=program.environment;
+                auto stdoutPath=caseDir/"stdout.txt";
+                if(test) { runOpts.inputPath=test->input.wstring(); runOpts.stdoutPath=stdoutPath.wstring(); }
+                auto run=runProcess(program.exe,runtimeArgs(program,runOpts.memoryBytes),input,runOpts); auto v=verdict(run); auto why=reason(run);
+                auto checker=request.value("checker",std::string("tokens")); auto tolerance=request.value("tolerance",1e-6);
+                if(v=="RUN" && test && !test->expected.empty()) { auto c=compareOutputFiles(stdoutPath,test->expected,checker,tolerance); v=c.equal?"AC":"WA"; why=c.message; }
+                else if(v=="RUN" && !expected.is_null()) { auto c=compareOutput(run.stdOut,expected.get<std::string>(),checker,tolerance); v=c.equal?"AC":"WA"; why=c.message; }
                 if(v=="RUN") noAnswer=true;
                 Json row={{"index",i},{"verdict",v},{"timeMs",run.runTimeMs},{"memoryBytes",run.runMemory},{"message",why}};
-                Json detail=row; detail.update({{"input",input},{"expected",expected},{"stdout",run.stdOut},{"stderr",run.errOut},{"exitCode",run.exit},{"seed",request.value("seed",42ULL)}});
+                if(test) row["name"]=test->name;
+                Json detail=row;
+                if(test) detail.update({{"fileBacked",true},{"inputPath",utf8(test->input.wstring())},{"expectedPath",test->expected.empty()?Json(nullptr):Json(utf8(test->expected.wstring()))},{"stdoutPath",utf8(stdoutPath.wstring())},{"stderr",run.errOut},{"exitCode",run.exit}});
+                else detail.update({{"input",input},{"expected",expected},{"stdout",run.stdOut},{"stderr",run.errOut},{"exitCode",run.exit},{"seed",request.value("seed",42ULL)}});
                 if(mode=="stress") detail.update({{"referenceTimeMs",refRun.runTimeMs},{"referenceStderr",refRun.errOut}});
                 writeFile(directory/("case-"+std::to_string(i)+".json"),safeDump(detail));
                 { std::lock_guard lock(mutex); state["cases"].push_back(row); state["completed"]=i+1; }

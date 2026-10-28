@@ -2,7 +2,7 @@
 const $ = id => document.getElementById(id);
 const token = location.hash.slice(1) || sessionStorage.getItem('judgebox-token') || '';
 if (token) sessionStorage.setItem('judgebox-token', token);
-let mode = 'manual', cases = [], runCaseLabel = null;
+let mode = 'manual', cases = [], dataset = null, runCaseLabel = null;
 let loaded = false, running = false, tools = {}, currentResult = null, selectedDetail = null;
 let previewIndex = 0, previewInput = null, saveTimer, pollTimer, savePromise = Promise.resolve();
 const samples = {
@@ -42,6 +42,11 @@ function formatTime(value) {
   if (!Number.isFinite(ms)) return '—';
   if (ms < 1) return '<1 ms';
   return `${ms.toFixed(ms < 10 ? 2 : ms < 100 ? 1 : 0)} ms`;
+}
+function formatMemory(value) {
+  const bytes = Number(value);
+  if (!Number.isFinite(bytes)) return '—';
+  return bytes < 1048576 ? `${(bytes/1024).toFixed(2)} KB` : `${(bytes/1048576).toFixed(2)} MB`;
 }
 let editorLanguage = '';
 function showDiagnostics(result, source) {
@@ -87,6 +92,7 @@ function mountEditor() {
   editorLanguage = $('language').value;
 }
 function rememberCases() {
+  if (dataset) return;
   document.querySelectorAll('.case-card').forEach(card => {
     const index = Number(card.dataset.index);
     if (!cases[index]) return;
@@ -156,12 +162,23 @@ function caseCard(item, index) {
   card.append(head, body);
   return card;
 }
+function datasetCard(item) {
+  const card = make('article',undefined,'case-card');
+  const head = make('div',undefined,'case-card-head');
+  head.append(make('h3',item.name,'case-card-title'));
+  const body = make('div',undefined,'manual-fields');
+  body.append(make('p',`输入 ${formatMemory(item.inputBytes)} · 答案 ${item.expectedBytes === null ? '未提供' : formatMemory(item.expectedBytes)}`,'field-help'));
+  card.append(head,body); return card;
+}
 function renderCases() {
   const list = $('caseList');
   list.replaceChildren();
-  cases.forEach((item, index) => list.append(caseCard(item, index)));
-  $('caseEmpty').hidden = cases.length > 0;
-  $('addCase').disabled = cases.length >= 200;
+  if (dataset) {
+    dataset.cases.slice(0,200).forEach(item => list.append(datasetCard(item)));
+    if (dataset.cases.length > 200) list.append(make('p',`其余 ${dataset.cases.length-200} 组不在界面展开，判题时仍会全部运行。`,'field-help'));
+  } else cases.forEach((item, index) => list.append(caseCard(item, index)));
+  $('caseEmpty').hidden = cases.length > 0 || Boolean(dataset);
+  $('addCase').disabled = !dataset && cases.length >= 200;
 }
 function focusCase(index, field) {
   const card = document.querySelector(`.case-card[data-index="${index}"]`);
@@ -169,13 +186,18 @@ function focusCase(index, field) {
   card.scrollIntoView({block:'nearest'});
   card.querySelector(field).focus();
 }
+function datasetLabel() {
+  if (!dataset) return '';
+  return dataset.label || dataset.directory.split(/[\\/]/).filter(Boolean).at(-1) || '数据集';
+}
 function switchMode(next, save = true) {
   if (!modeInfo[next]) return;
   rememberCases(); mode = next;
   $('mobileMode').value = next;
   document.querySelectorAll('.mode-btn').forEach(b => { const active = b.dataset.mode === mode; b.classList.toggle('active',active); b.setAttribute('aria-pressed',String(active)); });
-  const info = modeInfo[mode];
-  $('dataTitle').textContent = info.data;
+  const info = modeInfo[mode], label = mode === 'manual' ? datasetLabel() : '';
+  $('dataTitle').textContent = label ? `${info.data} · ${label}` : info.data;
+  document.title = label ? `${label} · JudgeBox` : 'JudgeBox · 本地判题工作台';
   $('modeDescription').textContent = info.description;
   $('runLabel').textContent = running ? '运行中' : info.run;
   $('manualPanel').hidden = mode !== 'manual'; $('generationPanel').hidden = mode === 'manual'; $('referencePanel').hidden = mode !== 'stress';
@@ -218,12 +240,15 @@ function generatorPayload() {
 function readTools() { const result = {...tools}; document.querySelectorAll('[data-tool]').forEach(e => { result[e.dataset.tool] = e.value.trim(); }); return result; }
 function payload() {
   rememberCases();
-  const p = {source:$('source').value,language:$('language').value,mode,timeMs:number('timeMs',10,60000),memoryMb:number('memoryMb',16,4096),outputKb:number('outputKb',1,4096),checker:$('checker').value,tolerance:Number($('tolerance').value),stopOnFailure:$('stopOnFailure').checked,tools:readTools()};
+  const p = {source:$('source').value,language:$('language').value,mode,timeMs:number('timeMs',10,60000),memoryMb:number('memoryMb',16,4096),outputKb:number('outputKb',1,16*1024*1024),checker:$('checker').value,tolerance:Number($('tolerance').value),stopOnFailure:$('stopOnFailure').checked,tools:readTools()};
   if (!p.source.trim()) { $('source').focus(); throw new Error('请先粘贴待测程序。'); }
   if (p.checker === 'float' && (!Number.isFinite(p.tolerance) || p.tolerance < 0 || p.tolerance > 1)) throw new Error('浮点容差须在 0 到 1 之间。');
   if (mode === 'manual') {
-    if (!cases.length) throw new Error('请先新建测试用例。');
-    p.cases = cases.map(c => ({...c}));
+    if (dataset) p.dataset = {directory:dataset.directory};
+    else {
+      if (!cases.length) throw new Error('请先新建测试用例或导入数据目录。');
+      p.cases = cases.map(c => ({...c}));
+    }
   }
   else Object.assign(p,generatorPayload(),{count:number('count',1,1000)});
   if (mode === 'stress') { p.reference = $('reference').value; p.referenceLanguage = $('referenceLanguage').value; p.referenceTimeMs = number('referenceTimeMs',10,60000); if (!p.reference.trim()) { $('reference').focus(); throw new Error('请填写参考程序。'); } }
@@ -231,7 +256,7 @@ function payload() {
 }
 function draft() {
   rememberCases(); const fields = {}; inputIds.forEach(id => { fields[id] = $(id).type === 'checkbox' ? $(id).checked : $(id).value; });
-  return {version:1,mode,fields,cases:cases.map(c => ({...c})),tools:readTools()};
+  return {version:1,mode,fields,cases:cases.map(c => ({...c})),dataset,tools:readTools()};
 }
 async function saveDraft() {
   if (!loaded) return;
@@ -246,7 +271,9 @@ async function saveDraft() {
 function queueSave() { if (!loaded) return; clearTimeout(saveTimer); saveTimer = setTimeout(() => saveDraft().catch(e => notice(e.message)),650); }
 function applyDraft(data) {
   if (!data || !data.fields) return;
-  if (Array.isArray(data.cases) && data.cases.length <= 200) {
+  dataset = data.dataset && typeof data.dataset.directory === 'string' && Array.isArray(data.dataset.cases) ? data.dataset : null;
+  if (dataset) cases = [];
+  else if (Array.isArray(data.cases) && data.cases.length <= 200) {
     cases = data.cases.map(c => { if (typeof c.input !== 'string' || !(c.expected === null || typeof c.expected === 'string')) throw new Error('工作区测试点格式不正确。'); return {input:c.input,expected:c.expected}; }).filter(c => c.input !== '' || (c.expected !== null && c.expected !== ''));
   }
   inputIds.forEach(id => { if (data.fields[id] !== undefined) { if ($(id).type === 'checkbox') $(id).checked = Boolean(data.fields[id]); else $(id).value = String(data.fields[id]); } });
@@ -256,7 +283,7 @@ function applyDraft(data) {
 function download(name, text, type = 'text/plain;charset=utf-8') { const url = URL.createObjectURL(new Blob([text],{type})); const a = make('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url),1000); }
 function addManual(input, expected = null) {
   if (cases.length >= 200) throw new Error('手动测试最多 200 组，请先删除一些测试点。');
-  rememberCases(); cases.push({input,expected}); renderCases(); switchMode('manual'); focusCase(cases.length - 1, '.case-expected');
+  dataset = null; rememberCases(); cases.push({input,expected}); renderCases(); switchMode('manual'); focusCase(cases.length - 1, '.case-expected');
 }
 function setRunning(value) { running = value; $('runButton').disabled = value; $('cancelButton').hidden = !value; document.querySelectorAll('.run-one').forEach(button => { button.disabled = value; }); $('runLabel').textContent = value ? '运行中' : modeInfo[mode].run; $('connectionState').textContent = value ? '引擎运行中' : '本地引擎就绪'; $('resultsTitle').closest('section').setAttribute('aria-busy',String(value)); }
 async function submitRun(onlyIndex) {
@@ -269,6 +296,8 @@ async function submitRun(onlyIndex) {
   setRunning(true); await poll();
 }
 function renderResult(state) {
+  document.querySelector('.side').classList.toggle('showing-results',state.done);
+  $('editCasesButton').hidden = !state.done;
   $('emptyResults').hidden = true; $('resultContent').hidden = false;
   const v = state.verdict; $('overallBadge').textContent = v; $('overallBadge').dataset.verdict = v;
   $('resultPhase').textContent = state.done ? ({AC:'全部测试通过',WA:'发现答案差异',CE:'编译失败',TLE:'超过时间限制',MLE:'超过内存限制',RE:'程序运行异常',OLE:'超过输出限制',JE:'判题流程出错',RUN:'运行完成 · 部分测试点未比较答案',CANCELLED:'任务已停止',READY:'就绪'}[v] || v) : state.phase;
@@ -289,12 +318,13 @@ function renderResult(state) {
   if (!currentResult || currentResult.cases.length !== state.cases.length || currentResult.directory !== state.directory) {
     const rows = $('resultRows'); rows.replaceChildren();
     state.cases.forEach(row => {
-      const tr = make('tr'); if (selectedDetail?.index === row.index) tr.classList.add('selected');
+      const card = make('button',undefined,'result-card'); card.type = 'button'; card.dataset.verdict = row.verdict;
+      if (selectedDetail?.index === row.index) card.classList.add('selected');
       const shown = runCaseLabel !== null && state.cases.length === 1 ? runCaseLabel : row.index;
-      tr.append(make('td',`#${String(shown+1).padStart(2,'0')}`)); const td = make('td'); td.append(badge(row.verdict)); tr.append(td);
-      tr.append(make('td',formatTime(row.timeMs)),make('td',`${(row.memoryBytes/1048576).toFixed(2)} MiB`));
-      const desc = make('td',row.message); desc.title = row.message; tr.append(desc);
-      const action = make('td'),b = make('button','查看','text-button'); b.setAttribute('aria-label',`查看测试点 ${row.index+1}`); b.onclick = handle(() => showDetail(row.index)); action.append(b); tr.append(action); rows.append(tr);
+      card.setAttribute('aria-label',`测试点 ${shown+1}，${row.verdict}，${formatTime(row.timeMs)}，${formatMemory(row.memoryBytes)}。查看详情`);
+      card.title = row.message || '点击查看测试点详情';
+      card.append(make('span',`#${shown+1}`,'result-card-index'),make('strong',row.verdict,'result-card-verdict'),make('span',`${formatTime(row.timeMs)} / ${formatMemory(row.memoryBytes)}`,'result-card-metrics'));
+      card.onclick = handle(() => showDetail(row.index)); rows.append(card);
     });
   }
   currentResult = state;
@@ -307,16 +337,109 @@ async function poll() {
     else if (state.cases.length && !selectedDetail) { const failed = state.cases.find(c => !['AC','RUN'].includes(c.verdict)); await showDetail((failed || state.cases[0]).index); }
   } catch(e) { notice(e.message); if (running) pollTimer = setTimeout(poll,1000); }
 }
-function clip(text) { if (text === null || text === undefined) return '（未提供预期输出）'; if (!text.length) return '（空输出）'; return text.length > 80000 ? text.slice(0,80000)+'\n\n…界面仅展示前 80000 字符，下载可获取完整内容。' : text; }
+function clip(text) { if (text === null || text === undefined) return '（未提供预期输出）'; if (!text.length) return '（空输出）'; return text.length > 1145 ? text.slice(0,1145)+'...' : text; }
+function visibleText(parent, text, changed = false) {
+  const fragment = document.createDocumentFragment();
+  for (const char of text) {
+    if (char === ' ' || char === '\t' || char === '\u00a0' || char === '\u200b') {
+      const symbol = make('span', char === ' ' ? '·' : char === '\t' ? '→\t' : char === '\u00a0' ? '⍽' : 'ZWSP', 'ws');
+      symbol.title = char === ' ' ? '空格' : char === '\t' ? '制表符' : char === '\u00a0' ? '不换行空格' : '零宽空格';
+      fragment.append(symbol);
+    } else fragment.append(document.createTextNode(char));
+  }
+  if (changed) { const mark = make('span', undefined, 'diff-changed'); mark.append(fragment); parent.append(mark); }
+  else parent.append(fragment);
+}
+function characterDiff(expected, actual) {
+  const operations = [];
+  const push = (kind,text) => { if (!text) return; if (operations.at(-1)?.kind === kind) operations.at(-1).text += text; else operations.push({kind,text}); };
+  if (expected.length * actual.length > 160000) {
+    let prefix = 0, suffix = 0;
+    while (prefix < expected.length && prefix < actual.length && expected[prefix] === actual[prefix]) prefix++;
+    while (suffix < expected.length - prefix && suffix < actual.length - prefix && expected[expected.length-1-suffix] === actual[actual.length-1-suffix]) suffix++;
+    push('same',expected.slice(0,prefix)); push('removed',expected.slice(prefix,expected.length-suffix)); push('added',actual.slice(prefix,actual.length-suffix)); push('same',suffix ? expected.slice(-suffix) : '');
+    return operations;
+  }
+  const table = Array.from({length:expected.length+1},() => new Uint16Array(actual.length+1));
+  for (let i=expected.length-1;i>=0;i--) for (let j=actual.length-1;j>=0;j--) table[i][j] = expected[i] === actual[j] ? table[i+1][j+1]+1 : Math.max(table[i+1][j],table[i][j+1]);
+  let i=0,j=0;
+  while (i<expected.length || j<actual.length) {
+    if (i<expected.length && j<actual.length && expected[i]===actual[j]) push('same',expected[i]),i++,j++;
+    else if (j<actual.length && (i===expected.length || table[i][j+1]>=table[i+1][j])) push('added',actual[j++]);
+    else push('removed',expected[i++]);
+  }
+  return operations;
+}
+function diffRow(target,line,number,kind,operations,side) {
+  const row = make('div',undefined,`diff-line ${kind === 'removed' ? 'diff-removed' : kind === 'added' ? 'diff-added' : ''}`);
+  row.append(make('span',number === null ? '' : String(number+1),'diff-number'));
+  const content = make('span',undefined,'diff-text');
+  if (line !== null) {
+    if (kind === 'changed') for (const operation of operations) {
+      if (operation.kind === 'same') visibleText(content,operation.text);
+      else if ((side === 'expected' && operation.kind === 'removed') || (side === 'actual' && operation.kind === 'added')) visibleText(content,operation.text,true);
+    }
+    else visibleText(content,line);
+    const end = make('span','¶','ws ws-newline'); end.title = '行尾'; content.append(end);
+  }
+  row.append(content); target.append(row);
+}
+function lineDiff(expected, actual) {
+  const a = expected.replace(/\r\n/g, '\n').replace(/\n$/, '').split('\n');
+  const b = actual.replace(/\r\n/g, '\n').replace(/\n$/, '').split('\n');
+  if (a.length * b.length > 250000) return a.map((line, i) => ({a:line,b:b[i] ?? null,ai:i,bi:b[i] === undefined ? null : i,kind:line === b[i] ? 'same' : 'changed'})).concat(b.slice(a.length).map((line,j) => ({a:null,b:line,ai:null,bi:a.length+j,kind:'added'})));
+  const table = Array.from({length:a.length + 1}, () => new Uint16Array(b.length + 1));
+  for (let i = a.length - 1; i >= 0; i--) for (let j = b.length - 1; j >= 0; j--) table[i][j] = a[i] === b[j] ? table[i+1][j+1] + 1 : Math.max(table[i+1][j],table[i][j+1]);
+  const raw = []; let i = 0, j = 0;
+  while (i < a.length || j < b.length) {
+    if (i < a.length && j < b.length && a[i] === b[j]) raw.push({a:a[i],b:b[j],ai:i,bi:j,kind:'same'}),i++,j++;
+    else if (j < b.length && (i === a.length || table[i][j+1] >= table[i+1][j])) raw.push({a:null,b:b[j],ai:null,bi:j,kind:'added'}),j++;
+    else raw.push({a:a[i],b:null,ai:i,bi:null,kind:'removed'}),i++;
+  }
+  const rows = [];
+  for (let k = 0; k < raw.length;) {
+    if (raw[k].kind === 'same') { rows.push(raw[k++]); continue; }
+    const removed = [], added = [];
+    while (k < raw.length && raw[k].kind !== 'same') (raw[k].kind === 'removed' ? removed : added).push(raw[k++]);
+    const length = Math.max(removed.length,added.length);
+    for (let n = 0; n < length; n++) {
+      const left = removed[n], right = added[n];
+      rows.push(left && right ? {...left,b:right.b,bi:right.bi,kind:'changed'} : left || right);
+    }
+  }
+  return rows;
+}
+function renderOutputDiff(expected, actual) {
+  const left = $('detailExpected'), right = $('detailOutput');
+  left.replaceChildren(); right.replaceChildren(); left.classList.add('diff-output'); right.classList.add('diff-output');
+  for (const row of lineDiff(expected, actual)) {
+    const operations = row.kind === 'changed' ? characterDiff(row.a,row.b) : null;
+    diffRow(left,row.a,row.ai,row.kind === 'added' ? 'empty' : row.kind,operations,'expected');
+    diffRow(right,row.b,row.bi,row.kind === 'removed' ? 'empty' : row.kind,operations,'actual');
+  }
+}
 async function showDetail(index) {
   const detail = await api(`/api/case?index=${index}`); selectedDetail = detail; $('caseDetail').hidden = false;
   const shown = runCaseLabel !== null && currentResult?.cases.length === 1 ? runCaseLabel : index;
-  $('detailTitle').textContent = `样例 #${String(shown+1).padStart(2,'0')} · ${detail.verdict}`;
-  $('detailMessage').textContent = detail.message + (detail.exitCode !== undefined ? ` · 退出码 ${detail.exitCode}` : '') + (detail.referenceTimeMs !== undefined ? ` · 参考程序耗时 ${formatTime(detail.referenceTimeMs)}` : '');
-  $('detailInput').textContent = clip(detail.input); $('detailExpected').textContent = clip(detail.expected); $('detailOutput').textContent = clip(detail.stdout);
+  $('detailTitle').textContent = `${detail.name || `样例 #${String(shown+1).padStart(2,'0')}`} · ${detail.verdict}`;
+  $('detailMessage').textContent = detail.message + (detail.exitCode !== undefined ? ` · 退出码 ${detail.exitCode}` : '') + (detail.referenceTimeMs !== undefined ? ` · 参考程序耗时 ${formatTime(detail.referenceTimeMs)}` : '') + (detail.fileBacked ? ' · 大数据模式仅显示前 1145 个字符' : '');
+  $('detailInput').textContent = clip(detail.input);
+  document.querySelector('.output-grid').classList.toggle('diff-grid',detail.verdict === 'WA' && detail.expected !== null && !detail.fileBacked);
+  $('detailExpected').classList.remove('diff-output'); $('detailOutput').classList.remove('diff-output');
+  if (detail.verdict === 'WA' && detail.expected !== null && !detail.fileBacked) {
+    renderOutputDiff(clip(detail.expected),clip(detail.stdout));
+    requestAnimationFrame(() => {
+      const firstDifference = $('detailOutput').querySelector('.diff-changed') || $('detailExpected').querySelector('.diff-changed');
+      firstDifference?.scrollIntoView({block:'center',inline:'center',behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'});
+    });
+  }
+  else { $('detailExpected').textContent = clip(detail.expected); $('detailOutput').textContent = clip(detail.stdout); }
   const stderr = [detail.stderr,detail.referenceStderr ? '[参考程序 stderr]\n'+detail.referenceStderr : '',detail.referenceStdout ? '[参考程序 stdout]\n'+detail.referenceStdout : ''].filter(Boolean).join('\n');
   $('stderrDetails').hidden = !stderr; $('detailStderr').textContent = clip(stderr);
-  document.querySelector('[data-download="expected"]').disabled = detail.expected === null;
+  document.querySelector('[data-download="expected"]').disabled = detail.expected === null || detail.fileBacked;
+  document.querySelector('[data-download="input"]').disabled = Boolean(detail.fileBacked);
+  document.querySelector('[data-download="stdout"]').disabled = Boolean(detail.fileBacked);
+  $('counterexampleButton').disabled = Boolean(detail.fileBacked); $('retestButton').disabled = Boolean(detail.fileBacked);
   Array.from($('resultRows').children).forEach((tr,i) => tr.classList.toggle('selected',currentResult?.cases[i]?.index === index));
 }
 function renderTools() {
@@ -334,8 +457,8 @@ document.querySelectorAll('.mode-btn').forEach(b => { b.setAttribute('aria-label
 $('mobileMode').onchange = () => switchMode($('mobileMode').value);
 $('goGenerate').onclick = () => switchMode('generated');
 $('addCase').onclick = () => {
-  if (cases.length >= 200) return;
-  rememberCases(); cases.push({input:'',expected:''}); renderCases(); focusCase(cases.length - 1, '.case-input'); queueSave();
+  if (!dataset && cases.length >= 200) return;
+  dataset = null; rememberCases(); cases.push({input:'',expected:''}); renderCases(); focusCase(cases.length - 1, '.case-input'); queueSave();
 };
 $('source').addEventListener('input',syncSource); $('language').onchange = syncSource;
 if ($('sourceLines')) $('source').onscroll = () => { $('sourceLines').scrollTop = $('source').scrollTop; };
@@ -353,6 +476,7 @@ $('previewButton').onclick = handle(async () => {
 });
 $('usePreviewButton').onclick = handle(() => { if (previewInput !== null) addManual(previewInput); });
 $('runButton').onclick = handle(() => submitRun());
+$('editCasesButton').onclick = () => { document.querySelector('.side').classList.remove('showing-results'); $('editCasesButton').hidden = true; };
 $('judgeSummary').addEventListener('click', event => {
   if (!window.matchMedia('(max-width: 800px)').matches) return;
   if (event.target.closest('.judge-scroll, button, a, input, select, textarea')) return;
@@ -365,15 +489,59 @@ $('sourceFileButton').onclick = () => $('sourceFile').click();
 $('sourceFile').onchange = handle(async () => { const file = $('sourceFile').files[0]; if (!file) return; if (file.size > 1024*1024) throw new Error('源码文件超过 1 MiB。'); $('source').value = await file.text(); const ext = file.name.split('.').pop().toLowerCase(); const lang = {cpp:'cpp',cc:'cpp',cxx:'cpp',py:'python',java:'java',cj:'cangjie'}[ext]; if (lang) $('language').value = lang; syncSource(); queueSave(); $('sourceFile').value = ''; });
 $('exportButton').onclick = () => download('judgebox-workspace.json',JSON.stringify(draft(),null,2),'application/json');
 $('importButton').onclick = () => $('workspaceFile').click();
+$('datasetButton').onclick = handle(async () => {
+  const directory = prompt('请输入包含 .in / .ans（或 .out）文件的数据目录完整路径：',dataset?.directory || '');
+  if (!directory?.trim()) return;
+  dataset = await api('/api/dataset/import',{directory:directory.trim()}); cases = [];
+  switchMode('manual'); renderCases(); queueSave();
+  notice(`已快速导入 ${dataset.cases.length} 组，共 ${formatMemory(dataset.totalBytes)}；文件内容不会载入浏览器。`);
+});
 $('workspaceFile').onchange = handle(async () => { const file = $('workspaceFile').files[0]; if (!file) return; if (file.size > 20*1024*1024) throw new Error('工作区文件超过 20 MiB。'); const data = JSON.parse(await file.text()); if (data.version !== 1 || !data.fields) throw new Error('不是有效的 JudgeBox 工作区文件。'); applyDraft(data); queueSave(); $('workspaceFile').value = ''; notice(); });
 $('counterexampleButton').onclick = () => { if (selectedDetail) download(`judgebox-case-${selectedDetail.index+1}.json`,JSON.stringify(selectedDetail,null,2),'application/json'); };
 $('retestButton').onclick = handle(() => { if (selectedDetail) addManual(selectedDetail.input,selectedDetail.expected); });
 document.querySelectorAll('[data-download]').forEach(b => b.onclick = () => { if (!selectedDetail) return; const key = b.dataset.download; const ext = {input:'in',expected:'ans',stdout:'out'}[key]; download(`case-${selectedDetail.index+1}.${ext}`,selectedDetail[key] ?? ''); });
 $('settingsButton').onclick = () => $('settingsDialog').showModal(); $('helpButton').onclick = () => $('helpDialog').showModal();
 document.querySelectorAll('.close-dialog').forEach(b => b.onclick = () => b.closest('dialog').close());
-$('saveSettings').onclick = handle(async () => { number('outputKb',1,4096); tools = readTools(); await saveDraft(); $('settingsDialog').close(); });
+$('saveSettings').onclick = handle(async () => { number('outputKb',1,16*1024*1024); tools = readTools(); await saveDraft(); $('settingsDialog').close(); });
 $('quitButton').onclick = handle(async () => { if (!confirm(running ? '停止当前任务并退出 JudgeBox？' : '退出 JudgeBox 本地引擎？')) return; await saveDraft(); await api('/api/shutdown',{}); clearTimeout(pollTimer); setRunning(false); $('runButton').disabled = true; $('connectionState').textContent = '引擎已退出'; notice('JudgeBox 已退出，草稿保存在本机。可以关闭这个页面。'); });
+function setupSplitter() {
+  const splitter = $('splitter'), workbench = document.querySelector('.workbench');
+  let percent = 40;
+  try { percent = Math.min(72,Math.max(28,Number(localStorage.getItem('judgebox-pane-width')) || 40)); } catch {}
+  const apply = value => { percent = Math.min(72,Math.max(28,value)); workbench.style.setProperty('--left-pane',`${percent}%`); splitter.setAttribute('aria-valuenow',String(Math.round(percent))); };
+  apply(percent);
+  splitter.addEventListener('pointerdown', event => {
+    if (event.button !== 0) return;
+    splitter.setPointerCapture(event.pointerId); splitter.classList.add('dragging'); event.preventDefault();
+  });
+  splitter.addEventListener('pointermove', event => {
+    if (!splitter.hasPointerCapture(event.pointerId)) return;
+    const bounds = workbench.getBoundingClientRect(); apply((event.clientX - bounds.left) / bounds.width * 100);
+  });
+  const finish = event => {
+    if (!splitter.hasPointerCapture(event.pointerId)) return;
+    splitter.releasePointerCapture(event.pointerId); splitter.classList.remove('dragging');
+    try { localStorage.setItem('judgebox-pane-width',String(percent)); } catch {}
+  };
+  splitter.addEventListener('pointerup',finish); splitter.addEventListener('pointercancel',finish);
+  splitter.addEventListener('keydown', event => {
+    if (!['ArrowLeft','ArrowRight','Home'].includes(event.key)) return;
+    event.preventDefault(); apply(event.key === 'Home' ? 40 : percent + (event.key === 'ArrowLeft' ? -2 : 2));
+    try { localStorage.setItem('judgebox-pane-width',String(percent)); } catch {}
+  });
+  splitter.addEventListener('dblclick',() => { apply(40); try { localStorage.setItem('judgebox-pane-width','40'); } catch {} });
+}
+function setupKeybinding() {
+  let saved = 'vscode'; try { saved = localStorage.getItem('judgebox-keybinding') || 'vscode'; } catch {}
+  $('keybinding').value = saved === 'vim' ? 'vim' : 'vscode'; $('vimMode').hidden = saved !== 'vim';
+  $('keybinding').onchange = () => {
+    const value = $('keybinding').value; window.JudgeEditor?.setKeybinding(value); $('vimMode').hidden = value !== 'vim';
+    try { localStorage.setItem('judgebox-keybinding',value); } catch {}
+  };
+  document.addEventListener('judgebox-save',() => saveDraft().catch(e => notice(e.message)));
+}
 async function init() {
+  setupSplitter(); setupKeybinding();
   $('source').value = ''; $('reference').value = ''; $('generatorSource').value = pythonExample; preset(); renderCases(); mountEditor(); syncSource();
   try {
     const config = await api('/api/config'); tools = config.tools; renderTools(); $('dataDirectory').textContent = '数据目录：'+config.dataDirectory;

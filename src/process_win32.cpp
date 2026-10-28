@@ -55,8 +55,18 @@ runResult execute(const std::wstring& exe, std::wstring command, const std::stri
         result.errorMessage = "Invalid time/memory/output limit"; return result;
     }
     if (opt.cancel && opt.cancel->load()) { result.cancelled = true; return result; }
-    Handle inRead, inWrite, outRead, outWrite, errRead, errWrite;
-    if (!pipe(inRead,inWrite,true,result.errorMessage) || !pipe(outRead,outWrite,false,result.errorMessage) || !pipe(errRead,errWrite,false,result.errorMessage)) return result;
+    const bool fileInput=!opt.inputPath.empty(),fileOutput=!opt.stdoutPath.empty();
+    Handle inRead,inWrite,outRead,outWrite,errRead,errWrite,inputFile,outputFile;
+    SECURITY_ATTRIBUTES inherit{sizeof(inherit),nullptr,TRUE};
+    if(fileInput) {
+        inputFile.reset(CreateFileW(opt.inputPath.c_str(),GENERIC_READ,FILE_SHARE_READ,&inherit,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL|FILE_FLAG_SEQUENTIAL_SCAN,nullptr));
+        if(!inputFile) { result.errorMessage=winError("Open input file"); return result; }
+    } else if(!pipe(inRead,inWrite,true,result.errorMessage)) return result;
+    if(fileOutput) {
+        outputFile.reset(CreateFileW(opt.stdoutPath.c_str(),GENERIC_WRITE,FILE_SHARE_READ,&inherit,CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL|FILE_FLAG_SEQUENTIAL_SCAN,nullptr));
+        if(!outputFile) { result.errorMessage=winError("Open output file"); return result; }
+    } else if(!pipe(outRead,outWrite,false,result.errorMessage)) return result;
+    if(!pipe(errRead,errWrite,false,result.errorMessage)) return result;
     Handle job(CreateJobObjectW(nullptr,nullptr));
     Handle port(CreateIoCompletionPort(INVALID_HANDLE_VALUE,nullptr,0,1));
     if (!job || !port) { result.errorMessage=winError("Create job/completion port"); return result; }
@@ -73,12 +83,12 @@ runResult execute(const std::wstring& exe, std::wstring command, const std::stri
     std::vector<unsigned char> storage(size);
     auto attributes=reinterpret_cast<LPPROC_THREAD_ATTRIBUTE_LIST>(storage.data());
     if (!InitializeProcThreadAttributeList(attributes,1,0,&size)) { result.errorMessage=winError("Initialize handle list"); return result; }
-    HANDLE inherited[]{inRead.h,outWrite.h,errWrite.h};
+    HANDLE inherited[]{fileInput?inputFile.h:inRead.h,fileOutput?outputFile.h:outWrite.h,errWrite.h};
     if (!UpdateProcThreadAttribute(attributes,0,PROC_THREAD_ATTRIBUTE_HANDLE_LIST,inherited,sizeof(inherited),nullptr,nullptr)) {
         result.errorMessage=winError("Restrict handle inheritance"); DeleteProcThreadAttributeList(attributes); return result;
     }
     STARTUPINFOEXW si{}; si.StartupInfo.cb=sizeof(si); si.StartupInfo.dwFlags=STARTF_USESTDHANDLES;
-    si.StartupInfo.hStdInput=inRead.h; si.StartupInfo.hStdOutput=outWrite.h; si.StartupInfo.hStdError=errWrite.h; si.lpAttributeList=attributes;
+    si.StartupInfo.hStdInput=inherited[0]; si.StartupInfo.hStdOutput=inherited[1]; si.StartupInfo.hStdError=errWrite.h; si.lpAttributeList=attributes;
     PROCESS_INFORMATION pi{};
     auto env=environmentBlock(opt);
     BOOL ok=CreateProcessW(exe.c_str(),command.data(),nullptr,nullptr,TRUE,
@@ -91,7 +101,7 @@ runResult execute(const std::wstring& exe, std::wstring command, const std::stri
         result.errorMessage=winError("Assign job"); TerminateProcess(process.h,1); WaitForSingleObject(process.h,INFINITE); return result;
     }
     result.started=true;
-    inRead.reset(); outWrite.reset(); errWrite.reset();
+    inRead.reset(); outWrite.reset(); errWrite.reset(); inputFile.reset();
     std::atomic_size_t captured{0};
     auto readStream=[&](HANDLE h, std::string& target) {
         char buffer[8192]; DWORD count;
@@ -100,12 +110,20 @@ runResult execute(const std::wstring& exe, std::wstring command, const std::stri
             if (before<opt.outputBytes) target.append(buffer,std::min<std::size_t>(count,opt.outputBytes-before));
         }
     };
+    auto capturedBytes=[&] {
+        if(!fileOutput) return captured.load();
+        LARGE_INTEGER bytes{};
+        if(!GetFileSizeEx(outputFile.h,&bytes) || bytes.QuadPart<0) return captured.load();
+        auto written=static_cast<std::uint64_t>(bytes.QuadPart);
+        if(written>opt.outputBytes) return opt.outputBytes+1;
+        return captured.load()+static_cast<std::size_t>(written);
+    };
     std::thread readerOut,readerErr,writer;
     auto start=std::chrono::steady_clock::now();
     try {
-        readerOut=std::thread(readStream,outRead.h,std::ref(result.stdOut));
+        if(!fileOutput) readerOut=std::thread(readStream,outRead.h,std::ref(result.stdOut));
         readerErr=std::thread(readStream,errRead.h,std::ref(result.errOut));
-        writer=std::thread([&] {
+        if(!fileInput) writer=std::thread([&] {
             std::size_t pos=0; DWORD count;
             while (pos<input.size() && WriteFile(inWrite.h,input.data()+pos,static_cast<DWORD>(std::min<std::size_t>(8192,input.size()-pos)),&count,nullptr) && count) pos+=count;
             inWrite.reset();
@@ -121,7 +139,7 @@ runResult execute(const std::wstring& exe, std::wstring command, const std::stri
         while (result.errorMessage.empty()) {
             messages(0);
             if (opt.cancel && opt.cancel->load()) result.cancelled=true;
-            if (captured.load()>opt.outputBytes) result.OLE=true;
+            if (capturedBytes()>opt.outputBytes) result.OLE=true;
             if (result.MLE || result.OLE || result.cancelled) break;
             DWORD state=WaitForSingleObject(process.h,5);
             if (state==WAIT_OBJECT_0) { messages(20); break; }
@@ -142,7 +160,7 @@ runResult execute(const std::wstring& exe, std::wstring command, const std::stri
     if (writer.joinable()) writer.join();
     if (readerOut.joinable()) readerOut.join();
     if (readerErr.joinable()) readerErr.join();
-    if (captured.load()>opt.outputBytes) result.OLE=true;
+    if (capturedBytes()>opt.outputBytes) result.OLE=true;
     JOBOBJECT_BASIC_ACCOUNTING_INFORMATION accounting{};
     if (QueryInformationJobObject(job.h,JobObjectBasicAccountingInformation,&accounting,sizeof(accounting),nullptr)) {
         auto ticks=accounting.TotalUserTime.QuadPart;
