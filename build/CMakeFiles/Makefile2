@@ -191,8 +191,8 @@ CMakeFiles/judge_core.dir/clean:
 # Target rules for target CMakeFiles/JudgeBox.dir
 
 # All Build rule for target.
-CMakeFiles/JudgeBox.dir/all: CMakeFiles/judge_process.dir/all
 CMakeFiles/JudgeBox.dir/all: CMakeFiles/judge_core.dir/all
+CMakeFiles/JudgeBox.dir/all: CMakeFiles/judge_process.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\JudgeBox.dir\build.make CMakeFiles/JudgeBox.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\JudgeBox.dir\build.make CMakeFiles/JudgeBox.dir/build
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=E:\JudgeBox\build\CMakeFiles --progress-num=1,2,3 "Built target JudgeBox"
@@ -1184,8 +1184,8 @@ CMakeFiles/process_tests.dir/clean:
 # Target rules for target CMakeFiles/core_tests.dir
 
 # All Build rule for target.
-CMakeFiles/core_tests.dir/all: CMakeFiles/judge_process.dir/all
 CMakeFiles/core_tests.dir/all: CMakeFiles/judge_core.dir/all
+CMakeFiles/core_tests.dir/all: CMakeFiles/judge_process.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\core_tests.dir\build.make CMakeFiles/core_tests.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\core_tests.dir\build.make CMakeFiles/core_tests.dir/build
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=E:\JudgeBox\build\CMakeFiles --progress-num=4,5 "Built target core_tests"
@@ -1217,8 +1217,8 @@ CMakeFiles/core_tests.dir/clean:
 # Target rules for target CMakeFiles/toolchain_paths_tests.dir
 
 # All Build rule for target.
-CMakeFiles/toolchain_paths_tests.dir/all: CMakeFiles/judge_process.dir/all
 CMakeFiles/toolchain_paths_tests.dir/all: CMakeFiles/judge_core.dir/all
+CMakeFiles/toolchain_paths_tests.dir/all: CMakeFiles/judge_process.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\toolchain_paths_tests.dir\build.make CMakeFiles/toolchain_paths_tests.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\toolchain_paths_tests.dir\build.make CMakeFiles/toolchain_paths_tests.dir/build
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=E:\JudgeBox\build\CMakeFiles --progress-num=19,20 "Built target toolchain_paths_tests"

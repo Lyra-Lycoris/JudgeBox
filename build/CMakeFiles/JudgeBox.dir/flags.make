@@ -6,5 +6,5 @@ CXX_DEFINES = -DNOMINMAX -DUNICODE -DWIN32_LEAN_AND_MEAN -D_UNICODE -D_WIN32_WIN
 
 CXX_INCLUDES = @CMakeFiles/JudgeBox.dir/includes_CXX.rsp
 
-CXX_FLAGS = -g -std=c++20 -Wall -Wextra -Wpedantic -finput-charset=UTF-8 -fexec-charset=UTF-8
+CXX_FLAGS = -O3 -DNDEBUG -std=c++20 -Wall -Wextra -Wpedantic -finput-charset=UTF-8 -fexec-charset=UTF-8
 

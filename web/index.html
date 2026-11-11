@@ -31,7 +31,7 @@
   <div class="topbar">
     <div class="brand" aria-label="JudgeBox">
       <span class="brand-mark"><svg><use href="#i-code"/></svg></span>
-      <div><h1>JudgeBox</h1><span>本地判题工作台</span></div>
+      <h1 class="brand-title" data-text="JudgeBox">Judge<span>Box</span></h1>
     </div>
     <nav class="mode-bar" aria-label="测试模式">
       <button class="mode-btn active" data-mode="manual" aria-pressed="true"><span class="mode-number">01</span>手动测试</button>
@@ -45,7 +45,7 @@
       <option value="stress">随机对拍</option>
     </select>
     <div class="top-actions">
-      <span id="saveState" class="saved" role="status"><svg><use href="#i-check"/></svg>已保存</span>
+      <span id="saveState" class="saved" role="status" data-state="saved">已保存</span>
       <span class="action-divider"></span>
       <button id="importButton" class="icon-button" title="导入工作区"><svg><use href="#i-upload"/></svg><span>导入</span></button>
       <button id="datasetButton" class="icon-button" title="快速导入 .in / .ans 数据目录，不加载文件内容"><svg><use href="#i-folder"/></svg><span>数据目录</span></button>
@@ -62,23 +62,18 @@
     <div class="side">
       <section class="panel data-panel" aria-labelledby="dataTitle">
         <div class="panel-heading">
-          <div class="section-heading"><span class="step-chip">1</span><div><h2 id="dataTitle">测试数据</h2><p id="modeDescription">填写输入与答案，快速验证程序</p></div></div>
-          <span id="connectionState" class="connection-state" role="status"><span class="status-dot"></span>连接中</span>
+          <div class="section-heading"><span class="step-chip">1</span><h2 id="dataTitle">测试数据</h2></div>
+          <span id="connectionState" class="connection-state" role="status" data-state="pending" title="连接中">连接中</span>
         </div>
         <div id="manualPanel" class="panel-content">
-          <div id="caseEmpty" class="case-empty">
-            <span class="empty-icon"><svg><use href="#i-terminal"/></svg></span>
-            <h3>从一组测试用例开始</h3>
-            <p>填入程序输入和预期输出，运行后即可在这里查看每个测试点的结果。</p>
-          </div>
+          <div id="caseEmpty" class="case-empty"></div>
           <div id="caseList" class="case-list" aria-label="测试用例"></div>
           <div class="add-case-row"><button id="addCase" type="button"><svg><use href="#i-plus"/></svg>新建测试用例</button></div>
-          <div class="panel-foot"><span>没有现成数据？</span><button id="goGenerate" class="text-button">试试输入生成器<svg><use href="#i-chevron"/></svg></button></div>
         </div>
         <div id="generationPanel" class="panel-content" hidden>
           <div id="referencePanel" class="reference-block" hidden>
             <div class="reference-title"><label for="reference">参考程序</label><label for="referenceLanguage" class="language-label">语言</label><select id="referenceLanguage"><option value="cpp">C++ 20</option><option value="python">Python 3</option><option value="java">Java</option><option value="cangjie">仓颉</option></select></div>
-            <textarea id="reference" class="reference-code" spellcheck="false" placeholder="粘贴一份正确的参考程序" wrap="off"></textarea>
+            <textarea id="reference" class="reference-code" spellcheck="false" placeholder="参考程序" wrap="off"></textarea>
             <div class="reference-limit"><label for="referenceTimeMs">参考程序时间上限</label><input id="referenceTimeMs" type="number" value="5000" min="10" max="60000"><span>ms</span></div>
           </div>
           <div class="generator-controls">
@@ -87,12 +82,12 @@
               <label class="template-label" for="template">数据模板</label>
               <select id="template"><option value="array">数组 · n + 一行整数</option><option value="pair">整数对 · a b</option><option value="matrix">矩阵 · n m + n 行数据</option><option value="string">字符串 · n + 字符串</option><option value="tree">树 · n + n−1 条边</option><option value="graph">简单图 · n m + m 条边</option><option value="multi">多组数组 · T + 每组 n 与数组</option><option value="custom">自定义 JSON 规则</option></select>
               <div id="visualParams"><div class="param-grid"><label><span id="sizeMinLabel">n 最小值</span><input id="sizeMin" type="number" value="1" min="1" max="1000"></label><label><span id="sizeMaxLabel">n 最大值</span><input id="sizeMax" type="number" value="8" min="1" max="1000"></label><label>数值最小值<input id="valueMin" type="number" value="-10" min="-1000000000" max="1000000000"></label><label>数值最大值<input id="valueMax" type="number" value="10" min="-1000000000" max="1000000000"></label></div><label id="alphabetField" hidden>字符集<input id="alphabet" value="abcxyz" maxlength="256"></label><label id="weightField" class="checkbox" hidden><input id="weighted" type="checkbox">带权边</label></div>
-              <details id="ruleDetails"><summary>生成规则 (JSON)</summary><label class="sr-only" for="rule">JSON 输入生成规则</label><textarea id="rule" class="rule-code" spellcheck="false" aria-describedby="ruleHelp"></textarea><p id="ruleHelp" class="field-help">支持 int / line / array / matrix / string / tree / graph / repeat / literal。</p></details>
+              <details id="ruleDetails"><summary>生成规则 (JSON)</summary><label class="sr-only" for="rule">JSON 输入生成规则</label><textarea id="rule" class="rule-code" spellcheck="false"></textarea></details>
             </div>
             <div id="pythonControls" hidden><label for="generatorSource">Python 生成器源码</label><textarea id="generatorSource" class="rule-code" spellcheck="false" wrap="off"></textarea><p class="field-help">sys.argv[1]：种子；sys.argv[2]：序号（从 0 开始）。stdout 为输入。</p></div>
             <div class="generator-options"><label>测试组数<input id="count" type="number" value="20" min="1" max="1000"></label><label>随机种子<input id="seed" type="number" value="42" min="0" max="9007199254740991"></label><label>取值策略<select id="strategy"><option value="random">随机取值</option><option value="boundary">边界与随机交替</option><option value="min">全部取最小值</option><option value="max">全部取最大值</option></select></label></div>
             <div class="preview-actions"><button id="previewButton" class="small-button"><svg><use href="#i-spark"/></svg>生成预览</button><span id="previewIndex" class="muted">种子 42 · 第 1 组</span><button id="usePreviewButton" class="text-button" disabled>加入手动测试</button></div>
-            <pre id="preview" class="preview" aria-label="生成数据预览">点击「生成预览」，在这里检查输入格式</pre>
+            <pre id="preview" class="preview" aria-label="生成数据预览">未生成</pre>
           </div>
         </div>
       </section>
@@ -100,7 +95,7 @@
         <div id="judgeSummary">
           <div id="emptyResults" class="result-summary">
             <span class="result-icon"><svg><use href="#i-check"/></svg></span>
-            <div><h2 id="resultsTitle">等待运行</h2><p>评测结果与运行详情会显示在这里</p></div>
+            <h2 id="resultsTitle">等待运行</h2>
             <span class="verdict">—</span>
           </div>
           <div id="resultContent" class="judge-body" hidden>
@@ -108,7 +103,7 @@
             <div class="judge-scroll">
               <p id="resultMeta" class="result-meta">未运行</p>
               <details id="compileDetails" hidden><summary>编译日志</summary><pre id="compileLog" class="log"></pre></details>
-              <div class="result-table-wrap"><div class="result-cards-heading"><h3>测试点信息</h3><span>点击测试点查看详情</span></div><div id="resultRows" class="result-cards" aria-label="测试点结果"></div></div>
+              <div class="result-table-wrap"><div class="result-cards-heading"><h3>测试点</h3></div><div id="resultRows" class="result-cards" aria-label="测试点结果"></div></div>
               <div id="caseDetail" class="case-detail" hidden><div class="detail-heading"><h3 id="detailTitle">测试点详情</h3><div><button id="counterexampleButton" class="text-button">导出测试点</button><button id="retestButton" class="text-button">加入手动测试</button></div></div><p id="detailMessage" class="field-help"></p><div class="output-grid"><div><div class="output-title">输入 <button data-download="input" class="text-button">下载 .in</button></div><pre id="detailInput"></pre></div><div><div class="output-title">预期输出 <button data-download="expected" class="text-button">下载 .ans</button></div><pre id="detailExpected"></pre></div><div><div class="output-title">实际输出 <button data-download="stdout" class="text-button">下载 .out</button></div><pre id="detailOutput"></pre></div></div><details id="stderrDetails" hidden><summary>标准错误 / 参考程序日志</summary><pre id="detailStderr" class="log"></pre></details></div>
             </div>
           </div>
@@ -122,18 +117,17 @@
     <div id="splitter" class="splitter" role="separator" aria-label="调整测试区与代码区宽度" aria-orientation="vertical" aria-valuemin="28" aria-valuemax="72" aria-valuenow="40" tabindex="0"><span aria-hidden="true"></span></div>
     <section class="panel source-panel" aria-labelledby="sourceTitle">
       <div class="source-heading">
-        <div class="section-heading"><span class="step-chip">2</span><div><h2 id="sourceTitle">编写待测程序</h2><p>粘贴代码，或从本机打开源文件</p></div></div>
-        <span class="privacy-badge"><span class="status-dot"></span>代码仅在本机运行</span>
+        <div class="section-heading"><span class="step-chip">2</span><h2 id="sourceTitle">待测程序</h2></div>
       </div>
       <div class="editor-toolbar">
         <div class="file-tab"><span class="file-dot"></span><span id="sourceFileName">Main.cpp</span><span id="diagnosticState" role="status"></span></div>
         <div class="panel-tools"><button id="sampleButton" class="text-button"><svg><use href="#i-spark"/></svg>填入示例</button><button id="sourceFileButton" class="text-button"><svg><use href="#i-folder"/></svg>打开文件</button></div>
         <div class="editor-preferences"><label for="keybinding" class="language-label">键位</label><select id="keybinding"><option value="vscode">VS Code</option><option value="vim">Vim</option></select><span id="vimMode" class="vim-mode" hidden>NORMAL</span><label for="language" class="language-label">语言</label><select id="language"><option value="cpp">C++ 20</option><option value="python">Python 3</option><option value="java">Java (Main)</option><option value="cangjie">Cangjie</option></select></div>
       </div>
-      <div class="code-editor" id="codeEditor"><label class="sr-only" for="source">待测程序源码</label><textarea id="source" class="code" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="在这里粘贴你的代码，或点击右上角「填入示例」快速开始…" wrap="off"></textarea></div>
+      <div class="code-editor" id="codeEditor"><label class="sr-only" for="source">待测程序源码</label><textarea id="source" class="code" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="粘贴或输入代码" wrap="off"></textarea></div>
       <div class="editor-status">
         <div class="limits"><label>时间限制<span class="input-unit"><input id="timeMs" type="number" value="1000" min="10" max="60000" step="10"><span>ms</span></span></label><label>内存限制<span class="input-unit"><input id="memoryMb" type="number" value="256" min="16" max="4096"><span>MiB</span></span></label><label>答案比较<select id="checker"><option value="tokens">忽略空白 · Token</option><option value="exact">严格按字节比较</option><option value="float">浮点误差比较</option></select></label></div>
-        <div id="floatField" class="float-field" hidden><label for="tolerance">绝对 / 相对容差</label><input id="tolerance" type="number" value="0.000001" min="0" max="1" step="0.000001"><span class="muted">|实际 − 预期| ≤ ε × max(1, |预期|)</span></div>
+        <div id="floatField" class="float-field" hidden><label for="tolerance">绝对 / 相对容差</label><input id="tolerance" type="number" value="0.000001" min="0" max="1" step="0.000001"></div>
       </div>
     </section>
   </div>

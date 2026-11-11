@@ -18,6 +18,8 @@ const modeInfo = {
   generated: {name:'生成测试', data:'输入生成器', description:'选择模板，批量构造边界与随机数据', run:'运行判题'},
   stress: {name:'随机对拍', data:'参考程序与输入', description:'用正确程序自动发现答案差异', run:'开始对拍'}
 };
+function engineState(text, state) { const el = $('connectionState'); el.textContent = text; el.title = text; el.dataset.state = state; }
+function saveState(text, state) { const el = $('saveState'); el.textContent = text; el.dataset.state = state; }
 function notice(message = '') { $('notice').textContent = message; $('notice').hidden = !message; }
 async function api(path, body) {
   const options = {headers:{'X-JudgeBox-Token':token}};
@@ -198,7 +200,6 @@ function switchMode(next, save = true) {
   const info = modeInfo[mode], label = mode === 'manual' ? datasetLabel() : '';
   $('dataTitle').textContent = label ? `${info.data} · ${label}` : info.data;
   document.title = label ? `${label} · JudgeBox` : 'JudgeBox · 本地判题工作台';
-  $('modeDescription').textContent = info.description;
   $('runLabel').textContent = running ? '运行中' : info.run;
   $('manualPanel').hidden = mode !== 'manual'; $('generationPanel').hidden = mode === 'manual'; $('referencePanel').hidden = mode !== 'stress';
   $('stopOnFailure').disabled = mode === 'stress';
@@ -261,10 +262,10 @@ function draft() {
 async function saveDraft() {
   if (!loaded) return;
   clearTimeout(saveTimer);
-  const snapshot = draft(); $('saveState').textContent = '保存中…';
+  const snapshot = draft(); saveState('保存中…','saving');
   savePromise = savePromise.catch(() => {}).then(async () => {
-    try { await api('/api/draft',snapshot); $('saveState').textContent = '已保存'; }
-    catch(e) { $('saveState').textContent = '保存失败'; throw e; }
+    try { await api('/api/draft',snapshot); saveState('已保存','saved'); }
+    catch(e) { saveState('保存失败','failed'); throw e; }
   });
   return savePromise;
 }
@@ -285,7 +286,7 @@ function addManual(input, expected = null) {
   if (cases.length >= 200) throw new Error('手动测试最多 200 组，请先删除一些测试点。');
   dataset = null; rememberCases(); cases.push({input,expected}); renderCases(); switchMode('manual'); focusCase(cases.length - 1, '.case-expected');
 }
-function setRunning(value) { running = value; $('runButton').disabled = value; $('cancelButton').hidden = !value; document.querySelectorAll('.run-one').forEach(button => { button.disabled = value; }); $('runLabel').textContent = value ? '运行中' : modeInfo[mode].run; $('connectionState').textContent = value ? '引擎运行中' : '本地引擎就绪'; $('resultsTitle').closest('section').setAttribute('aria-busy',String(value)); }
+function setRunning(value) { running = value; $('runButton').disabled = value; $('cancelButton').hidden = !value; document.querySelectorAll('.run-one').forEach(button => { button.disabled = value; }); $('runLabel').textContent = value ? '运行中' : modeInfo[mode].run; engineState(value ? '引擎运行中' : '本地引擎就绪', value ? 'running' : 'ready'); $('resultsTitle').closest('section').setAttribute('aria-busy',String(value)); }
 async function submitRun(onlyIndex) {
   if (running) return;
   notice(); const request = payload();
@@ -455,7 +456,6 @@ function editCode(event) {
 }
 document.querySelectorAll('.mode-btn').forEach(b => { b.setAttribute('aria-label',modeInfo[b.dataset.mode].name); b.onclick = () => switchMode(b.dataset.mode); });
 $('mobileMode').onchange = () => switchMode($('mobileMode').value);
-$('goGenerate').onclick = () => switchMode('generated');
 $('addCase').onclick = () => {
   if (!dataset && cases.length >= 200) return;
   dataset = null; rememberCases(); cases.push({input:'',expected:''}); renderCases(); focusCase(cases.length - 1, '.case-input'); queueSave();
@@ -503,7 +503,7 @@ document.querySelectorAll('[data-download]').forEach(b => b.onclick = () => { if
 $('settingsButton').onclick = () => $('settingsDialog').showModal(); $('helpButton').onclick = () => $('helpDialog').showModal();
 document.querySelectorAll('.close-dialog').forEach(b => b.onclick = () => b.closest('dialog').close());
 $('saveSettings').onclick = handle(async () => { number('outputKb',1,16*1024*1024); tools = readTools(); await saveDraft(); $('settingsDialog').close(); });
-$('quitButton').onclick = handle(async () => { if (!confirm(running ? '停止当前任务并退出 JudgeBox？' : '退出 JudgeBox 本地引擎？')) return; await saveDraft(); await api('/api/shutdown',{}); clearTimeout(pollTimer); setRunning(false); $('runButton').disabled = true; $('connectionState').textContent = '引擎已退出'; notice('JudgeBox 已退出，草稿保存在本机。可以关闭这个页面。'); });
+$('quitButton').onclick = handle(async () => { if (!confirm(running ? '停止当前任务并退出 JudgeBox？' : '退出 JudgeBox 本地引擎？')) return; await saveDraft(); await api('/api/shutdown',{}); clearTimeout(pollTimer); setRunning(false); $('runButton').disabled = true; engineState('引擎已退出','failed'); notice('JudgeBox 已退出，草稿保存在本机。可以关闭这个页面。'); });
 function setupSplitter() {
   const splitter = $('splitter'), workbench = document.querySelector('.workbench');
   let percent = 40;
@@ -545,8 +545,8 @@ async function init() {
   $('source').value = ''; $('reference').value = ''; $('generatorSource').value = pythonExample; preset(); renderCases(); mountEditor(); syncSource();
   try {
     const config = await api('/api/config'); tools = config.tools; renderTools(); $('dataDirectory').textContent = '数据目录：'+config.dataDirectory;
-    const saved = await api('/api/draft'); applyDraft(saved); loaded = true; $('connectionState').textContent = '本地引擎就绪';
+    const saved = await api('/api/draft'); applyDraft(saved); loaded = true; engineState('本地引擎就绪','ready');
     const status = await api('/api/status'); if (status.verdict !== 'READY') { renderResult(status); setRunning(!status.done); if (!status.done) await poll(); else if (status.cases.length) await showDetail(status.cases[0].index); }
-  } catch(e) { $('connectionState').textContent = '连接失败'; notice(e.message); }
+  } catch(e) { engineState('连接失败','failed'); notice(e.message); }
 }
 init();

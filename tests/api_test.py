@@ -140,8 +140,13 @@ class API(unittest.TestCase):
         self.assertEqual(result['verdict'],'OLE',str(result))
     def test_12_diagnostics_ignore_local_compiler(self):
         local=self.call('/api/diagnostics',{'language':'cpp','source':'int main(){ return x; }\n','tools':{'cpp':r'C:\msys64\ucrt64\bin\g++.exe'}})
-        bundled=pathlib.Path(EXE).parent/'runtimes'/'gcc'/'bin'/'g++.exe'
-        if bundled.is_file():
+        application=pathlib.Path(EXE).parent
+        bundled=False
+        for runtime in (application/'runtimes', application/'.runtime'/'stage'/'JudgeBox'/'runtimes', application.parent/'.runtime'/'stage'/'JudgeBox'/'runtimes'):
+            if runtime.is_dir():
+                bundled=(runtime/'gcc'/'bin'/'g++.exe').is_file()
+                break
+        if bundled:
             self.assertTrue(any(item.get('severity')=='error' for item in local['diagnostics']),local)
         else:
             self.assertEqual(local['diagnostics'],[])
