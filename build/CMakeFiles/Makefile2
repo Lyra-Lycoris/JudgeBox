@@ -130,7 +130,7 @@ clean: CMakeFiles/toolchain_paths_tests.dir/clean
 CMakeFiles/judge_process.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\judge_process.dir\build.make CMakeFiles/judge_process.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\judge_process.dir\build.make CMakeFiles/judge_process.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=E:\JudgeBox\build\CMakeFiles --progress-num=14,15 "Built target judge_process"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=E:\JudgeBox\build\CMakeFiles --progress-num=15,16 "Built target judge_process"
 .PHONY : CMakeFiles/judge_process.dir/all
 
 # Build rule for subdir invocation for target.
@@ -147,7 +147,7 @@ judge_process: CMakeFiles/judge_process.dir/rule
 # codegen rule for target.
 CMakeFiles/judge_process.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\judge_process.dir\build.make CMakeFiles/judge_process.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=E:\JudgeBox\build\CMakeFiles --progress-num=14,15 "Finished codegen for target judge_process"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=E:\JudgeBox\build\CMakeFiles --progress-num=15,16 "Finished codegen for target judge_process"
 .PHONY : CMakeFiles/judge_process.dir/codegen
 
 # clean rule for target.
@@ -162,12 +162,12 @@ CMakeFiles/judge_process.dir/clean:
 CMakeFiles/judge_core.dir/all: CMakeFiles/judge_process.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\judge_core.dir\build.make CMakeFiles/judge_core.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\judge_core.dir\build.make CMakeFiles/judge_core.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=E:\JudgeBox\build\CMakeFiles --progress-num=8,9,10,11,12,13 "Built target judge_core"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=E:\JudgeBox\build\CMakeFiles --progress-num=8,9,10,11,12,13,14 "Built target judge_core"
 .PHONY : CMakeFiles/judge_core.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/judge_core.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start E:\JudgeBox\build\CMakeFiles 8
+	$(CMAKE_COMMAND) -E cmake_progress_start E:\JudgeBox\build\CMakeFiles 9
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 CMakeFiles/judge_core.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start E:\JudgeBox\build\CMakeFiles 0
 .PHONY : CMakeFiles/judge_core.dir/rule
@@ -179,7 +179,7 @@ judge_core: CMakeFiles/judge_core.dir/rule
 # codegen rule for target.
 CMakeFiles/judge_core.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\judge_core.dir\build.make CMakeFiles/judge_core.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=E:\JudgeBox\build\CMakeFiles --progress-num=8,9,10,11,12,13 "Finished codegen for target judge_core"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=E:\JudgeBox\build\CMakeFiles --progress-num=8,9,10,11,12,13,14 "Finished codegen for target judge_core"
 .PHONY : CMakeFiles/judge_core.dir/codegen
 
 # clean rule for target.
@@ -200,7 +200,7 @@ CMakeFiles/JudgeBox.dir/all: CMakeFiles/judge_core.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/JudgeBox.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start E:\JudgeBox\build\CMakeFiles 11
+	$(CMAKE_COMMAND) -E cmake_progress_start E:\JudgeBox\build\CMakeFiles 12
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 CMakeFiles/JudgeBox.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start E:\JudgeBox\build\CMakeFiles 0
 .PHONY : CMakeFiles/JudgeBox.dir/rule
@@ -1155,7 +1155,7 @@ CMakeFiles/fixture.dir/clean:
 CMakeFiles/process_tests.dir/all: CMakeFiles/judge_process.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\process_tests.dir\build.make CMakeFiles/process_tests.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\process_tests.dir\build.make CMakeFiles/process_tests.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=E:\JudgeBox\build\CMakeFiles --progress-num=16,17 "Built target process_tests"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=E:\JudgeBox\build\CMakeFiles --progress-num=17,18 "Built target process_tests"
 .PHONY : CMakeFiles/process_tests.dir/all
 
 # Build rule for subdir invocation for target.
@@ -1172,7 +1172,7 @@ process_tests: CMakeFiles/process_tests.dir/rule
 # codegen rule for target.
 CMakeFiles/process_tests.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\process_tests.dir\build.make CMakeFiles/process_tests.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=E:\JudgeBox\build\CMakeFiles --progress-num=16,17 "Finished codegen for target process_tests"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=E:\JudgeBox\build\CMakeFiles --progress-num=17,18 "Finished codegen for target process_tests"
 .PHONY : CMakeFiles/process_tests.dir/codegen
 
 # clean rule for target.
@@ -1193,7 +1193,7 @@ CMakeFiles/core_tests.dir/all: CMakeFiles/judge_core.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/core_tests.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start E:\JudgeBox\build\CMakeFiles 10
+	$(CMAKE_COMMAND) -E cmake_progress_start E:\JudgeBox\build\CMakeFiles 11
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 CMakeFiles/core_tests.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start E:\JudgeBox\build\CMakeFiles 0
 .PHONY : CMakeFiles/core_tests.dir/rule
@@ -1221,12 +1221,12 @@ CMakeFiles/toolchain_paths_tests.dir/all: CMakeFiles/judge_process.dir/all
 CMakeFiles/toolchain_paths_tests.dir/all: CMakeFiles/judge_core.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\toolchain_paths_tests.dir\build.make CMakeFiles/toolchain_paths_tests.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\toolchain_paths_tests.dir\build.make CMakeFiles/toolchain_paths_tests.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=E:\JudgeBox\build\CMakeFiles --progress-num=18,19 "Built target toolchain_paths_tests"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=E:\JudgeBox\build\CMakeFiles --progress-num=19,20 "Built target toolchain_paths_tests"
 .PHONY : CMakeFiles/toolchain_paths_tests.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/toolchain_paths_tests.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start E:\JudgeBox\build\CMakeFiles 10
+	$(CMAKE_COMMAND) -E cmake_progress_start E:\JudgeBox\build\CMakeFiles 11
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 CMakeFiles/toolchain_paths_tests.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start E:\JudgeBox\build\CMakeFiles 0
 .PHONY : CMakeFiles/toolchain_paths_tests.dir/rule
@@ -1238,7 +1238,7 @@ toolchain_paths_tests: CMakeFiles/toolchain_paths_tests.dir/rule
 # codegen rule for target.
 CMakeFiles/toolchain_paths_tests.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\toolchain_paths_tests.dir\build.make CMakeFiles/toolchain_paths_tests.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=E:\JudgeBox\build\CMakeFiles --progress-num=18,19 "Finished codegen for target toolchain_paths_tests"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=E:\JudgeBox\build\CMakeFiles --progress-num=19,20 "Finished codegen for target toolchain_paths_tests"
 .PHONY : CMakeFiles/toolchain_paths_tests.dir/codegen
 
 # clean rule for target.

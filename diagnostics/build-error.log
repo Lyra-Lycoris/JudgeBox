@@ -1,0 +1,334 @@
+PS D:\judgeBox\JudgeBox> powershell -ExecutionPolicy Bypass -File .\build.ps1
+-- The CXX compiler identification is GNU 16.2.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: C:/msys64/ucrt64/bin/c++.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found Python3: C:/msys64/ucrt64/bin/python3.14.exe (found version "3.14.7") found components: Interpreter
+-- Configuring done (1.7s)
+-- Generating done (0.1s)
+-- Build files have been written to: D:/judgeBox/JudgeBox/build
+[  5%] Building CXX object CMakeFiles/judge_process.dir/src/process_win32.cpp.obj
+[ 10%] Building CXX object CMakeFiles/fixture.dir/tests/fixture.cpp.obj
+[ 15%] Linking CXX executable fixture.exe
+[ 15%] Built target fixture
+[ 20%] Linking CXX static library libjudge_process.a
+[ 20%] Built target judge_process
+[ 25%] Building CXX object CMakeFiles/judge_core.dir/src/generator.cpp.obj
+[ 30%] Building CXX object CMakeFiles/process_tests.dir/tests/process_tests.cpp.obj
+[ 35%] Building CXX object CMakeFiles/judge_core.dir/src/checker.cpp.obj
+[ 40%] Building CXX object CMakeFiles/judge_core.dir/src/dataset.cpp.obj
+[ 45%] Building CXX object CMakeFiles/judge_core.dir/src/compiler.cpp.obj
+[ 50%] Linking CXX executable process_tests.exe
+[ 50%] Built target process_tests
+[ 55%] Building CXX object CMakeFiles/judge_core.dir/src/judge.cpp.obj
+[ 60%] Building CXX object CMakeFiles/judge_core.dir/src/path_compat.cpp.obj
+[ 65%] Linking CXX static library libjudge_core.a
+[ 65%] Built target judge_core
+[ 70%] Building CXX object CMakeFiles/JudgeBox.dir/src/main.cpp.obj
+[ 75%] Building CXX object CMakeFiles/core_tests.dir/tests/core_tests.cpp.obj
+[ 80%] Building CXX object CMakeFiles/JudgeBox.dir/src/server.cpp.obj
+[ 85%] Building CXX object CMakeFiles/toolchain_paths_tests.dir/tests/toolchain_paths_tests.cpp.obj
+[ 90%] Linking CXX executable toolchain_paths_tests.exe
+[ 90%] Built target toolchain_paths_tests
+[ 95%] Linking CXX executable core_tests.exe
+[ 95%] Built target core_tests
+[100%] Linking CXX executable JudgeBox.exe
+[100%] Built target JudgeBox
+Test project D:/judgeBox/JudgeBox/build
+    Start 1: process
+1/4 Test #1: process ..........................   Passed    3.67 sec
+    Start 2: core
+2/4 Test #2: core .............................   Passed    1.83 sec
+    Start 3: toolchain_paths
+3/4 Test #3: toolchain_paths ..................   Passed    3.35 sec
+    Start 4: api
+4/4 Test #4: api ..............................***Failed    7.85 sec
+test_01_auth (__main__.API.test_01_auth) ... ok
+test_02_verdicts (__main__.API.test_02_verdicts) ...
+  test_02_verdicts (__main__.API.test_02_verdicts) (expected='AC') ... FAIL
+  test_02_verdicts (__main__.API.test_02_verdicts) (expected='WA') ... FAIL
+  test_02_verdicts (__main__.API.test_02_verdicts) (expected='TLE') ... FAIL
+  test_02_verdicts (__main__.API.test_02_verdicts) (expected='RE') ... FAIL
+  test_02_verdicts (__main__.API.test_02_verdicts) (expected='OLE') ... FAIL
+  test_02_verdicts (__main__.API.test_02_verdicts) (expected='RUN') ... FAIL
+test_03_stress (__main__.API.test_03_stress) ... FAIL
+test_04_languages (__main__.API.test_04_languages) ...
+  test_04_languages (__main__.API.test_04_languages) (lang='python') ... FAIL
+test_05_generator (__main__.API.test_05_generator) ... FAIL
+test_06_cancel (__main__.API.test_06_cancel) ... FAIL
+test_07_python_generator (__main__.API.test_07_python_generator) ... FAIL
+test_08_mle (__main__.API.test_08_mle) ... FAIL
+test_09_java_heap (__main__.API.test_09_java_heap) ... skipped 'Java unavailable'
+test_10_edge_cases (__main__.API.test_10_edge_cases) ...
+  test_10_edge_cases (__main__.API.test_10_edge_cases) (code='import sys;print("debug",file=sys.stderr);print(5)', expected='AC') ... FAIL
+  test_10_edge_cases (__main__.API.test_10_edge_cases) (code='pass', expected='AC') ... FAIL
+  test_10_edge_cases (__main__.API.test_10_edge_cases) (code='print(5)', expected='WA') ... FAIL
+  test_10_edge_cases (__main__.API.test_10_edge_cases) (code='print("1.00000001")', expected='AC') ... FAIL
+  test_10_edge_cases (__main__.API.test_10_edge_cases) (code='print("5 ")', expected='WA') ... FAIL
+  test_10_edge_cases (__main__.API.test_10_edge_cases) (code='print(5)', expected='WA') ... FAIL
+test_10_edge_cases (__main__.API.test_10_edge_cases) ... FAIL
+test_11_large_dataset (__main__.API.test_11_large_dataset) ... FAIL
+test_12_diagnostics_ignore_local_compiler (__main__.API.test_12_diagnostics_ignore_local_compiler) ... ok
+
+======================================================================
+FAIL: test_02_verdicts (__main__.API.test_02_verdicts) (expected='AC')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:/judgeBox/JudgeBox/tests/api_test.py", line 54, in test_02_verdicts
+    self.assertEqual(result['verdict'],expected,str(result))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'CE' != 'AC'
+- CE
++ AC
+ : {'cases': [], 'compileLog': "g++.exe: error: unrecognized command line option '-std=c++20'; did you mean '-std=c++2a'?\n", 'completed': 0, 'directory': 'C:\\Users\\      \\AppData\\Local\\Temp\\JudgeBox      hcd1sz_8\\1793454561726-1392582390', 'done': True, 'message': '    ʧ ܣ   鿴      ־', 'phase': '     ', 'seed': 42, 'total': 1, 'verdict': 'CE'}
+
+======================================================================
+FAIL: test_02_verdicts (__main__.API.test_02_verdicts) (expected='WA')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:/judgeBox/JudgeBox/tests/api_test.py", line 54, in test_02_verdicts
+    self.assertEqual(result['verdict'],expected,str(result))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'CE' != 'WA'
+- CE
++ WA
+ : {'cases': [], 'compileLog': "g++.exe: error: unrecognized command line option '-std=c++20'; did you mean '-std=c++2a'?\n", 'completed': 0, 'directory': 'C:\\Users\\      \\AppData\\Local\\Temp\\JudgeBox      hcd1sz_8\\1793454561801-1392582453', 'done': True, 'message': '    ʧ ܣ   鿴      ־', 'phase': '     ', 'seed': 42, 'total': 1, 'verdict': 'CE'}
+
+======================================================================
+FAIL: test_02_verdicts (__main__.API.test_02_verdicts) (expected='TLE')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:/judgeBox/JudgeBox/tests/api_test.py", line 54, in test_02_verdicts
+    self.assertEqual(result['verdict'],expected,str(result))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'CE' != 'TLE'
+- CE
++ TLE
+ : {'cases': [], 'compileLog': "g++.exe: error: unrecognized command line option '-std=c++20'; did you mean '-std=c++2a'?\n", 'completed': 0, 'directory': 'C:\\Users\\      \\AppData\\Local\\Temp\\JudgeBox      hcd1sz_8\\1793454561957-1392582609', 'done': True, 'message': '    ʧ ܣ   鿴      ־', 'phase': '     ', 'seed': 42, 'total': 1, 'verdict': 'CE'}
+
+======================================================================
+FAIL: test_02_verdicts (__main__.API.test_02_verdicts) (expected='RE')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:/judgeBox/JudgeBox/tests/api_test.py", line 54, in test_02_verdicts
+    self.assertEqual(result['verdict'],expected,str(result))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'CE' != 'RE'
+- CE
++ RE
+ : {'cases': [], 'compileLog': "g++.exe: error: unrecognized command line option '-std=c++20'; did you mean '-std=c++2a'?\n", 'completed': 0, 'directory': 'C:\\Users\\      \\AppData\\Local\\Temp\\JudgeBox      hcd1sz_8\\1793454562031-1392582687', 'done': True, 'message': '    ʧ ܣ   鿴      ־', 'phase': '     ', 'seed': 42, 'total': 1, 'verdict': 'CE'}
+
+======================================================================
+FAIL: test_02_verdicts (__main__.API.test_02_verdicts) (expected='OLE')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:/judgeBox/JudgeBox/tests/api_test.py", line 54, in test_02_verdicts
+    self.assertEqual(result['verdict'],expected,str(result))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'CE' != 'OLE'
+- CE
++ OLE
+ : {'cases': [], 'compileLog': "g++.exe: error: unrecognized command line option '-std=c++20'; did you mean '-std=c++2a'?\n", 'completed': 0, 'directory': 'C:\\Users\\      \\AppData\\Local\\Temp\\JudgeBox      hcd1sz_8\\1793454562085-1392582750', 'done': True, 'message': '    ʧ ܣ   鿴      ־', 'phase': '     ', 'seed': 42, 'total': 1, 'verdict': 'CE'}
+
+======================================================================
+FAIL: test_02_verdicts (__main__.API.test_02_verdicts) (expected='RUN')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:/judgeBox/JudgeBox/tests/api_test.py", line 54, in test_02_verdicts
+    self.assertEqual(result['verdict'],expected,str(result))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'CE' != 'RUN'
+- CE
++ RUN
+ : {'cases': [], 'compileLog': "g++.exe: error: unrecognized command line option '-std=c++20'; did you mean '-std=c++2a'?\n", 'completed': 0, 'directory': 'C:\\Users\\      \\AppData\\Local\\Temp\\JudgeBox      hcd1sz_8\\1793454562186-1392582843', 'done': True, 'message': '    ʧ ܣ   鿴      ־', 'phase': '     ', 'seed': 42, 'total': 1, 'verdict': 'CE'}
+
+======================================================================
+FAIL: test_03_stress (__main__.API.test_03_stress)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:/judgeBox/JudgeBox/tests/api_test.py", line 59, in test_03_stress
+    self.assertEqual(r['verdict'],'WA'); self.assertEqual(r['completed'],1)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+AssertionError: 'CE' != 'WA'
+- CE
++ WA
+
+
+======================================================================
+FAIL: test_04_languages (__main__.API.test_04_languages) (lang='python')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:/judgeBox/JudgeBox/tests/api_test.py", line 73, in test_04_languages
+    self.assertEqual(result['verdict'],'AC',str(result))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'CE' != 'AC'
+- CE
++ AC
+ : {'cases': [], 'compileLog': 'Python was not found; run without arguments to install from the Microsoft Store, or disable this shortcut from Settings > Apps > Advanced app settings > App execution aliases.\r\n', 'completed': 0, 'directory': 'C:\\Users\\      \\AppData\\Local\\Temp\\JudgeBox      hcd1sz_8\\1793454562435-1392583093', 'done': True, 'message': '    ʧ ܣ   鿴      ־', 'phase': '     ', 'seed': 42, 'total': 1, 'verdict': 'CE'}
+
+======================================================================
+FAIL: test_05_generator (__main__.API.test_05_generator)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:/judgeBox/JudgeBox/tests/api_test.py", line 78, in test_05_generator
+    self.assertEqual(r['verdict'],'RUN'); self.assertEqual(r['completed'],3)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'CE' != 'RUN'
+- CE
++ RUN
+
+
+======================================================================
+FAIL: test_06_cancel (__main__.API.test_06_cancel)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:/judgeBox/JudgeBox/tests/api_test.py", line 86, in test_06_cancel
+    self.assertEqual(r['verdict'],'CANCELLED')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'CE' != 'CANCELLED'
+- CE
++ CANCELLED
+
+
+======================================================================
+FAIL: test_07_python_generator (__main__.API.test_07_python_generator)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:/judgeBox/JudgeBox/tests/api_test.py", line 89, in test_07_python_generator
+    self.assertEqual(r['verdict'],'RUN')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'CE' != 'RUN'
+- CE
++ RUN
+
+
+======================================================================
+FAIL: test_08_mle (__main__.API.test_08_mle)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:/judgeBox/JudgeBox/tests/api_test.py", line 94, in test_08_mle
+    self.assertEqual(self.job(code,memoryMb=32)['verdict'],'MLE')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'CE' != 'MLE'
+- CE
++ MLE
+
+
+======================================================================
+FAIL: test_10_edge_cases (__main__.API.test_10_edge_cases) (code='import sys;print("debug",file=sys.stderr);print(5)', expected='AC')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:/judgeBox/JudgeBox/tests/api_test.py", line 110, in test_10_edge_cases
+    r=self.job(code,'python',**options); self.assertEqual(r['verdict'],expected,str(r))
+                                         ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'CE' != 'AC'
+- CE
++ AC
+ : {'cases': [], 'compileLog': 'Python was not found; run without arguments to install from the Microsoft Store, or disable this shortcut from Settings > Apps > Advanced app settings > App execution aliases.\r\n', 'completed': 0, 'directory': 'C:\\Users\\      \\AppData\\Local\\Temp\\JudgeBox      hcd1sz_8\\1793454563216-1392583875', 'done': True, 'message': '    ʧ ܣ   鿴      ־', 'phase': '     ', 'seed': 42, 'total': 1, 'verdict': 'CE'}
+
+======================================================================
+FAIL: test_10_edge_cases (__main__.API.test_10_edge_cases) (code='pass', expected='AC')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:/judgeBox/JudgeBox/tests/api_test.py", line 110, in test_10_edge_cases
+    r=self.job(code,'python',**options); self.assertEqual(r['verdict'],expected,str(r))
+                                         ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'CE' != 'AC'
+- CE
++ AC
+ : {'cases': [], 'compileLog': 'Python was not found; run without arguments to install from the Microsoft Store, or disable this shortcut from Settings > Apps > Advanced app settings > App execution aliases.\r\n', 'completed': 0, 'directory': 'C:\\Users\\      \\AppData\\Local\\Temp\\JudgeBox      hcd1sz_8\\1793454563372-1392584031', 'done': True, 'message': '    ʧ ܣ   鿴      ־', 'phase': '     ', 'seed': 42, 'total': 1, 'verdict': 'CE'}
+
+======================================================================
+FAIL: test_10_edge_cases (__main__.API.test_10_edge_cases) (code='print(5)', expected='WA')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:/judgeBox/JudgeBox/tests/api_test.py", line 110, in test_10_edge_cases
+    r=self.job(code,'python',**options); self.assertEqual(r['verdict'],expected,str(r))
+                                         ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'CE' != 'WA'
+- CE
++ WA
+ : {'cases': [], 'compileLog': 'Python was not found; run without arguments to install from the Microsoft Store, or disable this shortcut from Settings > Apps > Advanced app settings > App execution aliases.\r\n', 'completed': 0, 'directory': 'C:\\Users\\      \\AppData\\Local\\Temp\\JudgeBox      hcd1sz_8\\1793454563526-1392584187', 'done': True, 'message': '    ʧ ܣ   鿴      ־', 'phase': '     ', 'seed': 42, 'total': 1, 'verdict': 'CE'}
+
+======================================================================
+FAIL: test_10_edge_cases (__main__.API.test_10_edge_cases) (code='print("1.00000001")', expected='AC')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:/judgeBox/JudgeBox/tests/api_test.py", line 110, in test_10_edge_cases
+    r=self.job(code,'python',**options); self.assertEqual(r['verdict'],expected,str(r))
+                                         ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'CE' != 'AC'
+- CE
++ AC
+ : {'cases': [], 'compileLog': 'Python was not found; run without arguments to install from the Microsoft Store, or disable this shortcut from Settings > Apps > Advanced app settings > App execution aliases.\r\n', 'completed': 0, 'directory': 'C:\\Users\\      \\AppData\\Local\\Temp\\JudgeBox      hcd1sz_8\\1793454563668-1392584328', 'done': True, 'message': '    ʧ ܣ   鿴      ־', 'phase': '     ', 'seed': 42, 'total': 1, 'verdict': 'CE'}
+
+======================================================================
+FAIL: test_10_edge_cases (__main__.API.test_10_edge_cases) (code='print("5 ")', expected='WA')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:/judgeBox/JudgeBox/tests/api_test.py", line 110, in test_10_edge_cases
+    r=self.job(code,'python',**options); self.assertEqual(r['verdict'],expected,str(r))
+                                         ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'CE' != 'WA'
+- CE
++ WA
+ : {'cases': [], 'compileLog': 'Python was not found; run without arguments to install from the Microsoft Store, or disable this shortcut from Settings > Apps > Advanced app settings > App execution aliases.\r\n', 'completed': 0, 'directory': 'C:\\Users\\      \\AppData\\Local\\Temp\\JudgeBox      hcd1sz_8\\1793454563825-1392584484', 'done': True, 'message': '    ʧ ܣ   鿴      ־', 'phase': '     ', 'seed': 42, 'total': 1, 'verdict': 'CE'}
+
+======================================================================
+FAIL: test_10_edge_cases (__main__.API.test_10_edge_cases) (code='print(5)', expected='WA')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:/judgeBox/JudgeBox/tests/api_test.py", line 110, in test_10_edge_cases
+    r=self.job(code,'python',**options); self.assertEqual(r['verdict'],expected,str(r))
+                                         ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'CE' != 'WA'
+- CE
++ WA
+ : {'cases': [], 'compileLog': 'Python was not found; run without arguments to install from the Microsoft Store, or disable this shortcut from Settings > Apps > Advanced app settings > App execution aliases.\r\n', 'completed': 0, 'directory': 'C:\\Users\\      \\AppData\\Local\\Temp\\JudgeBox      hcd1sz_8\\1793454563966-1392584625', 'done': True, 'message': '    ʧ ܣ   鿴      ־', 'phase': '     ', 'seed': 42, 'total': 2, 'verdict': 'CE'}
+
+======================================================================
+FAIL: test_10_edge_cases (__main__.API.test_10_edge_cases)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:/judgeBox/JudgeBox/tests/api_test.py", line 116, in test_10_edge_cases
+    self.assertEqual(r['verdict'],'JE'); self.assertIn(' ο      CE',r['message'])
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+AssertionError: 'CE' != 'JE'
+- CE
++ JE
+
+
+======================================================================
+FAIL: test_11_large_dataset (__main__.API.test_11_large_dataset)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:/judgeBox/JudgeBox/tests/api_test.py", line 132, in test_11_large_dataset
+    self.assertEqual(result['verdict'],'AC',str(result))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'CE' != 'AC'
+- CE
++ AC
+ : {'cases': [], 'compileLog': "g++.exe: error: unrecognized command line option '-std=c++20'; did you mean '-std=c++2a'?\n", 'completed': 0, 'directory': 'C:\\Users\\      \\AppData\\Local\\Temp\\JudgeBox      hcd1sz_8\\1793454564282-1392584937', 'done': True, 'message': '    ʧ ܣ   鿴      ־', 'phase': '     ', 'seed': 42, 'total': 1, 'verdict': 'CE'}
+
+----------------------------------------------------------------------
+Ran 12 tests in 4.197s
+
+FAILED (failures=20, skipped=1)
+
+
+75% tests passed, 1 tests failed out of 4
+
+Total Test time (real) =  16.71 sec
+
+The following tests FAILED:
+          4 - api (Failed)
+Errors while running CTest
+Tests failed.
+所在位置 D:\judgeBox\JudgeBox\build.ps1:16 字符: 36
++         if ($LASTEXITCODE -ne 0) { throw 'Tests failed.' }
++                                    ~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (Tests failed.:String) [], RuntimeExc
+   eption
+    + FullyQualifiedErrorId : Tests failed.

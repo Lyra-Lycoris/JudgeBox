@@ -47,6 +47,7 @@ set(CMAKE_MAKEFILE_DEPENDS
   "CMakeFiles/4.3.3/CMakeSystem.cmake"
   "E:/JudgeBox/src/assets.hpp.in"
   "E:/JudgeBox/web/app.js"
+  "E:/JudgeBox/web/editor.js"
   "E:/JudgeBox/web/index.html"
   "E:/JudgeBox/web/style.css"
   )

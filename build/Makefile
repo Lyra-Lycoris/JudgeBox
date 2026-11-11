@@ -628,6 +628,30 @@ src/compiler.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\judge_core.dir\build.make CMakeFiles/judge_core.dir/src/compiler.cpp.s
 .PHONY : src/compiler.cpp.s
 
+src/dataset.obj: src/dataset.cpp.obj
+.PHONY : src/dataset.obj
+
+# target to build an object file
+src/dataset.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\judge_core.dir\build.make CMakeFiles/judge_core.dir/src/dataset.cpp.obj
+.PHONY : src/dataset.cpp.obj
+
+src/dataset.i: src/dataset.cpp.i
+.PHONY : src/dataset.i
+
+# target to preprocess a source file
+src/dataset.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\judge_core.dir\build.make CMakeFiles/judge_core.dir/src/dataset.cpp.i
+.PHONY : src/dataset.cpp.i
+
+src/dataset.s: src/dataset.cpp.s
+.PHONY : src/dataset.s
+
+# target to generate assembly for a file
+src/dataset.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\judge_core.dir\build.make CMakeFiles/judge_core.dir/src/dataset.cpp.s
+.PHONY : src/dataset.cpp.s
+
 src/generator.obj: src/generator.cpp.obj
 .PHONY : src/generator.obj
 
@@ -918,6 +942,9 @@ help:
 	@echo ... src/compiler.obj
 	@echo ... src/compiler.i
 	@echo ... src/compiler.s
+	@echo ... src/dataset.obj
+	@echo ... src/dataset.i
+	@echo ... src/dataset.s
 	@echo ... src/generator.obj
 	@echo ... src/generator.i
 	@echo ... src/generator.s
