@@ -1,6 +1,8 @@
 /build/
 /runs/
 /.runtime/
+/.claude/
+/.cursor/
 __pycache__/
 *.user
 /JudgeBox.exe
