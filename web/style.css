@@ -160,6 +160,9 @@ summary { cursor: pointer; padding: 5px 0; color: var(--text-soft); font-size: 1
 .reference-block { padding: 15px 16px; border-bottom: 1px solid var(--border); background: var(--surface-soft); }
 .reference-title { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
 .reference-code { width: 100%; height: 145px; background: #0d0d0f; font: 12px/1.7 var(--mono); tab-size: 4; }
+.code-editor.reference-editor { height: 240px; min-height: 160px; flex: none; }
+.reference-title .diagnostic-state { flex: 1; min-width: 0; max-width: none; }
+.reference-title .language-label { margin-left: 0; }
 .reference-limit { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-top: 9px; color: var(--muted); font-size: 11px; }
 .reference-limit input { width: 80px; min-height: 30px; font: 11px var(--mono); }
 .source-panel { min-width: 0; min-height: 0; height: 100%; display: flex; flex-direction: column; }
@@ -168,9 +171,9 @@ summary { cursor: pointer; padding: 5px 0; color: var(--text-soft); font-size: 1
 .editor-toolbar { flex: none; min-height: 46px; padding: 0 12px 0 0; display: flex; align-items: center; gap: 12px; background: var(--surface-soft); border-bottom: 1px solid var(--border); }
 .file-tab { align-self: stretch; display: flex; align-items: center; gap: 8px; min-width: 0; padding: 0 16px; background: var(--editor); color: var(--text-soft); border-right: 1px solid var(--border); border-top: 2px solid var(--accent-button); font: 12px var(--mono); }
 .file-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
-#diagnosticState { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font: 10px var(--sans); }
-#diagnosticState.diagnostic-bad { color: var(--red); }
-#diagnosticState.diagnostic-warn { color: var(--amber); }
+.diagnostic-state { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font: 10px var(--sans); }
+.diagnostic-state.diagnostic-bad { color: var(--red); }
+.diagnostic-state.diagnostic-warn { color: var(--amber); }
 .language-label { margin-left: auto; color: var(--muted); font-size: 11px; }
 .editor-toolbar select, .reference-title select { width: auto; min-height: 29px; padding-block: 3px; font: 11px var(--mono); background-color: #0d0d0f; }
 .panel-tools { display: flex; align-items: center; gap: 13px; margin-left: auto; }
@@ -533,10 +536,10 @@ dialog::backdrop { background: rgb(5 5 9 / 78%); }
 .result-card-metrics { font-size: 10px; }
 .output-title { color: var(--label); font-size: 12px; font-weight: 600; }
 summary { color: var(--label); font-weight: 600; }
-#diagnosticState { display: inline-flex; align-items: center; gap: 6px; color: #3ddc84; font: 500 11px var(--sans); }
-#diagnosticState:not(:empty)::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-#diagnosticState.diagnostic-bad { color: var(--accent-dark); }
-#diagnosticState.diagnostic-warn { color: #ffb547; }
+.diagnostic-state { display: inline-flex; align-items: center; gap: 6px; color: #3ddc84; font: 500 11px var(--sans); }
+.diagnostic-state:not(:empty)::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.diagnostic-state.diagnostic-bad { color: var(--accent-dark); }
+.diagnostic-state.diagnostic-warn { color: #ffb547; }
 input::placeholder, textarea::placeholder, .code::placeholder { color: #6e6888; }
 .code-editor .cm-gutters { color: #5b5677; }
 .ws { color: #6e6888; }
@@ -628,13 +631,13 @@ input::placeholder, textarea::placeholder, .code::placeholder { color: #6e6888; 
   .brand > div > span, .mode-number, .top-actions .icon-button span, .saved { display: none; }
   .mode-btn { padding-inline: 10px; }
   .workbench { padding-inline: 14px; }
-  #diagnosticState { max-width: 160px; }
+  .diagnostic-state { max-width: 160px; }
 }
 @media (max-width: 1050px) {
   .workbench { --left-pane: 37%; padding: 12px; }
   .limits { grid-template-columns: 1fr 1fr; gap: 10px; }
   .limits > label:last-child { grid-column: 1/-1; }
-  .privacy-badge, #diagnosticState { display: none; }
+  .privacy-badge, .diagnostic-state { display: none; }
   .panel-tools { gap: 9px; }
   .file-tab { padding-inline: 12px; }
   .editor-toolbar { flex-wrap: wrap; padding-bottom: 7px; }

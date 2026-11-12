@@ -144,7 +144,7 @@ int run(HINSTANCE instance,int argc,wchar_t** argv) {
             port = static_cast<unsigned short>(n);
         } else if (arg == L"--help") {
             g_console = ensureConsole() || g_console;
-            std::cout << "JudgeBox 1.3.0\n"
+            std::cout << "JudgeBox 1.3.1\n"
                          "Usage: JudgeBox [--window | --browser | --no-browser] [--port 0] [--data-dir PATH]\n"
                          "                [--self-test] [--help]\n"
                          "No option opens the native JudgeBox window. --browser opens the system browser,\n"
@@ -152,7 +152,7 @@ int run(HINSTANCE instance,int argc,wchar_t** argv) {
             return 0;
         } else if (arg == L"--version") {
             g_console = ensureConsole() || g_console;
-            std::cout << "JudgeBox 1.3.0\n";
+            std::cout << "JudgeBox 1.3.1\n";
             return 0;
         } else {
             throw std::runtime_error("未知参数：" + utf8(arg));

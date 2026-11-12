@@ -55,7 +55,7 @@ function mount(textarea, options) {
   const languageConf = new Compartment();
   const keybindingConf = new Compartment();
   let applying = false;
-  const onVimMode = mode => { const badge = document.getElementById("vimMode"); if (badge) badge.textContent = mode; };
+  const onVimMode = mode => { options.onVimMode?.(mode); };
   const view = new EditorView({
     parent: textarea.parentElement,
     state: EditorState.create({
@@ -74,7 +74,7 @@ function mount(textarea, options) {
           const items = await options.lint(editorView.state.doc.toString(), options.getLanguage());
           return (items || []).map(item => toMark(editorView, item)).filter(mark => mark.from < editorView.state.doc.length && mark.to >= mark.from);
         }, {delay: 500}),
-        placeholder("源程序"),
+        placeholder(options.placeholder || "源程序"),
         EditorView.updateListener.of(update => {
           if (!update.docChanged || applying) return;
           applying = true;
@@ -82,7 +82,7 @@ function mount(textarea, options) {
           textarea.dispatchEvent(new Event("input", {bubbles: true}));
           applying = false;
         }),
-        EditorView.contentAttributes.of({"aria-label": "待测程序源码"})
+        EditorView.contentAttributes.of({"aria-label": options.label || "待测程序源码"})
       ]
     })
   });
@@ -109,15 +109,12 @@ function mount(textarea, options) {
     },
     setKeybinding(name) {
       view.dispatch({effects: keybindingConf.reconfigure(keybindingExtension(name, onVimMode))});
-      view.focus();
-    }
+    },
+    relayout() { view.requestMeasure(); },
+    focus() { view.focus(); }
   };
 }
 
-let current = null;
 window.JudgeEditor = {
-  mount(textarea, options) { current = mount(textarea, options); },
-  pull() { if (current) current.pull(); },
-  setLanguage(language) { if (current) current.setLanguage(language); },
-  setKeybinding(name) { if (current) current.setKeybinding(name); }
+  mount(textarea, options) { return mount(textarea, options); }
 };

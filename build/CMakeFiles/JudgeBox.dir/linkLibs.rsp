@@ -1,1 +1,0 @@
- libjudge_core.a -lws2_32 -lbcrypt -lshell32 -lole32 -loleaut32 -luser32 -lgdi32 -ladvapi32 -lshlwapi libjudge_process.a -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32 

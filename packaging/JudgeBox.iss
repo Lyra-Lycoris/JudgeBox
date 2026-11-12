@@ -7,8 +7,8 @@
 [Setup]
 AppId={{B5AE8D65-EB14-44CB-81CF-8653D73B62F3}
 AppName=JudgeBox
-AppVersion=1.3.0
-AppVerName=JudgeBox 1.3.0
+AppVersion=1.3.1
+AppVerName=JudgeBox 1.3.1
 AppPublisher=JudgeBox
 AppCopyright=Copyright (C) 2026 JudgeBox
 AppMutex=Local\JudgeBox.Window

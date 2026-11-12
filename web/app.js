@@ -51,9 +51,12 @@ function formatMemory(value) {
   return bytes < 1048576 ? `${(bytes/1024).toFixed(2)} KB` : `${(bytes/1048576).toFixed(2)} MB`;
 }
 let editorLanguage = '';
-function showDiagnostics(result, source) {
-  const state = $('diagnosticState');
+let referenceEditorLanguage = '';
+let sourceEditor = null;
+let referenceEditor = null;
+function showDiagnostics(result, source, state = $('diagnosticState')) {
   const items = Array.isArray(result.diagnostics) ? result.diagnostics : [];
+  if (!state) return source.trim() ? items : [];
   state.classList.remove('diagnostic-bad', 'diagnostic-warn');
   if (!source.trim()) { state.textContent = ''; return []; }
   const errors = items.filter(item => item.severity !== 'warning');
@@ -69,29 +72,59 @@ function showDiagnostics(result, source) {
   return items;
 }
 function syncSource() {
-  if (window.JudgeEditor) {
-    JudgeEditor.pull();
+  if (sourceEditor) {
+    sourceEditor.pull();
     const language = $('language').value;
-    if (language !== editorLanguage) { editorLanguage = language; JudgeEditor.setLanguage(language); }
+    if (language !== editorLanguage) { editorLanguage = language; sourceEditor.setLanguage(language); }
   }
   const lines = $('sourceLines');
   if (lines) lines.textContent = Array.from({length:Math.min($('source').value.split('\n').length,10000)},(_,i) => i+1).join('\n');
   $('sourceFileName').textContent = {cpp:'Main.cpp',python:'main.py',java:'Main.java',cangjie:'main.cj'}[$('language').value];
 }
+function syncReference() {
+  if (!referenceEditor) return;
+  referenceEditor.pull();
+  const language = $('referenceLanguage').value;
+  if (language !== referenceEditorLanguage) { referenceEditorLanguage = language; referenceEditor.setLanguage(language); }
+}
 function mountEditor() {
-  if (!window.JudgeEditor || $('source').dataset.editor) return;
-  $('source').dataset.editor = '1';
-  JudgeEditor.mount($('source'), {
-    getLanguage: () => $('language').value,
-    lint: async (source, language) => {
-      if (!source.trim()) return showDiagnostics({diagnostics:[]}, '');
-      try {
-        const result = await api('/api/diagnostics', {source, language});
-        return showDiagnostics(result, source);
-      } catch (e) { return showDiagnostics({diagnostics:[], status:e.message || String(e)}, source); }
-    }
-  });
-  editorLanguage = $('language').value;
+  if (!window.JudgeEditor) return;
+  if (!$('source').dataset.editor) {
+    $('source').dataset.editor = '1';
+    sourceEditor = JudgeEditor.mount($('source'), {
+      getLanguage: () => $('language').value,
+      label: '待测程序源码',
+      placeholder: '源程序',
+      onVimMode: modeName => { const badge = $('vimMode'); if (badge) badge.textContent = modeName; },
+      lint: async (source, language) => {
+        if (!source.trim()) return showDiagnostics({diagnostics:[]}, '');
+        try {
+          const result = await api('/api/diagnostics', {source, language});
+          return showDiagnostics(result, source);
+        } catch (e) { return showDiagnostics({diagnostics:[], status:e.message || String(e)}, source); }
+      }
+    });
+    editorLanguage = $('language').value;
+  }
+  if (!$('reference').dataset.editor) {
+    $('reference').dataset.editor = '1';
+    referenceEditor = JudgeEditor.mount($('reference'), {
+      getLanguage: () => $('referenceLanguage').value,
+      label: '参考程序源码',
+      placeholder: '参考程序',
+      onVimMode: modeName => { const badge = $('referenceVimMode'); if (badge) badge.textContent = modeName; },
+      lint: async (source, language) => {
+        const state = $('referenceDiagnosticState');
+        if (mode !== 'stress') return [];
+        if (!source.trim()) return showDiagnostics({diagnostics:[]}, '', state);
+        try {
+          const result = await api('/api/diagnostics', {source, language});
+          return showDiagnostics(result, source, state);
+        } catch (e) { return showDiagnostics({diagnostics:[], status:e.message || String(e)}, source, state); }
+      }
+    });
+    referenceEditorLanguage = $('referenceLanguage').value;
+  }
 }
 function rememberCases() {
   if (dataset) return;
@@ -202,6 +235,7 @@ function switchMode(next, save = true) {
   document.title = label ? `${label} · JudgeBox` : 'JudgeBox · 本地判题工作台';
   $('runLabel').textContent = running ? '运行中' : info.run;
   $('manualPanel').hidden = mode !== 'manual'; $('generationPanel').hidden = mode === 'manual'; $('referencePanel').hidden = mode !== 'stress';
+  if (mode === 'stress' && referenceEditor) requestAnimationFrame(() => { referenceEditor.relayout(); referenceEditor.setLanguage($('referenceLanguage').value); });
   $('stopOnFailure').disabled = mode === 'stress';
   if (save) queueSave();
 }
@@ -252,7 +286,7 @@ function payload() {
     }
   }
   else Object.assign(p,generatorPayload(),{count:number('count',1,1000)});
-  if (mode === 'stress') { p.reference = $('reference').value; p.referenceLanguage = $('referenceLanguage').value; p.referenceTimeMs = number('referenceTimeMs',10,60000); if (!p.reference.trim()) { $('reference').focus(); throw new Error('请填写参考程序。'); } }
+  if (mode === 'stress') { p.reference = $('reference').value; p.referenceLanguage = $('referenceLanguage').value; p.referenceTimeMs = number('referenceTimeMs',10,60000); if (!p.reference.trim()) { if (referenceEditor) referenceEditor.focus(); else $('reference').focus(); throw new Error('请填写参考程序。'); } }
   return p;
 }
 function draft() {
@@ -280,7 +314,7 @@ function applyDraft(data) {
   }
   inputIds.forEach(id => { if (data.fields[id] !== undefined) { if ($(id).type === 'checkbox') $(id).checked = Boolean(data.fields[id]); else $(id).value = String(data.fields[id]); } });
   if (data.tools) { Object.entries(data.tools).forEach(([key,value]) => { if (typeof value === 'string' && value.trim() && !tools[key]) tools[key] = value.trim(); }); renderTools(); }
-  renderCases(); templateState(); generatorState(); syncSource(); switchMode(data.mode || 'manual',false); $('floatField').hidden = $('checker').value !== 'float';
+  renderCases(); templateState(); generatorState(); syncSource(); syncReference(); switchMode(data.mode || 'manual',false); $('floatField').hidden = $('checker').value !== 'float';
 }
 function download(name, text, type = 'text/plain;charset=utf-8') { const url = URL.createObjectURL(new Blob([text],{type})); const a = make('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url),1000); }
 function addManual(input, expected = null) {
@@ -468,7 +502,7 @@ $('addCase').onclick = () => {
   if (!dataset && cases.length >= 200) return;
   dataset = null; rememberCases(); cases.push({input:'',expected:''}); renderCases(); focusCase(cases.length - 1, '.case-input'); queueSave();
 };
-$('source').addEventListener('input',syncSource); $('language').onchange = syncSource;
+$('source').addEventListener('input',syncSource); $('language').onchange = syncSource; $('referenceLanguage').onchange = syncReference;
 if ($('sourceLines')) $('source').onscroll = () => { $('sourceLines').scrollTop = $('source').scrollTop; };
 ['source','reference','rule','generatorSource'].forEach(id => $(id).addEventListener('keydown',editCode));
 $('sampleButton').onclick = () => { $('source').value = samples[$('language').value]; syncSource(); queueSave(); };
@@ -541,16 +575,19 @@ function setupSplitter() {
 }
 function setupKeybinding() {
   let saved = 'vscode'; try { saved = localStorage.getItem('judgebox-keybinding') || 'vscode'; } catch {}
-  $('keybinding').value = saved === 'vim' ? 'vim' : 'vscode'; $('vimMode').hidden = saved !== 'vim';
+  const vim = saved === 'vim';
+  $('keybinding').value = vim ? 'vim' : 'vscode'; $('vimMode').hidden = !vim; $('referenceVimMode').hidden = !vim;
   $('keybinding').onchange = () => {
-    const value = $('keybinding').value; window.JudgeEditor?.setKeybinding(value); $('vimMode').hidden = value !== 'vim';
+    const value = $('keybinding').value; const useVim = value === 'vim';
+    sourceEditor?.setKeybinding(value); referenceEditor?.setKeybinding(value); sourceEditor?.focus();
+    $('vimMode').hidden = !useVim; $('referenceVimMode').hidden = !useVim;
     try { localStorage.setItem('judgebox-keybinding',value); } catch {}
   };
   document.addEventListener('judgebox-save',() => saveDraft().catch(e => notice(e.message)));
 }
 async function init() {
   setupSplitter(); setupKeybinding();
-  $('source').value = ''; $('reference').value = ''; $('generatorSource').value = pythonExample; preset(); renderCases(); mountEditor(); syncSource();
+  $('source').value = ''; $('reference').value = ''; $('generatorSource').value = pythonExample; preset(); renderCases(); mountEditor(); syncSource(); syncReference();
   try {
     const config = await api('/api/config'); tools = config.tools; renderTools(); $('dataDirectory').textContent = '数据目录：'+config.dataDirectory;
     const saved = await api('/api/draft'); applyDraft(saved); loaded = true;
