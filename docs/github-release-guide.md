@@ -52,10 +52,10 @@ $expected -eq $actual
 当前正确值：
 
 ```text
-b63705446db995b467f1d72fe56fdfff350fddcc90a9b1925fbe5fe7248f812c
+75e64d99d28b93fb46c867a26fcac777071bc7cf2639ec635cf2e0816356f069
 ```
 
-安装包大小约 427 MB（427,318,458 字节），如果只有一百多 MB，说明上次编译被中断，需要重新编译：
+安装包大小约 427 MB（427,318,459 字节），如果只有一百多 MB，说明上次编译被中断，需要重新编译：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\package.ps1 -SkipBuild -SkipLocalMatrix -SkipBundledMatrix
@@ -297,7 +297,7 @@ Invoke-WebRequest $url -OutFile "$env:TEMP\JudgeBox-1.3.0-check.exe"
 Get-FileHash "$env:TEMP\JudgeBox-1.3.0-check.exe" -Algorithm SHA256
 ```
 
-哈希应与 `b63705446db995b467f1d72fe56fdfff350fddcc90a9b1925fbe5fe7248f812c` 一致。
+哈希应与 `75e64d99d28b93fb46c867a26fcac777071bc7cf2639ec635cf2e0816356f069` 一致。
 
 ### 6.3 最后做一次真实安装
 

@@ -91,7 +91,7 @@ Windows「设置 → 应用 → JudgeBox → 卸载」，或运行安装目录�
 
 | 文件 | 大小 | SHA-256 |
 | --- | --- | --- |
-| `JudgeBox-Setup-1.3.0-x64.exe` | 427,318,458 字节 | `b63705446db995b467f1d72fe56fdfff350fddcc90a9b1925fbe5fe7248f812c` |
+| `JudgeBox-Setup-1.3.0-x64.exe` | 427,318,459 字节 | `75e64d99d28b93fb46c867a26fcac777071bc7cf2639ec635cf2e0816356f069` |
 | `JudgeBox-Setup-1.3.0-x64.exe.sha256` | 95 字节 | 内容为上一行哈希与文件名 |
 
 校验命令（PowerShell）：
