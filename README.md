@@ -1,8 +1,8 @@
 # JudgeBox
 
-[JudgeBox-Setup-1.2.0-x64.exe](https://github.com/Lyra-Lycoris/JudgeBox/releases/download/v1.2.0/JudgeBox-Setup-1.2.0-x64.exe) · [SHA-256](https://github.com/Lyra-Lycoris/JudgeBox/releases/download/v1.2.0/JudgeBox-Setup-1.2.0-x64.exe.sha256)
+[JudgeBox-Setup-1.3.0-x64.exe](https://github.com/Lyra-Lycoris/JudgeBox/releases/download/v1.3.0/JudgeBox-Setup-1.3.0-x64.exe) · [SHA-256](https://github.com/Lyra-Lycoris/JudgeBox/releases/download/v1.3.0/JudgeBox-Setup-1.3.0-x64.exe.sha256)
 
-上面是 Windows 11 x64 离线安装包，自带 C++、Python、Java、仓颉。安装后从开始菜单打开。
+上面是 Windows 11 x64 离线安装包，自带 C++、Python、Java、仓颉工具链。安装后从桌面或开始菜单打开，会直接显示 JudgeBox 窗口，不再弹出命令行窗口，也不需要手动选择工具链。界面使用系统自带的 WebView2 运行库；Windows 11 已内置该组件。
 
 还有关于数据生成的功能 我在下面写了，请你们看完好不好
 
@@ -14,7 +14,7 @@ cd JudgeBox
 powershell -ExecutionPolicy Bypass -File .\build.ps1
 ```
 
-需要 Windows 10/11、CMake 3.20+ 和 MSYS2 UCRT64。完成后双击根目录的 `JudgeBox.exe`，或运行 `启动JudgeBox.cmd`。
+需要 Windows 10/11、CMake 3.20+ 和 MSYS2 UCRT64。完成后双击根目录的 `JudgeBox.exe`，或运行 `启动JudgeBox.cmd`。窗口界面使用系统自带的 Microsoft Edge WebView2 运行库；Windows 11 已内置，Windows 10 若提示缺失请安装 WebView2 Runtime。自动化测试可以运行 `JudgeBox.exe --no-browser`，它只启动本地引擎并打印地址。
 
 以及别告诉我你不会用git，不会用git的请先自己找点教程，实在不愿意，用安装包也可以
 

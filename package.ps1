@@ -18,7 +18,7 @@ $stageDirectory = Join-Path $projectDirectory '.runtime\stage\JudgeBox'
 $downloadDirectory = Join-Path $projectDirectory '.runtime\downloads'
 $innoDirectory = Join-Path $projectDirectory '.runtime\inno'
 $distDirectory = Join-Path $projectDirectory 'dist'
-$artifactName = 'JudgeBox-Setup-1.2.0-x64.exe'
+$artifactName = 'JudgeBox-Setup-1.3.0-x64.exe'
 $artifact = Join-Path $distDirectory $artifactName
 $unicodeDirName = -join @([char]0x4E2D, [char]0x6587, ' ', [char]0x5B89, [char]0x88C5)
 $dataDirName = -join @([char]0x7528, [char]0x6237, [char]0x6570, [char]0x636E)
@@ -84,13 +84,19 @@ function Update-ApplicationFiles {
     $runtime = Join-Path $Directory 'runtimes'
     New-Item -ItemType Directory -Force -Path (Join-Path $Directory 'diagnostics'), (Join-Path $Directory 'docs'), (Join-Path $Directory 'notices'), (Join-Path $runtime 'python\Lib\site-packages') | Out-Null
     Copy-Item -LiteralPath (Join-Path $projectDirectory 'build\JudgeBox.exe') -Destination (Join-Path $Directory 'JudgeBox.exe') -Force
+    Copy-Item -LiteralPath (Join-Path $projectDirectory 'third_party\webview2\x64\WebView2Loader.dll') -Destination (Join-Path $Directory 'WebView2Loader.dll') -Force
+    Copy-Item -LiteralPath (Join-Path $projectDirectory 'third_party\webview2\LICENSE.txt') -Destination (Join-Path $Directory 'notices\webview2-LICENSE.txt') -Force
+    Copy-Item -LiteralPath (Join-Path $projectDirectory 'third_party\webview2\NOTICE.txt') -Destination (Join-Path $Directory 'notices\webview2-NOTICE.txt') -Force
     Copy-Item -LiteralPath (Join-Path $projectDirectory 'README.md') -Destination (Join-Path $Directory 'README.md') -Force
-    $rule = @(Get-ChildItem -LiteralPath (Join-Path $projectDirectory 'docs') -File -Filter '*.md')
-    if ($rule.Count -ne 1) { throw 'Expected exactly one Markdown document directly under docs.' }
-    Copy-Item -LiteralPath $rule[0].FullName -Destination (Join-Path (Join-Path $Directory 'docs') $rule[0].Name) -Force
+    # Keep the installed docs list explicit: release notes live in docs/ too and
+    # must not break packaging. The Chinese filename is built from code points so
+    # Windows PowerShell 5.1 does not misread this UTF-8-without-BOM script.
+    $rule = Join-Path $projectDirectory (Join-Path 'docs' ([string]([char]0x8F93) + [char]0x5165 + [char]0x751F + [char]0x6210 + [char]0x89C4 + [char]0x5219 + '.md'))
+    if (-not (Test-Path -LiteralPath $rule)) { throw 'Missing the input-generation rule document under docs.' }
+    Copy-Item -LiteralPath $rule -Destination (Join-Path (Join-Path $Directory 'docs') (Split-Path -Leaf $rule)) -Force
     Copy-Item -LiteralPath (Join-Path $projectDirectory 'tests\toolchain_matrix.py') -Destination (Join-Path $Directory 'diagnostics\toolchain_matrix.py') -Force
     Copy-Item -LiteralPath (Join-Path $projectDirectory 'third_party\json.LICENSE.MIT') -Destination (Join-Path $Directory 'notices\json.LICENSE.MIT') -Force
-    [System.IO.File]::WriteAllText((Join-Path $Directory 'Check-Toolchains.cmd'), "@echo off`r`n`"%~dp0JudgeBox.exe`" --self-test`r`npause`r`n", [System.Text.Encoding]::ASCII)
+    [System.IO.File]::WriteAllText((Join-Path $Directory 'Check-Toolchains.cmd'), "@echo off`r`nstart `"`" /wait `"%~dp0JudgeBox.exe`" --self-test`r`npause`r`n", [System.Text.Encoding]::ASCII)
     [System.IO.File]::WriteAllText((Join-Path $runtime 'bundle-owner.txt'), 'JudgeBox.OfflineToolchains', [System.Text.Encoding]::ASCII)
     [System.IO.File]::WriteAllText((Join-Path $runtime 'python\python314._pth'), "python314.zip`n.`nLib\site-packages`nimport site`n", [System.Text.Encoding]::ASCII)
     [System.IO.File]::WriteAllText((Join-Path $Directory '.judgebox-stage-owner'), 'JudgeBox stage v1', [System.Text.Encoding]::ASCII)
@@ -103,6 +109,7 @@ Temurin OpenJDK: legal notices under runtimes/jdk/legal; source archive runtimes
 Cangjie: runtimes/cangjie/LICENSE and Open_Source_Software_Notice.docx.
 Python: runtimes/python/LICENSE.txt.
 Python packages: license metadata under runtimes/python/Lib/site-packages/*.dist-info.
+Microsoft WebView2 SDK: notices/webview2-LICENSE.txt and notices/webview2-NOTICE.txt (BSD-3-Clause style Microsoft license).
 "@
     [System.IO.File]::WriteAllText((Join-Path $Directory 'notices\THIRD-PARTY.txt'), $thirdParty.Replace("`r`n", "`n"), $utf8)
     $validation = Join-Path $Directory 'validation'
@@ -261,8 +268,18 @@ try {
     Write-Host 'Installing to a Unicode path'
     Install-Silent 'install-unicode.log'
     $installedExe = Join-Path $installDir 'JudgeBox.exe'
+    if (-not (Test-Path -LiteralPath (Join-Path $installDir 'WebView2Loader.dll'))) { throw 'WebView2Loader.dll was not installed.' }
+    $desktopCandidates = @((Join-Path ([Environment]::GetFolderPath('Desktop')) 'JudgeBox.lnk'))
+    if ($env:PUBLIC) { $desktopCandidates += (Join-Path $env:PUBLIC 'Desktop\JudgeBox.lnk') }
+    if (-not ($desktopCandidates | Where-Object { Test-Path -LiteralPath $_ })) { throw 'The desktop icon was not created.' }
+    if ((Get-Item -LiteralPath $installedExe).VersionInfo.FileVersion -notmatch '1\.3\.0') { throw 'Installed JudgeBox.exe has the wrong version resource.' }
     Write-Host 'Running the installed self-test with embedded Python'
-    Invoke-Native { & $installedExe --self-test --data-dir $dataDir } 'Installed self-test failed.'
+    $selfTest = Start-Quoted -File $installedExe -Arguments ('--self-test --data-dir "' + $dataDir + '"')
+    if (-not $selfTest.WaitForExit(900000)) {
+        Stop-Process -Id $selfTest.Id -Force -ErrorAction SilentlyContinue
+        throw 'Installed self-test did not finish.'
+    }
+    if ($selfTest.ExitCode -ne 0) { throw 'Installed self-test failed.' }
     $selfTestReport = Join-Path $dataDir 'toolchain-self-test.json'
     if (-not (Test-Path -LiteralPath $selfTestReport)) { throw 'Self-test did not write a report.' }
     Copy-Item -LiteralPath $selfTestReport -Destination (Join-Path $projectDirectory 'build\toolchain-installed-unicode-report.json') -Force
@@ -274,7 +291,8 @@ try {
     Write-Host 'Reinstalling over the same directory'
     Install-Silent 'install-upgrade.log'
     if ((Get-Content -LiteralPath $keep -Raw).Trim() -ne 'must survive upgrade and uninstall') { throw 'Upgrade removed user data.' }
-    Invoke-Native { & $installedExe --help } 'Upgraded JudgeBox.exe did not start.'
+    $helpProcess = Start-Quoted -File $installedExe -Arguments '--help'
+    if (-not $helpProcess.WaitForExit(30000) -or $helpProcess.ExitCode -ne 0) { throw 'Upgraded JudgeBox.exe did not start.' }
     Uninstall-TestCopies
     if ((Get-Content -LiteralPath $keep -Raw).Trim() -ne 'must survive upgrade and uninstall') { throw 'Final uninstall removed user data.' }
     if ((Get-Content -LiteralPath $marker -Raw).Trim() -ne 'must survive uninstall') { throw 'Final uninstall removed the user profile marker.' }

@@ -75,13 +75,16 @@ def main():
     (rt/'python/Lib/site-packages').mkdir(parents=True,exist_ok=True)
     (rt/'python/python314._pth').write_text('python314.zip\n.\nLib\\site-packages\nimport site\n',encoding='utf-8')
     copy(ROOT/'build/JudgeBox.exe',out/'JudgeBox.exe')
+    copy(ROOT/'third_party/webview2/x64/WebView2Loader.dll',out/'WebView2Loader.dll')
     copy(ROOT/'README.md',out/'README.md');copy(ROOT/'docs/输入生成规则.md',out/'docs/输入生成规则.md')
     copy(ROOT/'third_party/json.LICENSE.MIT',notices/'json.LICENSE.MIT')
+    copy(ROOT/'third_party/webview2/LICENSE.txt',notices/'webview2-LICENSE.txt')
+    copy(ROOT/'third_party/webview2/NOTICE.txt',notices/'webview2-NOTICE.txt')
     copy(ROOT/'tests/toolchain_matrix.py',out/'diagnostics/toolchain_matrix.py')
-    (out/'Check-Toolchains.cmd').write_text('@echo off\r\n"%~dp0JudgeBox.exe" --self-test\r\npause\r\n',encoding='ascii')
+    (out/'Check-Toolchains.cmd').write_text('@echo off\r\nstart "" /wait "%~dp0JudgeBox.exe" --self-test\r\npause\r\n',encoding='ascii')
     manifest={'format':1,'platform':'Windows 11 x64','tools':{'cpp':'gcc/bin/g++.exe','python':'python/python.exe','java':'jdk/bin/java.exe','javac':'jdk/bin/javac.exe','cangjie':'cangjie/bin/cjc.exe'},'versions':{'gcc':'16.1.0','python':'3.14.9','java':'Temurin 21.0.11+10','cangjie':'1.2.0'},'gccPackages':gcc,'sources':{'python':'https://www.python.org/downloads/release/python-3149/','java':'https://github.com/adoptium/temurin21-binaries/releases/tag/jdk-21.0.11%2B10','cangjie':'https://cangjie-lang.cn/download','gcc':'https://packages.msys2.org/package/mingw-w64-ucrt-x86_64-gcc'}}
     (rt/'manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf-8')
-    (notices/'THIRD-PARTY.txt').write_text('JudgeBox invokes unmodified third-party tools as separate processes.\n\nGCC and dependencies: original licenses are under runtimes/gcc/share/licenses and package descriptions under notices/msys2-packages. Exact source package locations and versions are recorded in runtimes/manifest.json. When redistributing binaries, also provide corresponding sources as required by each license; source locations alone do not replace those obligations.\n\nTemurin OpenJDK: legal notices under runtimes/jdk/legal; source archive runtimes/jdk/lib/src.zip.\nCangjie: runtimes/cangjie/LICENSE and Open_Source_Software_Notice.docx.\nPython: runtimes/python/LICENSE.txt.\nPython packages: license metadata under runtimes/python/Lib/site-packages/*.dist-info.\n',encoding='utf-8')
+    (notices/'THIRD-PARTY.txt').write_text('JudgeBox invokes unmodified third-party tools as separate processes.\n\nGCC and dependencies: original licenses are under runtimes/gcc/share/licenses and package descriptions under notices/msys2-packages. Exact source package locations and versions are recorded in runtimes/manifest.json. When redistributing binaries, also provide corresponding sources as required by each license; source locations alone do not replace those obligations.\n\nTemurin OpenJDK: legal notices under runtimes/jdk/legal; source archive runtimes/jdk/lib/src.zip.\nCangjie: runtimes/cangjie/LICENSE and Open_Source_Software_Notice.docx.\nPython: runtimes/python/LICENSE.txt.\nPython packages: license metadata under runtimes/python/Lib/site-packages/*.dist-info.\nMicrosoft WebView2 SDK: notices/webview2-LICENSE.txt and notices/webview2-NOTICE.txt.\n',encoding='utf-8')
     total=sum(f.stat().st_size for f in out.rglob('*') if f.is_file())
     print('Staged',out,'size MiB',round(total/1048576,1),'GCC packages',len(gcc),flush=True)
 

@@ -63,7 +63,8 @@ void respond(SOCKET s,int code,const std::string& content,const std::string& mim
     std::size_t offset=0; while(offset<response.size()) { auto n=send(s,response.data()+offset,static_cast<int>(std::min<std::size_t>(response.size()-offset,1024*1024)),0); if(n<=0) break; offset+=n; }
 }
 }
-int serve(const fs::path& dataDirectory,bool openBrowser,unsigned short requestedPort) {
+void requestServerStop() { stopping=true; }
+int serve(const fs::path& dataDirectory,bool openBrowser,unsigned short requestedPort,const ServeHooks& hooks) {
     WSADATA wsa{}; if(WSAStartup(MAKEWORD(2,2),&wsa)) throw std::runtime_error("Winsock 初始化失败");
     struct Cleanup { ~Cleanup(){WSACleanup();} } cleanup;
     Socket listener(socket(AF_INET,SOCK_STREAM,IPPROTO_TCP)); if(listener.value==INVALID_SOCKET) throw std::runtime_error("无法创建监听 socket");
@@ -73,10 +74,17 @@ int serve(const fs::path& dataDirectory,bool openBrowser,unsigned short requeste
     int addrSize=sizeof(addr); getsockname(listener.value,reinterpret_cast<sockaddr*>(&addr),&addrSize);
     const std::string host="127.0.0.1:"+std::to_string(ntohs(addr.sin_port)),origin="http://"+host,session=token();
     auto tools=detectTools(); JudgeEngine engine(fs::absolute(dataDirectory),tools);
-    SetConsoleCtrlHandler(consoleHandler,TRUE);
-    std::cout<<origin<<"/#"<<session<<std::endl;
-    std::cout<<"JudgeBox is running locally. Keep this window open. Ctrl+C to stop.\n"<<std::flush;
-    if(openBrowser) ShellExecuteW(nullptr,L"open",wide(origin+"/#"+session).c_str(),nullptr,nullptr,SW_SHOWNORMAL);
+    const std::string url=origin+"/#"+session;
+    if(hooks.ready) {
+        if(!hooks.quiet) std::cout<<url<<std::endl<<std::flush;
+        SetConsoleCtrlHandler(consoleHandler,TRUE);
+        hooks.ready(url);
+    } else {
+        SetConsoleCtrlHandler(consoleHandler,TRUE);
+        std::cout<<url<<std::endl;
+        std::cout<<"JudgeBox is running locally. Keep this window open. Ctrl+C to stop.\n"<<std::flush;
+        if(openBrowser) ShellExecuteW(nullptr,L"open",wide(url).c_str(),nullptr,nullptr,SW_SHOWNORMAL);
+    }
     while(!stopping.load()) {
         fd_set reads; FD_ZERO(&reads); FD_SET(listener.value,&reads); timeval wait{0,200000};
         if(select(0,&reads,nullptr,nullptr,&wait)<=0) continue;
@@ -92,7 +100,7 @@ int serve(const fs::path& dataDirectory,bool openBrowser,unsigned short requeste
                     body=Json::parse(r.body); if(!body.is_object()) throw std::runtime_error("请求应为 JSON 对象");
                 }
                 Json result;
-                if(r.path=="/api/config" && r.method=="GET") result={{"tools",tools},{"version","1.1.2"},{"dataDirectory",utf8(fs::absolute(dataDirectory).wstring())}};
+                if(r.path=="/api/config" && r.method=="GET") result={{"tools",tools},{"version","1.3.0"},{"dataDirectory",utf8(fs::absolute(dataDirectory).wstring())},{"bundled",bundledRuntime()}};
                 else if(r.path=="/api/status" && r.method=="GET") result=engine.status();
                 else if(r.path=="/api/run" && r.method=="POST") result=engine.start(body);
                 else if(r.path=="/api/cancel" && r.method=="POST") { engine.stop(); result={{"ok",true}}; }
@@ -115,5 +123,7 @@ int serve(const fs::path& dataDirectory,bool openBrowser,unsigned short requeste
             } else respond(client.value,404,dump({{"error","接口不存在"}}));
         } catch(const std::exception& e) { respond(client.value,400,dump({{"error",e.what()}})); }
     }
-    engine.stop(); SetConsoleCtrlHandler(consoleHandler,FALSE); return 0;
+    engine.stop(); SetConsoleCtrlHandler(consoleHandler,FALSE);
+    if(hooks.stopped) hooks.stopped();
+    return 0;
 }

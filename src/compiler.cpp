@@ -28,6 +28,10 @@ fs::path runtimeDirectory(const fs::path& applicationDirectory) {
     if(auto staged=accept(applicationDirectory/L".runtime/stage/JudgeBox/runtimes"); !staged.empty()) return staged;
     return accept(applicationDirectory.parent_path()/L".runtime/stage/JudgeBox/runtimes");
 }
+bool bundledRuntime(const fs::path& applicationDirectory) {
+    auto runtime=runtimeDirectory(applicationDirectory);
+    return !runtime.empty() && fs::is_regular_file(runtime/L"manifest.json");
+}
 Json bundledTools(const fs::path& applicationDirectory) {
     Json tools=Json::object();
     auto runtime=runtimeDirectory(applicationDirectory);

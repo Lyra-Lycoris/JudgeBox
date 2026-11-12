@@ -327,7 +327,12 @@ dialog::backdrop { background: rgb(0 0 0 / 72%); }
 .dialog-title h2 { margin-top: 3px; font-size: 21px; }
 .dialog-eyebrow { color: var(--accent); font-size: 11px; }
 .tool-field { margin: 13px 0; }
-.tool-field input { font: 11px var(--mono); }
+.tool-field .tool-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.tool-field input { font: 11px var(--mono); margin-top: 0; }
+.tool-field input[readonly] { color: var(--muted); border-color: var(--border); background: var(--surface-soft); }
+.builtin-chip { flex: none; padding: 2px 7px; border: 1px solid rgb(76 203 127 / 35%); border-radius: 999px; color: var(--green); background: rgb(76 203 127 / 10%); font-size: 10px; letter-spacing: .04em; }
+#toolsStatus { margin-top: 4px; }
+#toolsStatus[data-state=failed] { color: var(--red); }
 .settings-grid { max-width: 230px; margin-top: 19px; }
 #saveSettings { margin-top: 19px; min-width: 120px; }
 .help-content h3 { display: flex; align-items: center; gap: 8px; margin-top: 20px; }

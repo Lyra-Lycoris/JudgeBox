@@ -109,8 +109,9 @@ class API(unittest.TestCase):
             with self.subTest(code=code,expected=expected):
                 r=self.job(code,'python',**options); self.assertEqual(r['verdict'],expected,str(r))
                 if len(options.get('cases',[]))==2: self.assertEqual(r['completed'],2)
+        # A stale browser draft must not shadow the bundled toolchains.
         r=self.job('print(5)','python',tools={'python':r'Z:\missing_python.exe'})
-        self.assertEqual(r['verdict'],'JE')
+        self.assertEqual(r['verdict'],'AC',str(r))
         rule={'steps':[{'type':'line','items':[1,2]}]}
         r=self.job('print(5)','python',mode='stress',reference='bad source',referenceLanguage='cpp',generator=rule,count=1)
         self.assertEqual(r['verdict'],'JE'); self.assertIn('参考程序 CE',r['message'])

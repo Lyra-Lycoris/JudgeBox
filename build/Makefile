@@ -772,6 +772,14 @@ src/process_win32.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\judge_process.dir\build.make CMakeFiles/judge_process.dir/src/process_win32.cpp.s
 .PHONY : src/process_win32.cpp.s
 
+src/resources.obj: src/resources.rc.obj
+.PHONY : src/resources.obj
+
+# target to build an object file
+src/resources.rc.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\JudgeBox.dir\build.make CMakeFiles/JudgeBox.dir/src/resources.rc.obj
+.PHONY : src/resources.rc.obj
+
 src/server.obj: src/server.cpp.obj
 .PHONY : src/server.obj
 
@@ -795,6 +803,30 @@ src/server.s: src/server.cpp.s
 src/server.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\JudgeBox.dir\build.make CMakeFiles/JudgeBox.dir/src/server.cpp.s
 .PHONY : src/server.cpp.s
+
+src/webview_win32.obj: src/webview_win32.cpp.obj
+.PHONY : src/webview_win32.obj
+
+# target to build an object file
+src/webview_win32.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\JudgeBox.dir\build.make CMakeFiles/JudgeBox.dir/src/webview_win32.cpp.obj
+.PHONY : src/webview_win32.cpp.obj
+
+src/webview_win32.i: src/webview_win32.cpp.i
+.PHONY : src/webview_win32.i
+
+# target to preprocess a source file
+src/webview_win32.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\JudgeBox.dir\build.make CMakeFiles/JudgeBox.dir/src/webview_win32.cpp.i
+.PHONY : src/webview_win32.cpp.i
+
+src/webview_win32.s: src/webview_win32.cpp.s
+.PHONY : src/webview_win32.s
+
+# target to generate assembly for a file
+src/webview_win32.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\JudgeBox.dir\build.make CMakeFiles/JudgeBox.dir/src/webview_win32.cpp.s
+.PHONY : src/webview_win32.cpp.s
 
 tests/core_tests.obj: tests/core_tests.cpp.obj
 .PHONY : tests/core_tests.obj
@@ -960,9 +992,13 @@ help:
 	@echo ... src/process_win32.obj
 	@echo ... src/process_win32.i
 	@echo ... src/process_win32.s
+	@echo ... src/resources.obj
 	@echo ... src/server.obj
 	@echo ... src/server.i
 	@echo ... src/server.s
+	@echo ... src/webview_win32.obj
+	@echo ... src/webview_win32.i
+	@echo ... src/webview_win32.s
 	@echo ... tests/core_tests.obj
 	@echo ... tests/core_tests.i
 	@echo ... tests/core_tests.s

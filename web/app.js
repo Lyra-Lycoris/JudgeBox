@@ -257,7 +257,8 @@ function payload() {
 }
 function draft() {
   rememberCases(); const fields = {}; inputIds.forEach(id => { fields[id] = $(id).type === 'checkbox' ? $(id).checked : $(id).value; });
-  return {version:1,mode,fields,cases:cases.map(c => ({...c})),dataset,tools:readTools()};
+  const customTools = {}; Object.entries(readTools()).forEach(([key,value]) => { if (value && !tools[key]) customTools[key] = value; });
+  return {version:1,mode,fields,cases:cases.map(c => ({...c})),dataset,tools:customTools};
 }
 async function saveDraft() {
   if (!loaded) return;
@@ -278,7 +279,7 @@ function applyDraft(data) {
     cases = data.cases.map(c => { if (typeof c.input !== 'string' || !(c.expected === null || typeof c.expected === 'string')) throw new Error('工作区测试点格式不正确。'); return {input:c.input,expected:c.expected}; }).filter(c => c.input !== '' || (c.expected !== null && c.expected !== ''));
   }
   inputIds.forEach(id => { if (data.fields[id] !== undefined) { if ($(id).type === 'checkbox') $(id).checked = Boolean(data.fields[id]); else $(id).value = String(data.fields[id]); } });
-  if (data.tools) { tools = {...tools,...data.tools}; renderTools(); }
+  if (data.tools) { Object.entries(data.tools).forEach(([key,value]) => { if (typeof value === 'string' && value.trim() && !tools[key]) tools[key] = value.trim(); }); renderTools(); }
   renderCases(); templateState(); generatorState(); syncSource(); switchMode(data.mode || 'manual',false); $('floatField').hidden = $('checker').value !== 'float';
 }
 function download(name, text, type = 'text/plain;charset=utf-8') { const url = URL.createObjectURL(new Blob([text],{type})); const a = make('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url),1000); }
@@ -445,9 +446,16 @@ async function showDetail(index) {
 }
 function renderTools() {
   const labels = {cpp:'C++ · g++.exe',python:'Python · python.exe',javac:'Java 编译器 · javac.exe',java:'Java 运行时 · java.exe',cangjie:'仓颉 · cjc.exe'};
-  $('toolFields').replaceChildren(); Object.entries(labels).forEach(([key,name]) => {
-    const label = make('label',name,'tool-field'); const input = make('input'); input.dataset.tool = key; input.value = tools[key] || ''; input.placeholder = '未检测到，可填写完整可执行文件路径'; input.spellcheck = false; label.append(input); $('toolFields').append(label);
+  const container = $('toolFields'); container.replaceChildren(); const missing = [];
+  Object.entries(labels).forEach(([key,name]) => {
+    const label = make('label',name,'tool-field'); const row = make('div',undefined,'tool-row');
+    const input = make('input'); input.dataset.tool = key; input.value = tools[key] || ''; input.spellcheck = false;
+    if (tools[key]) { input.readOnly = true; input.setAttribute('aria-readonly','true'); row.append(input,make('span','内置','builtin-chip')); }
+    else { input.placeholder = '未检测到，可填写完整可执行文件路径'; missing.push(name); row.append(input); }
+    label.append(row); container.append(label);
   });
+  const status = $('toolsStatus');
+  if (status) { status.textContent = missing.length ? `缺少内置工具：${missing.join('、')}。请重新安装，或在上方填写路径。` : '已检测到全部内置工具链，判题无需额外配置。'; status.dataset.state = missing.length ? 'failed' : 'ready'; }
 }
 function editCode(event) {
   if (event.key !== 'Tab') return;
@@ -545,7 +553,10 @@ async function init() {
   $('source').value = ''; $('reference').value = ''; $('generatorSource').value = pythonExample; preset(); renderCases(); mountEditor(); syncSource();
   try {
     const config = await api('/api/config'); tools = config.tools; renderTools(); $('dataDirectory').textContent = '数据目录：'+config.dataDirectory;
-    const saved = await api('/api/draft'); applyDraft(saved); loaded = true; engineState('本地引擎就绪','ready');
+    const saved = await api('/api/draft'); applyDraft(saved); loaded = true;
+    const missingTools = Object.entries(tools).filter(([,value]) => !value);
+    if (missingTools.length) notice(`内置工具链不完整：${missingTools.map(([key]) => key).join('、')}。请重新安装 JudgeBox。`);
+    engineState('本地引擎就绪','ready');
     const status = await api('/api/status'); if (status.verdict !== 'READY') { renderResult(status); setRunning(!status.done); if (!status.done) await poll(); else if (status.cases.length) await showDetail(status.cases[0].index); }
   } catch(e) { engineState('连接失败','failed'); notice(e.message); }
 }

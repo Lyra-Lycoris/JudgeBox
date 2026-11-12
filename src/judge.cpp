@@ -73,16 +73,41 @@ namespace
             return "程序退出码：" + std::to_string(r.exit);
         return "未提供预期输出，仅展示运行结果";
     }
+    bool usableTool(const Json &value)
+    {
+        if (!value.is_string())
+            return false;
+        auto text = value.get<std::string>();
+        if (text.empty())
+            return false;
+        try
+        {
+            std::error_code error;
+            return fs::is_regular_file(fs::path(wide(text)), error) && !error;
+        }
+        catch (...)
+        {
+            return false;
+        }
+    }
     Json toolsFor(const Json &request, const Json &defaults)
     {
         Json tools = defaults;
-        if (request.contains("tools"))
+        if (!request.contains("tools"))
+            return tools;
+        if (!request.at("tools").is_object())
+            throw std::runtime_error("tools 必须为对象");
+        // The installer owns the bundled toolchains. A stale path saved in an old
+        // browser draft (or an empty field) must never replace them.
+        for (auto it = request.at("tools").begin(); it != request.at("tools").end(); ++it)
         {
-            if (!request.at("tools").is_object())
-                throw std::runtime_error("tools 必须为对象");
-            for (auto it = request.at("tools").begin(); it != request.at("tools").end(); ++it)
-                if (tools.contains(it.key()) && it.value().is_string() && !it.value().get<std::string>().empty())
-                    tools[it.key()] = it.value();
+            if (!tools.contains(it.key()) || !it.value().is_string())
+                continue;
+            auto current = tools.value(it.key(), std::string());
+            if (usableTool(current))
+                continue;
+            if (usableTool(it.value()))
+                tools[it.key()] = it.value();
         }
         return tools;
     }

@@ -6,7 +6,9 @@
 __pycache__/
 *.user
 /JudgeBox.exe
+/WebView2Loader.dll
 /JudgeBox-portable.zip
 /dist/
 /web/editor/node_modules/
 .cph/
+/InstalledPackedge/
