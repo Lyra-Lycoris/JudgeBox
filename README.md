@@ -18,6 +18,13 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1
 
 以及别告诉我你不会用git，不会用git的请先自己找点教程，实在不愿意，用安装包也可以
 
+## 题目系统（开发中）
+
+后端题包层已经可用：`problem.json` + `data.zip` → `POST /api/problems/import` → 题单 / 提交 / 判题 / 历史，字段以 `JudgeBox-共用规格.md` §6 为准（前端还在做，目前只有接口）。
+验收：`ctest --test-dir build -R problem --output-on-failure`，会导入 `tests/fixtures/ict-renjian-cihua/problem.json`，用仓颉参考解跑满 100 分，再提交一次 WRONG CODE 校验 0 分。
+判题缓存写在 exe 同级的 `.cache/`（`submissions/` 是历史，`judge/` 是逐点产物）；实测一次导入约 11 秒、一次仓颉提交约 8 秒，大头是每次都要编译一遍 testlib 版 checker。
+手工试：`JudgeBox.exe --no-browser --data-dir %TEMP%\jb`，用启动窗口地址里的 token 调接口即可。
+
 ## 数据生成 JSON
 
 对拍方式和数据生成模式需要对格式进行规范，我们规定了一些预设，当然，不可能把所有方式的预设全部写了，我们只能用手写 json 去定制每一个题目的生成规则

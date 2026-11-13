@@ -8,6 +8,11 @@
 #include "compiler.hpp"
 #include "assets.hpp"
 #include "editor_asset.hpp"
+#include "web_assets.hpp"
+#include "apierror.hpp"
+#include "problems.hpp"
+#include "problemjudge.hpp"
+#include "submitstore.hpp"
 #include <algorithm>
 #include <array>
 #include <iostream>
@@ -51,15 +56,17 @@ Request receive(SOCKET s) {
         r.headers[key]=value;
     }
     if(r.headers.contains("transfer-encoding")) throw std::runtime_error("不支持分块请求");
+    // 题包导入要塞下一整个 problem.json，其余接口维持原有的 20 MiB 上限。
+    const std::size_t limit=r.path=="/api/problems/import"?64*1024*1024:20*1024*1024;
     std::size_t length=0;
-    if(r.headers.contains("content-length")) { std::size_t used=0; auto& raw=r.headers.at("content-length"); length=std::stoull(raw,&used); if(used!=raw.size() || length>20*1024*1024) throw std::runtime_error("请求超过 20 MiB"); }
+    if(r.headers.contains("content-length")) { std::size_t used=0; auto& raw=r.headers.at("content-length"); length=std::stoull(raw,&used); if(used!=raw.size() || length>limit) throw std::runtime_error("请求超过 "+std::to_string(limit/(1024*1024))+" MiB"); }
     r.body=data.substr(end+4);
     while(r.body.size()<length) { int n=recv(s,buffer,static_cast<int>(std::min<std::size_t>(sizeof(buffer),length-r.body.size())),0); if(n<=0) throw std::runtime_error("请求内容中断"); r.body.append(buffer,n); }
     if(r.body.size()>length) r.body.resize(length);
     return r;
 }
 void respond(SOCKET s,int code,const std::string& content,const std::string& mime="application/json; charset=utf-8") {
-    std::string response="HTTP/1.1 "+std::to_string(code)+(code==200?" OK":code==403?" Forbidden":code==404?" Not Found":" Bad Request")+"\r\nContent-Type: "+mime+"\r\nContent-Length: "+std::to_string(content.size())+"\r\nConnection: close\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\nReferrer-Policy: no-referrer\r\nContent-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'\r\n\r\n"+content;
+    std::string response="HTTP/1.1 "+std::to_string(code)+(code==200?" OK":code==409?" Conflict":code==500?" Internal Server Error":code==403?" Forbidden":code==404?" Not Found":" Bad Request")+"\r\nContent-Type: "+mime+"\r\nContent-Length: "+std::to_string(content.size())+"\r\nConnection: close\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\nReferrer-Policy: no-referrer\r\nContent-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'\r\n\r\n"+content;
     std::size_t offset=0; while(offset<response.size()) { auto n=send(s,response.data()+offset,static_cast<int>(std::min<std::size_t>(response.size()-offset,1024*1024)),0); if(n<=0) break; offset+=n; }
 }
 }
@@ -73,7 +80,9 @@ int serve(const fs::path& dataDirectory,bool openBrowser,unsigned short requeste
     if(bind(listener.value,reinterpret_cast<sockaddr*>(&addr),sizeof(addr)) || listen(listener.value,8)) throw std::runtime_error("端口绑定失败，请检查端口是否被占用");
     int addrSize=sizeof(addr); getsockname(listener.value,reinterpret_cast<sockaddr*>(&addr),&addrSize);
     const std::string host="127.0.0.1:"+std::to_string(ntohs(addr.sin_port)),origin="http://"+host,session=token();
-    auto tools=detectTools(); JudgeEngine engine(fs::absolute(dataDirectory),tools);
+    auto tools=detectTools(); auto engineData=fs::absolute(dataDirectory);
+    JudgeEngine engine(engineData,tools);
+    ProblemJudgeEngine problemEngine(executableDirectory(),engineData,tools);
     const std::string url=origin+"/#"+session;
     if(hooks.ready) {
         if(!hooks.quiet) std::cout<<url<<std::endl<<std::flush;
@@ -103,24 +112,42 @@ int serve(const fs::path& dataDirectory,bool openBrowser,unsigned short requeste
                 if(r.path=="/api/config" && r.method=="GET") result={{"tools",tools},{"version","1.3.1"},{"dataDirectory",utf8(fs::absolute(dataDirectory).wstring())},{"bundled",bundledRuntime()}};
                 else if(r.path=="/api/status" && r.method=="GET") result=engine.status();
                 else if(r.path=="/api/run" && r.method=="POST") result=engine.start(body);
-                else if(r.path=="/api/cancel" && r.method=="POST") { engine.stop(); result={{"ok",true}}; }
+                else if(r.path=="/api/cancel" && r.method=="POST") { engine.stop(); problemEngine.stop(); result={{"ok",true}}; }
                 else if(r.path=="/api/generate" && r.method=="POST") result=engine.preview(body);
                 else if(r.path=="/api/dataset/import" && r.method=="POST") result=datasetSummary(loadDataset(body.value("directory",std::string())));
                 else if(r.path.starts_with("/api/case?index=") && r.method=="GET") { auto id=r.path.substr(16); std::size_t used; int i=std::stoi(id,&used); if(used!=id.size()) throw std::runtime_error("无效测试点编号"); result=engine.detail(i); }
                 else if(r.path=="/api/draft" && r.method=="GET") { auto path=dataDirectory/"draft.json"; result=fs::exists(path)?Json::parse(readFile(path)):Json::object(); }
                 else if(r.path=="/api/draft" && r.method=="POST") { writeFile(dataDirectory/"draft.json",dump(body)); result={{"ok",true}}; }
-                else if(r.path=="/api/shutdown" && r.method=="POST") { stopping=true; engine.stop(); result={{"ok",true}}; }
-                else if(r.path=="/api/diagnostics" && r.method=="POST") result=diagnoseSource(body.value("source",std::string()),body.value("language",std::string("cpp")),bundledTools(executableDirectory()),fs::absolute(dataDirectory));
+                else if(r.path=="/api/shutdown" && r.method=="POST") { stopping=true; engine.stop(); problemEngine.stop(); result={{"ok",true}}; }
+                else if(r.path=="/api/diagnostics" && r.method=="POST") result=diagnoseSource(body.value("source",std::string()),body.value("language",std::string("cpp")),bundledTools(executableDirectory()),engineData);
+                else if(r.path=="/api/problems" && r.method=="GET") result=listProblems(engineData);
+                else if(r.path=="/api/problems/import" && r.method=="POST") result=importProblem(engineData,body);
+                else if(r.path.starts_with("/api/problems/") && r.method=="GET") result=loadProblem(engineData,r.path.substr(14));
+                else if(r.path.starts_with("/api/problems/") && r.method=="DELETE") { if(!deleteProblem(engineData,r.path.substr(14))) throw ApiError(404,"题目不存在"); result={{"ok",true}}; }
+                else if(r.path=="/api/submit" && r.method=="POST") { if(!engine.status().at("done").get<bool>()) throw ApiError(409,"已有提交正在判题"); result=problemEngine.start(body); }
+                else if(r.path=="/api/submit/status" && r.method=="GET") result=problemEngine.status();
+                else if(r.path=="/api/submissions/clear" && r.method=="POST") result={{"ok",true},{"removed",clearSubmissions(executableDirectory(),body.value("problemId",std::string()))}};
+                else if(r.method=="GET" && r.path.starts_with("/api/submissions") && (r.path.size()==16 || r.path[16]=='?')) { auto query=r.path.find('?'); auto filter=query==std::string::npos?std::string():r.path.substr(query+1); result=listSubmissions(executableDirectory(),filter.starts_with("problemId=")?filter.substr(10):std::string()); }
+                else if(r.path.starts_with("/api/submissions/") && r.method=="GET") result=readSubmission(executableDirectory(),r.path.substr(17));
                 else { respond(client.value,404,dump({{"error","接口不存在"}})); continue; }
                 respond(client.value,200,dump(result));
             } else if(r.method=="GET") {
-                if(r.path=="/" || r.path=="/index.html") respond(client.value,200,assets::html,"text/html; charset=utf-8");
-                else if(r.path=="/style.css") respond(client.value,200,assets::css,"text/css; charset=utf-8");
-                else if(r.path=="/app.js") respond(client.value,200,assets::js,"text/javascript; charset=utf-8");
-                else if(r.path=="/editor.js") respond(client.value,200,assets::editorJs,"text/javascript; charset=utf-8");
-                else if(r.path=="/favicon.svg") respond(client.value,200,assets::icon,"image/svg+xml");
-                else respond(client.value,404,"Not found","text/plain");
+                bool served=false;
+                for(std::size_t i=0;i<webassets::kWebAssetCount && !served;++i)
+                    if(r.path==webassets::kWebAssets[i].path) { respond(client.value,200,webassets::kWebAssets[i].data,webassets::kWebAssets[i].mime); served=true; }
+                if(!served) {
+                    if(r.path=="/" || r.path=="/index.html") respond(client.value,200,assets::html,"text/html; charset=utf-8");
+                    else if(r.path=="/style.css") respond(client.value,200,assets::css,"text/css; charset=utf-8");
+                    else if(r.path=="/app.js") respond(client.value,200,assets::js,"text/javascript; charset=utf-8");
+                    else if(r.path=="/editor.js") respond(client.value,200,assets::editorJs,"text/javascript; charset=utf-8");
+                    else if(r.path=="/favicon.svg") respond(client.value,200,assets::icon,"image/svg+xml");
+                    else respond(client.value,404,"Not found","text/plain");
+                }
             } else respond(client.value,404,dump({{"error","接口不存在"}}));
+        } catch(const ApiError& e) {
+            Json payload={{"error",e.what()}};
+            if(e.extra.is_object()) payload.update(e.extra);
+            respond(client.value,e.status,dump(payload));
         } catch(const std::exception& e) { respond(client.value,400,dump({{"error",e.what()}})); }
     }
     engine.stop(); SetConsoleCtrlHandler(consoleHandler,FALSE);

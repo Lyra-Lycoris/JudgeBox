@@ -1,5 +1,6 @@
 /build/
 /runs/
+/.cache/
 /.runtime/
 /.claude/
 /.cursor/
