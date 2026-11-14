@@ -25,6 +25,9 @@ class ProblemAPI(unittest.TestCase):
         cls.data = pathlib.Path(cls.root.name) / 'runs'
         env = dict(os.environ)
         env['PATH'] = ';'.join(p for p in env['PATH'].split(';') if 'msys64' not in p.lower() and 'cangjie' not in p.lower())
+        cls.database = pathlib.Path(cls.root.name) / 'ProblemDatabase'
+        cls.database.mkdir()
+        env['JUDGEBOX_PROBLEM_DATABASE'] = str(cls.database)
         cls.proc = subprocess.Popen([str(EXE), '--no-browser', '--data-dir', str(cls.data)],
                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
                                     encoding='utf-8', env=env)
@@ -101,15 +104,9 @@ class ProblemAPI(unittest.TestCase):
         self.assertEqual(verification['solutions']['cangjie']['verdict'], 'AC')
         self.assertEqual(len(verification['groups']), 4)
         self.assertTrue(all(group['passed'] for group in verification['groups']), verification['groups'])
-        stored_path = pathlib.Path(self.root.name) / 'problems' / PROBLEM_ID / 'problem.json'
-        self.assertTrue(stored_path.is_file())
-        self.assertTrue((pathlib.Path(self.root.name) / 'problems' / PROBLEM_ID / 'data.zip').is_file())
-        stored = json.loads(stored_path.read_text(encoding='utf-8'))
-        self.assertNotIn('tests', stored)
-        self.assertIn('storedAt', stored)
-        self.assertTrue(stored['checker'].lstrip().startswith('#include'))
-        self.assertEqual(sorted(stored['function']['drivers'].keys()), ['cangjie', 'cpp'])
-        self.assertEqual(stored['solution']['cangjie'][0].lstrip()[:7], 'package')
+        files = [path.name for path in self.database.glob('*.zip')]
+        self.assertEqual(files, ['ict-renjian-cihua_人间词话_.zip'], files)
+        self.assertEqual(body['file'], 'ict-renjian-cihua_人间词话_.zip')
         # 判题之前状态是空转，不能是 404。
         state = self.ok('/api/submit/status')
         self.assertEqual(state['done'], True)
@@ -130,6 +127,8 @@ class ProblemAPI(unittest.TestCase):
         self.assertIsNone(problem['lastVerdict'])
         self.assertIsNone(problem['lastSubmittedAt'])
         self.assertEqual(problem['limits'], {'timeMs': 2000, 'memoryMb': 512})
+        self.assertEqual(problem['title']['zh'], '人间词话')
+        self.assertEqual(problem['file'], 'ict-renjian-cihua_人间词话_.zip')
 
     # 3. 详情字段齐全
     def test_03_detail(self):
@@ -256,6 +255,7 @@ class ProblemAPI(unittest.TestCase):
         broken.write_bytes(b'not a zip')
         status, body = self.request('/api/problems/import', {'zipPath': str(broken)}, timeout=30)
         self.assertEqual(status, 400, body)
+        self.assertEqual(len(list(self.database.glob('*.zip'))), 1, '坏题包不能进题库')
 
     # 9. 重复导入是幂等的；删除接口同时清掉该题提交
     def test_09_replace_and_delete(self):
@@ -274,6 +274,7 @@ class ProblemAPI(unittest.TestCase):
         status, body = self.request('/api/problems/' + PROBLEM_ID)
         self.assertEqual(status, 404, body)
         self.assertEqual(self.ok('/api/submissions?problemId=' + PROBLEM_ID)['submissions'], [])
+        self.assertEqual(list(self.database.glob('*.zip')), [])
 
     # 10. base64 上传同一份题包（浏览器走这条）
     def test_10_base64_import(self):
@@ -329,10 +330,33 @@ class ProblemAPI(unittest.TestCase):
         self.assertEqual(body['verification']['checker'], 'builtin')
         self.assertEqual(body['verification']['checkerCompiled'], False)
         self.assertEqual(body['verification']['solutions']['cpp']['score'], 100)
+        self.assertEqual(len(list(self.database.glob('*.zip'))), 2)
+        cards = {item['id']: item for item in self.ok('/api/problems')['problems']}
+        self.assertEqual(cards['demo-builtin']['title']['zh'], '内置判分示例')
         self.ok('/api/submit', {'problemId': 'demo-builtin', 'language': 'cpp', 'source': source})
         result = self.wait_done()
         self.assertEqual(result['verdict'], 'AC')
         self.assertEqual(result['score'], 100)
+
+    # 13. 直接把题包丢进题库目录（不走导入接口）也会出现，标题取自 problem.json 而不是文件名
+    def test_13_manual_drop(self):
+        template = pathlib.Path(__file__).resolve().parent.parent / 'CreateProblemGuide' / '模板'
+        folder = pathlib.Path(self.root.name) / 'manual-package'
+        shutil.copytree(template, folder)
+        archive = make_zip(folder, pathlib.Path(self.root.name) / 'whatever.zip')
+        shutil.copyfile(archive, self.database / 'zzz-random-name.zip')
+        cards = {item['id']: item for item in self.ok('/api/problems')['problems']}
+        self.assertIn('a-plus-b', cards)
+        self.assertEqual(cards['a-plus-b']['title']['zh'], 'A+B 问题')
+        self.assertEqual(cards['a-plus-b']['difficulty'], 800)
+        detail = self.ok('/api/problems/a-plus-b')
+        self.assertEqual(detail['judgeMode'], 'function')
+        self.assertTrue(detail['drivers']['cangjie'])
+        request = urllib.request.Request(self.url + '/api/problems/a-plus-b', method='DELETE',
+                                         headers={'Content-Type': 'application/json', 'X-JudgeBox-Token': self.token})
+        with urllib.request.urlopen(request, timeout=30) as response:
+            self.assertEqual(json.load(response), {'ok': True})
+        self.assertFalse((self.database / 'zzz-random-name.zip').exists())
 
 
 if __name__ == '__main__':

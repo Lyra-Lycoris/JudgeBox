@@ -452,9 +452,7 @@ Program programFromJson(const Json& j) {
 Json runCustomTests(const fs::path& cacheRoot,const fs::path& dataDir,const Json& tools,const std::string& problemId,const Json& request) {
     static const std::string allowed="abcdefghijklmnopqrstuvwxyz0123456789-";
     if(problemId.size()<2 || problemId.size()>48 || problemId.find_first_not_of(allowed)!=std::string::npos) throw ApiError(404,"题目不存在");
-    auto problemFile=problemsRoot(dataDir)/wide(problemId)/L"problem.json";
-    if(!fs::is_regular_file(problemFile)) throw ApiError(404,"题目不存在");
-    auto meta=Json::parse(readFile(problemFile));
+    auto meta=problemMeta(problemId);
     auto language=request.value("language",std::string());
     auto source=request.value("source",std::string());
     if(language!="cpp" && language!="cangjie") throw ApiError(400,"language 只能是 cpp 或 cangjie");

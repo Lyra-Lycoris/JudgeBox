@@ -7,6 +7,8 @@
 #include "testlib_asset.hpp"
 #include <algorithm>
 #include <cstdio>
+#include <cstdlib>
+#include <mutex>
 #include <map>
 #include <set>
 #include <string_view>
@@ -271,7 +273,7 @@ void validateDocument(const Json& document,Structure& structure,Issues& issues) 
 
 
 // ---- 3：从题包目录里读代码文件与用例 ----
-std::vector<ProblemCase> collectPackage(const fs::path& directory,const Json& document,Structure& structure,Issues& issues) {
+std::vector<ProblemCase> collectPackage(const fs::path& directory,const Json& document,Structure& structure,Issues& issues,bool readCases=true) {
     auto error=[&](std::string message) { issues.error(std::move(message)); };
     for(const auto& entry:fs::directory_iterator(directory))
         if(entry.is_directory()) error("题包 zip 不能有子目录："+utf8(entry.path().filename().wstring()));
@@ -356,6 +358,7 @@ std::vector<ProblemCase> collectPackage(const fs::path& directory,const Json& do
             listed.insert(item.get<std::string>());
         }
     std::vector<ProblemCase> cases;
+    if(readCases) {
     std::size_t totalBytes=0;
     for(const auto& [id,group]:ordered) {
         if(!inputs.contains(id)) { error("用例 "+id+" 缺少 "+id+".in"); continue; }
@@ -372,6 +375,7 @@ std::vector<ProblemCase> collectPackage(const fs::path& directory,const Json& do
     if(totalBytes>64ULL*1024*1024) error("用例总大小超过 64 MiB");
     if(cases.size()>200) error("用例数超过 200");
     if(cases.empty()) error("题包没有任何用例");
+    }
 
     structure.meta=document;
     structure.meta["checker"]=structure.checker;
@@ -547,26 +551,153 @@ void summarize(const Json& meta,const std::string& id,Json& item) {
 }
 }
 
-fs::path problemsRoot(const fs::path& dataDir) { return fs::absolute(dataDir).parent_path()/L"problems"; }
+fs::path problemDatabase() {
+    if(const char* value=std::getenv("JUDGEBOX_PROBLEM_DATABASE"); value && *value) {
+        try { return fs::path(wide(std::string(value))); } catch(...) {}
+    }
+    return executableDirectory()/L"ProblemDatabase";
+}
+fs::path problemsRoot(const fs::path& dataDir) { (void)dataDir; return problemDatabase(); }
+
+namespace {
+std::string stampOf(const fs::path& file) {
+    std::error_code error;
+    auto size=fs::file_size(file,error);
+    if(error) return {};
+    auto time=fs::last_write_time(file,error);
+    if(error) return {};
+    return std::to_string(size)+"@"+std::to_string(static_cast<long long>(time.time_since_epoch().count()));
+}
+std::string hexOf(const std::string& text) {
+    std::uint64_t hash=1469598103934665603ULL;
+    for(unsigned char c:text) { hash^=c; hash*=1099511628211ULL; }
+    char buffer[17];
+    std::snprintf(buffer,sizeof buffer,"%016llx",static_cast<unsigned long long>(hash));
+    return buffer;
+}
+Json readZipDocument(const fs::path& file) {
+    auto text=readZipEntry(file,"problem.json");
+    try { return Json::parse(stripBom(text)); }
+    catch(const std::exception& e) { throw std::runtime_error("problem.json 解析失败："+std::string(e.what())); }
+}
+struct DatabaseFile { fs::path path; Json document; };
+struct CacheEntry { std::string stamp; Json document; };
+std::mutex databaseMutex;
+std::map<std::wstring,CacheEntry> databaseCache;
+// 题库目录里的每个 zip 就是一道题；标题/难度等元数据全部来自包里的 problem.json。
+std::vector<DatabaseFile> scanDatabase() {
+    std::vector<DatabaseFile> files;
+    std::error_code error;
+    auto root=problemDatabase();
+    if(!fs::is_directory(root,error)) return files;
+    std::vector<fs::path> paths;
+    for(const auto& entry:fs::directory_iterator(root,error))
+        if(entry.is_regular_file() && entry.path().extension()==L".zip") paths.push_back(entry.path());
+    std::sort(paths.begin(),paths.end());
+    for(const auto& path:paths) {
+        try {
+            std::lock_guard lock(databaseMutex);
+            auto key=path.wstring();
+            auto stamp=stampOf(path);
+            auto found=databaseCache.find(key);
+            if(found!=databaseCache.end() && !stamp.empty() && found->second.stamp==stamp) {
+                files.push_back({path,found->second.document});
+                continue;
+            }
+            auto document=readZipDocument(path);
+            CacheEntry entry; entry.stamp=stamp; entry.document=document;
+            databaseCache[key]=entry;
+            files.push_back({path,std::move(document)});
+        } catch(const std::exception& e) {
+            std::fprintf(stderr,"JudgeBox: 跳过无法读取的题包 %s：%s\n",utf8(path.filename().wstring()).c_str(),e.what());
+        }
+    }
+    return files;
+}
+// 解压到 .cache/problemdb/<stamp>，同一份题包只解一次；判题与详情都从这里读。
+fs::path extractedRoot(const fs::path& file) {
+    auto directory=executableDirectory()/L".cache"/L"problemdb"/wide(hexOf(utf8(file.filename().wstring())+"\n"+stampOf(file)));
+    auto package=directory/L"package";
+    if(fs::is_regular_file(package/L"problem.json")) return package;
+    std::error_code error;
+    fs::remove_all(directory,error);
+    fs::create_directories(directory);
+    auto alias=directory/L"source.zip";
+    fs::create_hard_link(file,alias,error);
+    if(error) { error.clear(); fs::copy_file(file,alias,fs::copy_options::overwrite_existing,error); }
+    if(error) throw std::runtime_error("无法准备题包解压："+error.message());
+    try { extractZip(alias,package); }
+    catch(...) { std::error_code cleanup; fs::remove(alias,cleanup); throw; }
+    fs::remove(alias,error);
+    if(fs::is_regular_file(package/L"problem.json")) return package;
+    fs::path found; int count=0;
+    for(const auto& entry:fs::directory_iterator(package))
+        if(entry.is_directory() && fs::is_regular_file(entry.path()/L"problem.json")) { found=entry.path(); ++count; }
+    if(count!=1) throw std::runtime_error("题包根目录没有 problem.json（不要多套目录）");
+    return found;
+}
+struct LoadedProblem { fs::path root; Json meta; };
+LoadedProblem loadNormalized(const fs::path& file,const Json& document,bool readCases) {
+    Structure structure; Issues issues;
+    validateDocument(document,structure,issues);
+    if(!issues.empty()) throw std::runtime_error(issues.details.front().value("message",std::string("题包不合法")));
+    auto root=extractedRoot(file);
+    collectPackage(root,document,structure,issues,readCases);
+    if(!issues.empty()) throw std::runtime_error(issues.details.front().value("message",std::string("题包不合法")));
+    structure.meta["storedAt"]=stampOf(file);
+    return {root,structure.meta};
+}
+bool findDatabaseFile(const std::string& id,fs::path& file,Json& document) {
+    for(const auto& item:scanDatabase())
+        if(item.document.value("id",std::string())==id) { file=item.path; document=item.document; return true; }
+    return false;
+}
+std::string databaseTitle(const Json& document) {
+    std::string title;
+    if(document.contains("title") && document.at("title").is_object()) {
+        title=document.at("title").value("zh",std::string());
+        if(trim(title).empty()) title=document.at("title").value("en",std::string());
+    }
+    if(trim(title).empty()) title="problem";
+    for(char& c:title)
+        if(std::string("\\/:*?\"<>|").find(c)!=std::string::npos || static_cast<unsigned char>(c)<0x20) c='-';
+    while(!title.empty() && (title.back()==' ' || title.back()=='.' || title.back()=='-')) title.pop_back();
+    std::size_t count=0,cut=title.size();
+    for(std::size_t i=0;i<title.size();++i)
+        if((static_cast<unsigned char>(title[i])&0xC0)!=0x80 && ++count==41) { cut=i; break; }
+    title.resize(cut);
+    if(title.empty()) title="problem";
+    return title;
+}
+void removeExtracted(const fs::path& file) {
+    std::error_code error;
+    fs::remove_all(executableDirectory()/L".cache"/L"problemdb"/wide(hexOf(utf8(file.filename().wstring())+"\n"+stampOf(file))),error);
+}
+}
 
 Json listProblems(const fs::path& dataDir) {
-    auto root=problemsRoot(dataDir),cacheRoot=executableDirectory();
+    (void)dataDir;
+    auto cacheRoot=executableDirectory();
     Json items=Json::array();
-    std::error_code error;
-    if(fs::is_directory(root,error)) {
-        for(const auto& entry:fs::directory_iterator(root,error)) {
-            if(!entry.is_directory()) continue;
-            std::string id=utf8(entry.path().filename().wstring());
-            if(!validId(id)) continue;
-            try {
-                auto meta=readMeta(entry.path());
-                Json item; summarize(meta,id,item);
-                item.update(problemStats(cacheRoot,id));
-                items.push_back(std::move(item));
-            } catch(const std::exception& e) {
-                std::fprintf(stderr,"JudgeBox: 跳过无法读取的题目 %s：%s\n",id.c_str(),e.what());
-            }
+    for(const auto& item:scanDatabase()) {
+        auto id=item.document.value("id",std::string());
+        if(!validId(id)) continue;
+        Json card; summarize(item.document,id,card);
+        auto title=card.value("title",Json::object());
+        auto text=[&](const char* key) {
+            return title.is_object() && title.contains(key) && title.at(key).is_string()
+                ? title.at(key).get<std::string>() : std::string();
+        };
+        if(trim(text("zh")).empty() || trim(text("en")).empty()) {
+            auto fallback=utf8(item.path.stem().wstring());
+            Json fixed=title.is_object()?title:Json::object();
+            if(trim(text("zh")).empty()) fixed["zh"]=fallback;
+            if(trim(text("en")).empty()) fixed["en"]=fallback;
+            card["title"]=fixed;
         }
+        card["file"]=utf8(item.path.filename().wstring());
+        card.update(problemStats(cacheRoot,id));
+        items.push_back(std::move(card));
     }
     auto rank=[](const Json& item) { return item.at("bestScore").is_null()?-1LL:item.at("bestScore").get<long long>(); };
     std::sort(items.begin(),items.end(),[&](const Json& a,const Json& b){
@@ -580,9 +711,11 @@ Json listProblems(const fs::path& dataDir) {
 }
 
 Json loadProblem(const fs::path& dataDir,const std::string& id) {
+    (void)dataDir;
     if(!validId(id)) throw ApiError(404,"题目不存在");
-    auto directory=problemsRoot(dataDir)/wide(id);
-    auto meta=readMeta(directory);
+    fs::path file; Json document;
+    if(!findDatabaseFile(id,file,document)) throw ApiError(404,"题目不存在");
+    auto meta=loadNormalized(file,document,false).meta;
     Json item; summarize(meta,id,item);
     item.update(problemStats(executableDirectory(),id));
     Json function=meta.value("function",Json::object());
@@ -607,11 +740,16 @@ Json loadProblem(const fs::path& dataDir,const std::string& id) {
     return item;
 }
 
+Json problemMeta(const std::string& id) {
+    if(!validId(id)) throw ApiError(404,"题目不存在");
+    fs::path file; Json document;
+    if(!findDatabaseFile(id,file,document)) throw ApiError(404,"题目不存在");
+    return loadNormalized(file,document,false).meta;
+}
 
 Json importProblem(const fs::path& dataDir,const Json& request) {
-    auto root=problemsRoot(dataDir);
-    fs::create_directories(root);
-    Workspace workspace(root/wide(".import-"+std::to_string(GetTickCount64())));
+    (void)dataDir;
+    Workspace workspace(executableDirectory()/L".cache"/L"import"/wide(std::to_string(GetTickCount64())));
     Issues issues;
     auto package=preparePackage(request,workspace.path,issues);
     if(!issues.empty()) mergeDetails(issues,"题包校验失败");
@@ -624,58 +762,69 @@ Json importProblem(const fs::path& dataDir,const Json& request) {
     Structure structure;
     validateDocument(document,structure,issues);
     if(!issues.empty()) mergeDetails(issues,"题包校验失败");
-    auto cases=collectPackage(package,document,structure,issues);
+    auto cases=collectPackage(package,document,structure,issues,true);
     if(!issues.empty()) mergeDetails(issues,"题包校验失败");
     auto tools=detectTools(executableDirectory());
     auto verification=verifyPackage(structure.meta,structure,cases,workspace.path,tools,issues);
     if(!issues.empty()) mergeDetails(issues,"题包校验失败");
 
-    auto target=root/wide(structure.id);
-    bool replaced=fs::is_directory(target);
-    fs::create_directories(target);
-    createZip(target/L"data.zip",workspace.path/"cases");
-    Json meta=structure.meta;
-    meta["storedAt"]=nowIso();
-    Json report={{"id",structure.id},{"importedAt",nowIso()},{"verification",verification}};
-    writeFile(target/L"report.json",report.dump(2));
-    writeFile(target/L"problem.json",meta.dump(2));
-    Json result={{"ok",true},{"id",structure.id},{"verification",verification}};
+    auto database=problemDatabase();
+    fs::create_directories(database);
+    bool replaced=false;
+    std::error_code error;
+    for(const auto& item:scanDatabase())
+        if(item.document.value("id",std::string())==structure.id) {
+            removeExtracted(item.path);
+            fs::remove(item.path,error);
+            replaced=true;
+        }
+    auto name=structure.id+"_"+databaseTitle(document)+"_.zip";
+    auto target=database/wide(name);
+    std::error_code copyError;
+    fs::copy_file(workspace.path/"package.zip",target,fs::copy_options::overwrite_existing,copyError);
+    if(copyError) throw std::runtime_error("无法写入题库目录："+copyError.message());
+    Json result={{"ok",true},{"id",structure.id},{"file",name},{"verification",verification}};
     if(replaced) result["replaced"]=true;
     return result;
 }
+
 bool deleteProblem(const fs::path& dataDir,const std::string& id) {
+    (void)dataDir;
     if(!validId(id)) return false;
-    auto directory=problemsRoot(dataDir)/wide(id);
+    bool removed=false;
     std::error_code error;
-    if(!fs::is_directory(directory,error)) return false;
-    fs::remove_all(directory,error);
-    if(error) throw std::runtime_error("无法删除题目目录："+utf8(directory.wstring()));
-    removeProblemSubmissions(executableDirectory(),id);
-    return true;
+    for(const auto& item:scanDatabase())
+        if(item.document.value("id",std::string())==id) {
+            removeExtracted(item.path);
+            fs::remove(item.path,error);
+            removed=true;
+        }
+    if(removed) removeProblemSubmissions(executableDirectory(),id);
+    return removed;
 }
 
 ProblemPackage openProblem(const fs::path& dataDir,const std::string& id,const fs::path& workDirectory) {
+    (void)dataDir; (void)workDirectory;
     if(!validId(id)) throw ApiError(404,"题目不存在");
+    fs::path file; Json document;
+    if(!findDatabaseFile(id,file,document)) throw ApiError(404,"题目不存在");
+    auto loaded=loadNormalized(file,document,false);
     ProblemPackage package;
-    package.directory=problemsRoot(dataDir)/wide(id);
-    package.meta=readMeta(package.directory);
+    package.directory=loaded.root;
+    package.meta=loaded.meta;
     if(!package.meta.contains("groups") || !package.meta.at("groups").is_array()) throw std::runtime_error("题目数据损坏：groups 缺失");
-    auto zip=package.directory/L"data.zip";
-    if(!fs::is_regular_file(zip)) throw std::runtime_error("题目数据损坏：缺少 data.zip");
-    fs::create_directories(workDirectory);
-    extractZip(zip,workDirectory);
     for(const auto& group:package.meta.at("groups")) {
         auto groupName=group.at("name").get<std::string>();
         for(const auto& item:group.at("cases")) {
-            CaseFile file;
-            file.id=item.get<std::string>();
-            file.group=groupName;
-            file.input=workDirectory/wide(file.id+".in");
-            file.answer=workDirectory/wide(file.id+".ans");
-            if(!fs::is_regular_file(file.input)) throw std::runtime_error("题目数据损坏：缺少 "+file.id+".in");
-            if(!fs::is_regular_file(file.answer)) throw std::runtime_error("题目数据损坏：缺少 "+file.id+".ans");
-            file.answerBytes=fs::file_size(file.answer);
-            package.cases.push_back(std::move(file));
+            CaseFile entry;
+            entry.id=item.get<std::string>();
+            entry.group=groupName;
+            entry.input=loaded.root/wide(entry.id+".in");
+            entry.answer=loaded.root/wide(entry.id+".ans");
+            if(!fs::is_regular_file(entry.input)) throw std::runtime_error("题目数据损坏：缺少 "+entry.id+".in");
+            if(!fs::is_regular_file(entry.answer)) throw std::runtime_error("题目数据损坏：缺少 "+entry.id+".ans");
+            entry.answerBytes=fs::file_size(entry.answer);
+            package.cases.push_back(std::move(entry));
         }
     }
     return package;

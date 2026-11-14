@@ -42,11 +42,11 @@ void extractZip(const fs::path& zip,const fs::path& destination) {
     for(const auto& entry:fs::recursive_directory_iterator(destination,fs::directory_options::skip_permission_denied)) {
         if(!entry.is_regular_file()) continue;
         auto resolved=fs::weakly_canonical(entry.path(),error);
-        if(error) throw std::runtime_error("data.zip 含有无法识别的路径："+utf8(entry.path().filename().wstring()));
+        if(error) throw std::runtime_error("题包 zip 含有无法识别的路径："+utf8(entry.path().filename().wstring()));
         auto relative=resolved.lexically_relative(root);
         if(relative.empty() || relative.is_absolute() || *relative.begin()==fs::path(L".."))
-            throw std::runtime_error("data.zip 含有越界路径："+utf8(entry.path().wstring()));
-        if(++count>500) throw std::runtime_error("data.zip 文件数超过 500");
+            throw std::runtime_error("题包 zip 含有越界路径："+utf8(entry.path().wstring()));
+        if(++count>500) throw std::runtime_error("题包 zip 文件数超过 500");
     }
 }
 void createZip(const fs::path& zip,const fs::path& sourceDirectory) {
@@ -55,5 +55,36 @@ void createZip(const fs::path& zip,const fs::path& sourceDirectory) {
     if(!parent.empty()) fs::create_directories(parent);
     std::error_code error; fs::remove(zip,error);
     checkTar(runTar({L"-a",L"-cf",zip.wstring(),L"-C",sourceDirectory.wstring(),L"."},sourceDirectory),"打包");
-    if(!fs::is_regular_file(zip)) throw std::runtime_error("data.zip 打包后不存在");
+    if(!fs::is_regular_file(zip)) throw std::runtime_error("打包后 zip 不存在");
+}
+
+std::string readZipEntry(const fs::path& zip,const std::string& entry) {
+    if(!fs::is_regular_file(zip)) throw std::runtime_error("找不到题包："+utf8(zip.wstring()));
+    if(!fs::is_regular_file(tarExecutable)) throw std::runtime_error("系统缺少 tar.exe，无法读取题包");
+    // tar.exe 的 argv 走 ANSI：zip 路径带中文会变成 ???，所以在同盘的 .cache 里做一个 ASCII 硬链接再读。
+    auto temporary=executableDirectory()/L".cache"/L"tmp";
+    fs::create_directories(temporary);
+    auto alias=temporary/(std::wstring(L"read-")+std::to_wstring(GetTickCount64())+L"-"+std::to_wstring(GetCurrentThreadId())+L".zip");
+    std::error_code error;
+    fs::remove(alias,error);
+    fs::create_hard_link(zip,alias,error);
+    if(error) { error.clear(); fs::copy_file(zip,alias,fs::copy_options::overwrite_existing,error); }
+    if(error) throw std::runtime_error("无法准备题包读取："+error.message());
+    struct Cleanup { fs::path path; ~Cleanup() { std::error_code cleanup; fs::remove(path,cleanup); } } cleanup{alias};
+    RunOptions options;
+    options.timeMs=60000;
+    options.memoryBytes=512ULL*1024*1024;
+    options.outputBytes=8*1024*1024;
+    options.workingDirectory=temporary.wstring();
+    auto read=[&](const std::string& name) {
+        std::vector<std::wstring> arguments{L"-xOf",alias.wstring(),wide(name)};
+        return runProcess(tarExecutable.wstring(),arguments,"",options);
+    };
+    auto result=read(entry);
+    if(result.exit || result.stdOut.empty()) {
+        auto prefixed=read("./"+entry);
+        if(!prefixed.exit && !prefixed.stdOut.empty()) return prefixed.stdOut;
+    }
+    if(result.exit || result.stdOut.empty()) throw std::runtime_error("题包里找不到 "+entry);
+    return result.stdOut;
 }

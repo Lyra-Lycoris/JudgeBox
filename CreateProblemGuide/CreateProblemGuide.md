@@ -24,14 +24,14 @@
 - **文件名一律用 ASCII**（`a-z A-Z 0-9 _ - .`）。平台用系统 `tar.exe` 解压，包里出现中文文件名会解压失败。`problem.json` 里的中文内容没问题，只有**文件名**受限。
 - 导入时允许 zip 里套一层同名目录（Windows 右键"压缩到 zip"很常见），平台会自动下钻；但不要套两层。
 - 除上表以外的文件（`README.md` 之类）会被忽略，不会当成用例。
-- 导入接口只收 zip：`{"zipPath": "绝对路径"}` 或 `{"zip": "<base64>"}`（§9）。
+- 导入接口只收 zip：`{"zipPath": "绝对路径"}` 或 `{"zip": "<base64>"}`（§9）；也可以直接把 zip 拷进 `ProblemDatabase`，刷新题单就会出现。
 - zip 体积：base64 上传建议 ≤ 44 MiB（请求体上限 64 MiB）；更大的用 `zipPath`。
 
 ## 1. 概念
 
 | 词 | 含义 |
 |---|---|
-| 题包 | 上面那个 zip；导入后落在 `<dataDir>/../problems/<id>/` |
+| 题包 | 上面那个 zip；最终放在 exe 同级的 `ProblemDatabase/<id>_<题目名>_.zip` |
 | 用例 case | 一份 `.in` + 一份同名 `.ans`；判题时一个用例起一个进程 |
 | 组 group | 若干用例 + 一个分值；组内全 AC 才拿这组的全部分数 |
 | driver（`main.*`） | 只做 I/O 胶水：读 stdin → 调选手函数 → 写 stdout。`function` 模式必填 |
@@ -278,6 +278,8 @@ for (int i = 0; i < n; ++i) { auto line = ouf.readLine(); /* 去掉 \r */ }
 - 只收 zip；`zipPath` 必须是绝对路径。前端网页走 base64（选文件 → 自动编码）。
 - 请求体上限 64 MiB；base64 会膨胀约 1/3，所以网页导入建议 ≤ 44 MiB。
 - 导入是同步的：首次要编译 checker 与 driver，约 5–20 秒；成功会覆盖同 `id` 的旧版本并返回 `"replaced": true`。
+- **题库目录**：exe 同级的 `ProblemDatabase/`，里面只放题包 zip，命名 `<id>_<题目名>_.zip`（题目名取 `title.zh`，去掉了文件名非法字符）。导入就是把上传的 zip 按这个名字写进去；也可以直接把 zip 拷进去，刷新题单即出现。
+- 首页题单和题目详情都从 zip 里的 `problem.json` 读，卡片标题是其中的 `title.zh`，**不是压缩包文件名**。
 - 导入失败**不会写盘**，旧版本原样保留，可以反复试。
 
 ### 9.2 自检三项（任何一项失败即 400）
@@ -339,7 +341,7 @@ for (int i = 0; i < n; ++i) { auto line = ouf.readLine(); /* 去掉 \r */ }
 
 ## 11. 交付检查清单
 
-- [ ] 交付物是一个 zip，根目录平铺，没有子目录，文件名全 ASCII。
+- [ ] 交付物是一个 zip，根目录平铺，没有子目录，文件名全 ASCII；最终以 `<id>_<题目名>_.zip` 放进 `ProblemDatabase/`。
 - [ ] `problem.json` 只有 §2 的 12 个键；没有 `tests` / `checker` / `solution` / `driver` / `starter`。
 - [ ] `id` 合法；`difficulty` 是整百；`tags` 来自词表；题面中英齐全。
 - [ ] `groups` 至少 2 组，第一组 `sample` 且 1 分，`Σpoints == 100`。

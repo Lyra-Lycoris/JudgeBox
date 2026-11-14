@@ -14,3 +14,5 @@ __pycache__/
 .cph/
 /InstalledPackedge/
 /.vscode/
+/ProblemDatabase/*
+!/ProblemDatabase/ict-renjian-cihua_人间词话_.zip

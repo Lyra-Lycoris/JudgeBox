@@ -17,9 +17,11 @@ struct ProblemPackage {
     std::vector<CaseFile> cases; // 按 groups 顺序展开
 };
 
+fs::path problemDatabase();
 fs::path problemsRoot(const fs::path& dataDir);
 Json listProblems(const fs::path& dataDir);
 Json loadProblem(const fs::path& dataDir,const std::string& id);
 Json importProblem(const fs::path& dataDir,const Json& request);
 bool deleteProblem(const fs::path& dataDir,const std::string& id);
 ProblemPackage openProblem(const fs::path& dataDir,const std::string& id,const fs::path& workDirectory);
+Json problemMeta(const std::string& id);
