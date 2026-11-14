@@ -272,7 +272,9 @@ try {
     $desktopCandidates = @((Join-Path ([Environment]::GetFolderPath('Desktop')) 'JudgeBox.lnk'))
     if ($env:PUBLIC) { $desktopCandidates += (Join-Path $env:PUBLIC 'Desktop\JudgeBox.lnk') }
     if (-not ($desktopCandidates | Where-Object { Test-Path -LiteralPath $_ })) { throw 'The desktop icon was not created.' }
-    if ((Get-Item -LiteralPath $installedExe).VersionInfo.FileVersion -notmatch '1\.3\.1') { throw 'Installed JudgeBox.exe has the wrong version resource.' }
+    $expectedFileVersion = (Get-Item -LiteralPath (Join-Path $projectDirectory 'build\JudgeBox.exe')).VersionInfo.FileVersion
+    $installedFileVersion = (Get-Item -LiteralPath $installedExe).VersionInfo.FileVersion
+    if ($installedFileVersion -ne $expectedFileVersion) { throw "Installed JudgeBox.exe version $installedFileVersion does not match built $expectedFileVersion." }
     Write-Host 'Running the installed self-test with embedded Python'
     $selfTest = Start-Quoted -File $installedExe -Arguments ('--self-test --data-dir "' + $dataDir + '"')
     if (-not $selfTest.WaitForExit(900000)) {
