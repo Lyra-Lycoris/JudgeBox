@@ -122,6 +122,7 @@ int serve(const fs::path& dataDirectory,bool openBrowser,unsigned short requeste
                 else if(r.path=="/api/diagnostics" && r.method=="POST") result=diagnoseSource(body.value("source",std::string()),body.value("language",std::string("cpp")),bundledTools(executableDirectory()),engineData);
                 else if(r.path=="/api/problems" && r.method=="GET") result=listProblems(engineData);
                 else if(r.path=="/api/problems/import" && r.method=="POST") result=importProblem(engineData,body);
+                else if(r.path.starts_with("/api/problems/") && r.path.ends_with("/run") && r.method=="POST") { if(!problemEngine.status().at("done").get<bool>()) throw ApiError(409,"正在判题，请等提交结束后再自测"); result=runCustomTests(executableDirectory(),engineData,tools,r.path.substr(14,r.path.size()-18),body); }
                 else if(r.path.starts_with("/api/problems/") && r.method=="GET") result=loadProblem(engineData,r.path.substr(14));
                 else if(r.path.starts_with("/api/problems/") && r.method=="DELETE") { if(!deleteProblem(engineData,r.path.substr(14))) throw ApiError(404,"题目不存在"); result={{"ok",true}}; }
                 else if(r.path=="/api/submit" && r.method=="POST") { if(!engine.status().at("done").get<bool>()) throw ApiError(409,"已有提交正在判题"); result=problemEngine.start(body); }

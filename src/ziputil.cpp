@@ -25,7 +25,7 @@ void checkTar(const runResult& result,const char* action) {
         auto detail=result.errOut+result.stdOut;
         if(detail.empty()) detail="退出码 "+std::to_string(result.exit);
         if(detail.size()>2000) detail.resize(2000);
-        throw std::runtime_error(std::string("data.zip ") + action+"失败："+detail);
+        throw std::runtime_error(std::string(action)+"失败："+detail);
     }
 }
 }

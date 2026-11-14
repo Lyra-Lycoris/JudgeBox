@@ -19,8 +19,10 @@ std::vector<std::pair<std::string,std::string>> assembleCangjie(const std::strin
 Program buildChecker(const std::string& source,const fs::path& directory,const Json& tools,const std::atomic_bool* cancel);
 Program buildUnit(const std::string& language,const std::vector<std::pair<std::string,std::string>>& files,
                   const fs::path& directory,const Json& tools,const std::atomic_bool* cancel);
-CaseJudgement judgeCase(const Program& program,const fs::path& directory,const CaseFile& test,const Program& checker,
+CaseJudgement judgeCase(const Program& program,const fs::path& directory,const CaseFile& test,const Program* checker,
                         long long timeMs,long long memoryMb,const std::atomic_bool* cancel);
+
+Json runCustomTests(const fs::path& cacheRoot,const fs::path& dataDir,const Json& tools,const std::string& problemId,const Json& request);
 
 class ProblemJudgeEngine {
     fs::path cacheRoot,dataDir;

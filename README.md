@@ -20,9 +20,10 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1
 
 ## 题目系统（开发中）
 
-后端题包层已经可用：`problem.json` + `data.zip` → `POST /api/problems/import` → 题单 / 提交 / 判题 / 历史，字段以 `JudgeBox-共用规格.md` §6 为准（前端还在做，目前只有接口）。
-验收：`ctest --test-dir build -R problem --output-on-failure`，会导入 `tests/fixtures/ict-renjian-cihua/problem.json`，用仓颉参考解跑满 100 分，再提交一次 WRONG CODE 校验 0 分。
-判题缓存写在 exe 同级的 `.cache/`（`submissions/` 是历史，`judge/` 是逐点产物）；实测一次导入约 11 秒、一次仓颉提交约 8 秒，大头是每次都要编译一遍 testlib 版 checker。
+后端题包层已经可用：一个题包 **zip** → `POST /api/problems/import` → 题单 / 提交 / 判题 / 历史。出题规范见 [CreateProblemGuide](CreateProblemGuide/CreateProblemGuide.md)，同目录下有可直接导入的 `完整示例.zip` 和 `模板/`。
+zip 根目录放 `problem.json`、`<caseId>.in/.ans`、`checker.cpp`（SPJ，可选）、`main.*`/`starter.*`（函数题）、`solution.*`；没有 `checker.cpp` 时按内置 token 比较判。
+验收：`ctest --test-dir build -R problem --output-on-failure`，会导入夹具题包，用仓颉参考解跑满 100 分，再提交一次错误代码校验 0 分。
+判题缓存写在 exe 同级的 `.cache/`（`submissions/` 历史、`judge/` 逐点产物、`checkers/` 编译缓存）。
 手工试：`JudgeBox.exe --no-browser --data-dir %TEMP%\jb`，用启动窗口地址里的 token 调接口即可。
 
 ## 数据生成 JSON

@@ -1,4 +1,4 @@
-﻿#include "problems.hpp"
+#include "problems.hpp"
 #include "apierror.hpp"
 #include "compiler.hpp"
 #include "problemjudge.hpp"
@@ -13,19 +13,16 @@
 
 namespace {
 const std::set<std::string> kFields={"schemaVersion","id","title","difficulty","tags","limits","judgeMode","statement",
-    "hints","samples","groups","function","checker","solution","tests","testsZipPath","notes"};
-// 规格 §4.5：标签只能取这张表，出题模型不许自由发挥。
+    "samples","groups","function","notes"};
 const std::set<std::string> kTags={"模拟","枚举","排序","二分","贪心","构造","前缀和","差分","双指针","滑动窗口","哈希","栈",
     "队列","单调栈","堆","并查集","树状数组","线段树","字符串","Trie","KMP","图论","最短路","最小生成树","拓扑排序","二分图",
     "网络流","树","最近公共祖先","动态规划","背包","区间DP","状压DP","数位DP","树形DP","数学","数论","组合数学","概率期望",
     "计算几何","位运算","分治","记忆化搜索","高精度","交互"};
-
 struct Structure {
-    std::string id,checker,zipPath;
+    std::string id,checker;
     Json meta;
-    std::vector<ProblemCase> cases; // 只有 tests 内嵌时有意义
     std::vector<std::string> drivers,solutions;
-    bool hasTests=false,functionMode=false;
+    bool functionMode=false;
 };
 struct Issues {
     std::vector<Json> details;
@@ -174,24 +171,6 @@ void validateDocument(const Json& document,Structure& structure,Issues& issues) 
             else if(text.size()>64*1024) error(std::string("statement.")+key+" 超过 64 KB");
         }
     }
-    if(document.contains("hints")) {
-        if(!document.at("hints").is_object()) error("hints 必须是对象");
-        else {
-            const auto& hints=document.at("hints");
-            for(auto it=hints.begin();it!=hints.end();++it)
-                if(it.key()!="zh" && it.key()!="en") error("hints 含有未知字段 "+it.key());
-            for(const auto* key:{"zh","en"}) {
-                if(!hints.contains(key)) continue;
-                const auto& list=hints.at(key);
-                if(!list.is_array()) { error(std::string("hints.")+key+" 必须是数组"); continue; }
-                if(list.size()>4) error(std::string("hints.")+key+" 最多 4 条");
-                for(std::size_t i=0;i<list.size();++i) {
-                    if(!list[i].is_string()) { error("hints."+std::string(key)+"["+std::to_string(i)+"] 必须是字符串"); continue; }
-                    if(textWidth(list[i].get<std::string>())>300) error("hints."+std::string(key)+" 第 "+std::to_string(i+1)+" 条超过 300 字");
-                }
-            }
-        }
-    }
     if(!document.contains("samples") || !document.at("samples").is_array()) error("samples 缺失或不是数组");
     else {
         const auto& samples=document.at("samples");
@@ -259,13 +238,14 @@ void validateDocument(const Json& document,Structure& structure,Issues& issues) 
         }
         if(pointsSum!=100) error("groups 分值之和为 "+std::to_string(pointsSum)+"，应为 100");
     }
-    // ---- 4：function 模式 ----
+
+    // ---- 4：function 模式（package / signature 在 json 里，driver 与 starter 来自文件） ----
     if(structure.functionMode) {
-        if(!document.contains("function") || !document.at("function").is_object()) error("function 模式必须提供 function 段");
+        if(!document.contains("function") || !document.at("function").is_object()) error("function 模式必须提供 function 段（package 与 signature）");
         else {
             const auto& function=document.at("function");
             for(auto it=function.begin();it!=function.end();++it)
-                if(it.key()!="package" && it.key()!="signature" && it.key()!="drivers" && it.key()!="starter")
+                if(it.key()!="package" && it.key()!="signature")
                     error("function 含有未知字段 "+it.key());
             std::string package;
             if(!stringAt(function,"package",package) || trim(package).empty()) error("function.package 不能为空");
@@ -280,55 +260,6 @@ void validateDocument(const Json& document,Structure& structure,Issues& issues) 
                     if(!stringAt(signature,key,text) || trim(text).empty()) error(std::string("function.signature.")+key+" 不能为空");
                 }
             }
-            for(const auto* key:{"drivers","starter"}) {
-                if(!function.contains(key) || !function.at(key).is_object()) { error(std::string("function.")+key+" 缺失或不是对象"); continue; }
-                for(auto it=function.at(key).begin();it!=function.at(key).end();++it) {
-                    if(it.key()!="cpp" && it.key()!="cangjie") error(std::string("function.")+key+" 含有未知语言 "+it.key());
-                    else if(!it.value().is_string() || trim(it.value().get<std::string>()).empty()) error(std::string("function.")+key+"."+it.key()+" 不能为空");
-                }
-            }
-            if(function.contains("drivers") && function.at("drivers").is_object() && function.contains("starter") && function.at("starter").is_object()) {
-                const auto& drivers=function.at("drivers");
-                const auto& starter=function.at("starter");
-                bool any=false;
-                for(const auto* language:{"cpp","cangjie"}) {
-                    bool hasDriver=drivers.contains(language),hasStarter=starter.contains(language);
-                    if(hasDriver!=hasStarter) error(std::string("function.drivers 与 function.starter 的语言集合不一致：")+language);
-                    if(hasDriver && hasStarter) { structure.drivers.push_back(language); any=true; }
-                }
-                if(!any) error("function.drivers 至少需要 cpp 或 cangjie 之一");
-            }
-        }
-    }
-    std::string checker;
-    if(!stringAt(document,"checker",checker) || trim(checker).empty()) error("checker 不能为空");
-    else if(checker.size()>512*1024) error("checker 超过 512 KB");
-    else structure.checker=checker;
-
-    if(!document.contains("solution") || !document.at("solution").is_object()) error("solution 缺失或不是对象");
-    else {
-        const auto& solution=document.at("solution");
-        if(solution.empty()) error("solution 至少需要一种语言");
-        for(auto it=solution.begin();it!=solution.end();++it) {
-            auto language=it.key();
-            if(language!="cpp" && language!="cangjie") { error("solution 含有未知语言 "+language); continue; }
-            std::size_t size=0; bool ok=true;
-            if(it.value().is_string()) size=it.value().get_ref<const std::string&>().size();
-            else if(it.value().is_array()) {
-                if(it.value().empty()) { error("solution."+language+" 不能是空数组"); ok=false; }
-                for(std::size_t i=0;i<it.value().size() && ok;++i) {
-                    const auto& unit=it.value()[i];
-                    if(!unit.is_string() || unit.get_ref<const std::string&>().empty()) { error("solution."+language+"["+std::to_string(i)+"] 必须是非空字符串"); ok=false; break; }
-                    size+=unit.get_ref<const std::string&>().size()+1;
-                }
-            } else { error("solution."+language+" 必须是字符串或字符串数组"); ok=false; }
-            if(!ok) continue;
-            if(size>512*1024) { error("solution."+language+" 超过 512 KB"); continue; }
-            if(structure.functionMode && std::find(structure.drivers.begin(),structure.drivers.end(),language)==structure.drivers.end()) {
-                error("solution 声明了 "+language+"，但题包没有对应的 driver");
-                continue;
-            }
-            structure.solutions.push_back(language);
         }
     }
     if(document.contains("notes")) {
@@ -336,49 +267,87 @@ void validateDocument(const Json& document,Structure& structure,Issues& issues) 
         else for(auto it=document.at("notes").begin();it!=document.at("notes").end();++it)
             if(it.key()!="zh" && it.key()!="en") error("notes 含有未知字段 "+it.key());
     }
-    // ---- 3：用例来源 ----
-    bool hasTests=document.contains("tests");
-    if(hasTests) {
-        const auto& tests=document.at("tests");
-        if(!tests.is_array()) error("tests 必须是数组");
-        else {
-            if(tests.size()>200) error("用例数超过 200（"+std::to_string(tests.size())+" 个）");
-            std::size_t totalBytes=0;
-            for(std::size_t i=0;i<tests.size();++i) {
-                const auto& item=tests[i];
-                auto label="tests["+std::to_string(i)+"]";
-                if(!item.is_object()) { error(label+" 必须是对象"); continue; }
-                for(auto it=item.begin();it!=item.end();++it)
-                    if(it.key()!="id" && it.key()!="group" && it.key()!="input" && it.key()!="answer") error(label+" 含有未知字段 "+it.key());
-                ProblemCase entry;
-                if(!stringAt(item,"id",entry.id) || !validCaseId(entry.id)) error(label+".id 缺失或格式不合法");
-                if(!stringAt(item,"group",entry.group)) error(label+".group 缺失");
-                if(!stringAt(item,"input",entry.input)) error(label+".input 缺失");
-                else if(entry.input.size()>4*1024*1024) error("用例 "+entry.id+" 的输入超过 4 MiB");
-                if(!stringAt(item,"answer",entry.answer) || entry.answer.empty()) error("用例 "+entry.id+" 缺少答案");
-                else if(entry.answer.size()>4*1024*1024) error("用例 "+entry.id+" 的答案超过 4 MiB");
-                totalBytes+=entry.input.size()+entry.answer.size();
-                if(!entry.id.empty()) structure.cases.push_back(std::move(entry));
-            }
-            if(totalBytes>64ULL*1024*1024) error("用例总大小超过 64 MiB");
-            structure.hasTests=true;
-        }
-    } else if(document.contains("testsZipPath")) {
-        std::string zipPath;
-        if(!stringAt(document,"testsZipPath",zipPath)) error("testsZipPath 必须是字符串");
-        else {
-            auto path=fs::path(wide(zipPath));
-            if(!path.is_absolute()) error("testsZipPath 必须是绝对路径");
-            else if(!fs::is_regular_file(path)) error("找不到 testsZipPath 指向的数据包："+zipPath);
-            else structure.zipPath=zipPath;
-        }
-    }
-    if(!hasTests && structure.zipPath.empty()) error("tests 与 testsZipPath 至少要提供一个");
 }
 
-// ---- 3：把用例真的取到内存里（zip 需要解压） ----
-std::vector<ProblemCase> collectCases(const Json& document,const Structure& structure,const fs::path& workspace,Issues& issues) {
+
+// ---- 3：从题包目录里读代码文件与用例 ----
+std::vector<ProblemCase> collectPackage(const fs::path& directory,const Json& document,Structure& structure,Issues& issues) {
     auto error=[&](std::string message) { issues.error(std::move(message)); };
+    for(const auto& entry:fs::directory_iterator(directory))
+        if(entry.is_directory()) error("题包 zip 不能有子目录："+utf8(entry.path().filename().wstring()));
+    auto readText=[&](const fs::path& path) { return stripBom(readFile(path)); };
+    auto present=[&](const std::string& name) { return fs::is_regular_file(directory/wide(name)); };
+    auto extension=[](const std::string& language) { return language=="cpp"?std::string(".cpp"):std::string(".cj"); };
+
+    // checker.cpp 可选：没有就按内置 token 比较判
+    if(present("checker.cpp")) {
+        auto text=readText(directory/L"checker.cpp");
+        if(trim(text).empty()) error("checker.cpp 是空文件");
+        else if(text.size()>512*1024) error("checker.cpp 超过 512 KB");
+        else structure.checker=text;
+    }
+
+    Json drivers=Json::object(),starter=Json::object(),solution=Json::object();
+    for(const auto& language:{"cpp","cangjie"}) {
+        auto name=std::string(language),main="main"+extension(name),start="starter"+extension(name);
+        bool hasMain=present(main),hasStarter=present(start);
+        if(structure.functionMode) {
+            if(!hasMain) {
+                if(hasStarter) error("有 "+start+" 但缺少 "+main+"（starter 必须和 main 成对）");
+                continue;
+            }
+            if(!hasStarter) { error("缺少 "+start+"（function 模式每个 driver 都要配 starter）"); continue; }
+            drivers[name]=readText(directory/wide(main));
+            starter[name]=readText(directory/wide(start));
+            structure.drivers.push_back(name);
+        } else {
+            if(hasMain) error("io 模式不需要 "+main+"（选手自己写 main）");
+            if(hasStarter) error("io 模式不需要 "+start);
+        }
+    }
+    if(structure.functionMode && structure.drivers.empty()) error("function 模式至少要有一个 main.cj 或 main.cpp");
+
+    for(const auto& language:{"cpp","cangjie"}) {
+        auto name=std::string(language),ext=extension(name);
+        std::vector<std::string> units;
+        if(present("solution"+ext)) units.push_back(readText(directory/wide("solution"+ext)));
+        else {
+            std::map<int,std::string> numbered;
+            for(const auto& entry:fs::directory_iterator(directory)) {
+                auto file=utf8(entry.path().filename().wstring());
+                std::string prefix="solution_";
+                if(!file.starts_with(prefix) || !file.ends_with(ext) || file.size()<=prefix.size()+ext.size()) continue;
+                auto middle=file.substr(prefix.size(),file.size()-prefix.size()-ext.size());
+                if(middle.find_first_not_of("0123456789")!=std::string::npos) continue;
+                numbered[std::stoi(middle)]=readText(entry.path());
+            }
+            for(const auto& [index,text]:numbered) {
+                if(index!=static_cast<int>(units.size())+1) { error("solution_ 编号必须从 1 连续（缺 solution_"+std::to_string(units.size()+1)+ext+"）"); break; }
+                units.push_back(text);
+            }
+        }
+        if(units.empty()) continue;
+        std::size_t bytes=0;
+        for(const auto& unit:units) bytes+=unit.size()+1;
+        if(bytes>512*1024) { error("solution"+ext+" 超过 512 KB"); continue; }
+        if(structure.functionMode && std::find(structure.drivers.begin(),structure.drivers.end(),name)==structure.drivers.end()) {
+            error("有 solution"+ext+"，但没有对应的 main"+ext+"（参考答案的语言必须有 driver）");
+            continue;
+        }
+        solution[name]=units.size()==1?Json(units[0]):Json(units);
+        structure.solutions.push_back(name);
+    }
+    if(structure.solutions.empty()) error("缺少参考解：solution.cj 或 solution.cpp（多文件用 solution_1.cj、solution_2.cj…）");
+
+    // 用例：根目录下的 <caseId>.in / <caseId>.ans
+    std::map<std::string,fs::path> inputs,answers;
+    for(const auto& entry:fs::directory_iterator(directory)) {
+        if(!entry.is_regular_file()) continue;
+        auto name=utf8(entry.path().stem().wstring());
+        auto ext=utf8(entry.path().extension().wstring());
+        if(ext==".in") inputs[name]=entry.path();
+        else if(ext==".ans") answers[name]=entry.path();
+    }
     std::vector<std::pair<std::string,std::string>> ordered;
     std::set<std::string> listed;
     for(const auto& group:document.at("groups"))
@@ -387,46 +356,31 @@ std::vector<ProblemCase> collectCases(const Json& document,const Structure& stru
             listed.insert(item.get<std::string>());
         }
     std::vector<ProblemCase> cases;
-    if(structure.hasTests) {
-        std::map<std::string,const ProblemCase*> byId;
-        for(const auto& entry:structure.cases) byId[entry.id]=&entry;
-        for(const auto& [id,group]:ordered) {
-            auto it=byId.find(id);
-            if(it==byId.end()) { error("用例 "+id+" 不在 tests 中"); continue; }
-            if(!it->second->group.empty() && it->second->group!=group)
-                error("用例 "+id+" 在 tests 里属于组 "+it->second->group+"，但 groups 把它列在组 "+group);
-            auto entry=*it->second; entry.group=group;
-            cases.push_back(std::move(entry));
-        }
-        for(const auto& entry:structure.cases)
-            if(!listed.contains(entry.id)) error("用例 "+entry.id+" 不在任何组中");
-    } else {
-        auto extracted=workspace/"data";
-        try { extractZip(fs::path(wide(structure.zipPath)),extracted); }
-        catch(const std::exception& e) { error(std::string("读取 data.zip 失败：")+e.what()); return {}; }
-        std::map<std::string,fs::path> inputs,answers;
-        for(const auto& entry:fs::directory_iterator(extracted)) {
-            if(!entry.is_regular_file()) continue;
-            auto name=utf8(entry.path().stem().wstring());
-            auto extension=utf8(entry.path().extension().wstring());
-            if(extension==".in") inputs[name]=entry.path();
-            else if(extension==".ans") answers[name]=entry.path();
-        }
-        std::size_t totalBytes=0;
-        for(const auto& [id,group]:ordered) {
-            if(!inputs.contains(id)) { error("用例 "+id+" 缺少 "+id+".in"); continue; }
-            if(!answers.contains(id)) { error("用例 "+id+" 缺少 "+id+".ans"); continue; }
-            ProblemCase entry{id,group,stripBom(readFile(inputs[id])),stripBom(readFile(answers[id]))};
-            if(entry.input.size()>4*1024*1024) error("用例 "+id+" 的输入超过 4 MiB");
-            if(entry.answer.empty()) error("用例 "+id+" 的 .ans 是空文件");
-            else if(entry.answer.size()>4*1024*1024) error("用例 "+id+" 的答案超过 4 MiB");
-            totalBytes+=entry.input.size()+entry.answer.size();
-            cases.push_back(std::move(entry));
-        }
-        for(const auto& [id,path]:inputs) { (void)path; if(!listed.contains(id)) error("用例 "+id+" 不在任何组中"); }
-        for(const auto& [id,path]:answers) { (void)path; if(!listed.contains(id)) error("用例 "+id+" 不在任何组中"); }
-        if(totalBytes>64ULL*1024*1024) error("用例总大小超过 64 MiB");
-        if(cases.size()>200) error("用例数超过 200");
+    std::size_t totalBytes=0;
+    for(const auto& [id,group]:ordered) {
+        if(!inputs.contains(id)) { error("用例 "+id+" 缺少 "+id+".in"); continue; }
+        if(!answers.contains(id)) { error("用例 "+id+" 缺少 "+id+".ans"); continue; }
+        ProblemCase entry{id,group,stripBom(readFile(inputs[id])),stripBom(readFile(answers[id]))};
+        if(entry.input.size()>4*1024*1024) error("用例 "+id+" 的输入超过 4 MiB");
+        if(entry.answer.empty()) error("用例 "+id+" 的 .ans 是空文件");
+        else if(entry.answer.size()>4*1024*1024) error("用例 "+id+" 的答案超过 4 MiB");
+        totalBytes+=entry.input.size()+entry.answer.size();
+        cases.push_back(std::move(entry));
+    }
+    for(const auto& [id,path]:inputs) { (void)path; if(!listed.contains(id)) error("用例 "+id+" 不在任何组中"); }
+    for(const auto& [id,path]:answers) { (void)path; if(!listed.contains(id)) error("用例 "+id+" 不在任何组中"); }
+    if(totalBytes>64ULL*1024*1024) error("用例总大小超过 64 MiB");
+    if(cases.size()>200) error("用例数超过 200");
+    if(cases.empty()) error("题包没有任何用例");
+
+    structure.meta=document;
+    structure.meta["checker"]=structure.checker;
+    structure.meta["solution"]=solution;
+    if(structure.functionMode) {
+        auto function=structure.meta.value("function",Json::object());
+        function["drivers"]=drivers;
+        function["starter"]=starter;
+        structure.meta["function"]=function;
     }
     return cases;
 }
@@ -443,7 +397,8 @@ Program compileReference(const Json& document,const Structure& structure,const s
     if(language=="cpp") return buildUnit(language,{{"Main.cpp",assembleCpp("",units)}},directory,tools,nullptr);
     return buildUnit(language,assembleCangjie("","",units,false),directory,tools,nullptr);
 }
-// ---- 6–8：编译 checker / driver / 用参考答案跑满分 ----
+
+// ---- 6–8：编译 checker（可选）/ driver / 用参考答案跑满分 ----
 Json verifyPackage(const Json& document,const Structure& structure,const std::vector<ProblemCase>& cases,const fs::path& workspace,const Json& tools,Issues& issues) {
     auto error=[&](std::string message) { issues.error(std::move(message)); };
     auto caseDirectory=workspace/"cases";
@@ -455,13 +410,17 @@ Json verifyPackage(const Json& document,const Structure& structure,const std::ve
         writeFile(answer,item.answer);
         paths[item.id]={input,answer};
     }
-    auto checkerDirectory=workspace/"checker";
-    fs::create_directories(checkerDirectory);
-    writeFile(checkerDirectory/L"testlib.h",testlib_asset::header);
-    auto checker=buildChecker(structure.checker,checkerDirectory,tools,nullptr);
-    if(checker.verdict!="AC") {
-        error("checker 编译失败（前 20 行）：\n"+firstLines(checker.log,20));
-        return Json::object();
+    Program checker;
+    bool custom=!structure.checker.empty();
+    if(custom) {
+        auto checkerDirectory=workspace/"checker";
+        fs::create_directories(checkerDirectory);
+        writeFile(checkerDirectory/L"testlib.h",testlib_asset::header);
+        checker=buildChecker(structure.checker,checkerDirectory,tools,nullptr);
+        if(checker.verdict!="AC") {
+            error("checker 编译失败（前 20 行）：\n"+firstLines(checker.log,20));
+            return Json::object();
+        }
     }
     Json driverStatus=Json::object();
     if(structure.functionMode) {
@@ -497,7 +456,7 @@ Json verifyPackage(const Json& document,const Structure& structure,const std::ve
                 auto runDirectory=workspace/"run"/wide(language+"-"+id);
                 fs::create_directories(runDirectory);
                 CaseFile file{id,groupName,paths[id].first,paths[id].second,fs::file_size(paths[id].second)};
-                auto judgement=judgeCase(program,runDirectory,file,checker,timeMs,memoryMb,nullptr);
+                auto judgement=judgeCase(program,runDirectory,file,custom?&checker:nullptr,timeMs,memoryMb,nullptr);
                 if(judgement.verdict!="AC") {
                     passed=false;
                     if(firstFailure.empty()) { firstFailure=judgement.verdict; firstGroup=groupName; firstCase=id; firstMessage=judgement.message; }
@@ -516,27 +475,59 @@ Json verifyPackage(const Json& document,const Structure& structure,const std::ve
             } else error("参考答案未满分：得分 "+std::to_string(score)+"，应为 100");
         }
     }
-    return {{"cases",static_cast<long long>(cases.size())},{"groups",groupStatus},{"checkerCompiled",true},
+    return {{"cases",static_cast<long long>(cases.size())},{"groups",groupStatus},
+            {"checker",custom?"custom":"builtin"},{"checkerCompiled",custom},
             {"drivers",driverStatus},{"solutions",solutions}};
 }
-Json readRequest(const Json& request) {
-    std::string text;
-    if(request.contains("json") && request.at("json").is_string()) text=request.at("json").get<std::string>();
-    else if(request.contains("path") && request.at("path").is_string()) {
-        auto path=request.at("path").get<std::string>();
-        if(path.empty()) throw ApiError(400,"path 不能为空");
-        auto file=fs::path(wide(path));
-        if(!file.is_absolute()) throw ApiError(400,"path 必须是绝对路径");
-        if(!fs::is_regular_file(file)) throw ApiError(400,"找不到题包文件："+path);
-        text=readFile(file);
-    } else throw ApiError(400,"请提供 json 或 path");
-    if(text.size()>64ULL*1024*1024) throw ApiError(400,"problem.json 超过 64 MiB");
-    try { return Json::parse(text); }
-    catch(const std::exception& e) {
-        Json details=Json::array();
-        details.push_back({{"level","error"},{"message",std::string("JSON 解析失败：")+e.what()}});
-        throw ApiError(400,"题包校验失败",{{"details",details}});
+
+bool decodeBase64(const std::string& text,std::string& bytes) {
+    static const std::string alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    int buffer=0,bits=0;
+    for(char c:text) {
+        if(c=='=') break;
+        if(c=='\r' || c=='\n' || c==' ' || c=='\t') continue;
+        auto index=alphabet.find(c);
+        if(index==std::string::npos) return false;
+        buffer=(buffer<<6)|static_cast<int>(index);
+        bits+=6;
+        if(bits>=8) { bits-=8; bytes.push_back(static_cast<char>((buffer>>bits)&0xFF)); }
     }
+    return true;
+}
+// 题包是一个 zip：解压到工作目录，返回题包根目录（允许 zip 里套一层目录）。
+fs::path preparePackage(const Json& request,const fs::path& workspace,Issues& issues) {
+    auto error=[&](std::string message) { issues.error(std::move(message)); };
+    fs::create_directories(workspace);
+    auto local=workspace/"package.zip";
+    if(request.contains("zipPath") && request.at("zipPath").is_string()) {
+        auto text=request.at("zipPath").get<std::string>();
+        auto path=fs::path(wide(text));
+        if(!path.is_absolute()) { error("zipPath 必须是绝对路径"); return {}; }
+        if(!fs::is_regular_file(path)) { error("找不到题包 zip："+text); return {}; }
+        // 系统 tar.exe 用的是 ANSI 参数：源路径带中文会变成 ???，先复制到工作目录的 ASCII 路径再解压。
+        std::error_code copyError;
+        fs::copy_file(path,local,fs::copy_options::overwrite_existing,copyError);
+        if(copyError) { error("无法复制题包 zip 到临时目录："+copyError.message()); return {}; }
+    } else if(request.contains("zip") && request.at("zip").is_string()) {
+        std::string bytes;
+        if(!decodeBase64(request.at("zip").get<std::string>(),bytes)) { error("zip 字段不是合法的 base64"); return {}; }
+        if(bytes.size()>44ULL*1024*1024) { error("题包 zip 超过 44 MiB（base64 上传上限）"); return {}; }
+        writeFile(local,bytes);
+    } else { error("请提供题包 zip：{\"zipPath\": 绝对路径} 或 {\"zip\": base64}"); return {}; }
+    auto extracted=workspace/"package";
+    try { extractZip(local,extracted); }
+    catch(const std::exception& e) {
+        error(std::string("题包 zip 解压失败（文件名请全部用 ASCII）：")+e.what());
+        return {};
+    }
+    if(fs::is_regular_file(extracted/L"problem.json")) return extracted;
+    fs::path found;
+    int count=0;
+    for(const auto& entry:fs::directory_iterator(extracted))
+        if(entry.is_directory() && fs::is_regular_file(entry.path()/L"problem.json")) { found=entry.path(); ++count; }
+    if(count==1) return found;
+    error("题包 zip 根目录没有 problem.json（不要多套目录）");
+    return {};
 }
 Json readMeta(const fs::path& directory) {
     auto path=directory/L"problem.json";
@@ -607,7 +598,6 @@ Json loadProblem(const fs::path& dataDir,const std::string& id) {
         for(const auto* language:{"cpp","cangjie"}) if(drivers.contains(language)) languages.push_back(language);
     } else { languages.push_back("cpp"); languages.push_back("cangjie"); }
     item.update({{"statement",meta.value("statement",Json::object())},
-                 {"hints",meta.value("hints",Json::object())},
                  {"samples",meta.value("samples",Json::array())},
                  {"signature",function.value("signature",Json::object())},
                  {"starter",function.value("starter",Json::object())},
@@ -617,29 +607,27 @@ Json loadProblem(const fs::path& dataDir,const std::string& id) {
     return item;
 }
 
+
 Json importProblem(const fs::path& dataDir,const Json& request) {
-    auto document=readRequest(request);
-    Structure structure; Issues issues;
-    validateDocument(document,structure,issues);
-    if(!issues.empty()) mergeDetails(issues,"题包校验失败");
-    if(request.contains("zipPath") && request.at("zipPath").is_string()) {
-        auto zipPath=request.at("zipPath").get<std::string>();
-        auto path=fs::path(wide(zipPath));
-        if(!path.is_absolute()) issues.error("zipPath 必须是绝对路径");
-        else if(!fs::is_regular_file(path)) issues.error("找不到 zipPath 指向的数据包："+zipPath);
-        else { structure.zipPath=zipPath; structure.hasTests=false; structure.cases.clear(); }
-        if(!issues.empty()) mergeDetails(issues,"题包校验失败");
-    }
     auto root=problemsRoot(dataDir);
     fs::create_directories(root);
     Workspace workspace(root/wide(".import-"+std::to_string(GetTickCount64())));
-    auto cases=collectCases(document,structure,workspace.path,issues);
-    if(!issues.empty() || cases.empty()) {
-        if(issues.empty()) issues.error("题包没有任何用例");
+    Issues issues;
+    auto package=preparePackage(request,workspace.path,issues);
+    if(!issues.empty()) mergeDetails(issues,"题包校验失败");
+    Json document;
+    try { document=Json::parse(stripBom(readFile(package/L"problem.json"))); }
+    catch(const std::exception& e) {
+        issues.error(std::string("problem.json 解析失败：")+e.what());
         mergeDetails(issues,"题包校验失败");
     }
+    Structure structure;
+    validateDocument(document,structure,issues);
+    if(!issues.empty()) mergeDetails(issues,"题包校验失败");
+    auto cases=collectPackage(package,document,structure,issues);
+    if(!issues.empty()) mergeDetails(issues,"题包校验失败");
     auto tools=detectTools(executableDirectory());
-    auto verification=verifyPackage(document,structure,cases,workspace.path,tools,issues);
+    auto verification=verifyPackage(structure.meta,structure,cases,workspace.path,tools,issues);
     if(!issues.empty()) mergeDetails(issues,"题包校验失败");
 
     auto target=root/wide(structure.id);
@@ -647,7 +635,6 @@ Json importProblem(const fs::path& dataDir,const Json& request) {
     fs::create_directories(target);
     createZip(target/L"data.zip",workspace.path/"cases");
     Json meta=structure.meta;
-    meta.erase("tests");
     meta["storedAt"]=nowIso();
     Json report={{"id",structure.id},{"importedAt",nowIso()},{"verification",verification}};
     writeFile(target/L"report.json",report.dump(2));
@@ -656,7 +643,6 @@ Json importProblem(const fs::path& dataDir,const Json& request) {
     if(replaced) result["replaced"]=true;
     return result;
 }
-
 bool deleteProblem(const fs::path& dataDir,const std::string& id) {
     if(!validId(id)) return false;
     auto directory=problemsRoot(dataDir)/wide(id);

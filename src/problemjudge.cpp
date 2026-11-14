@@ -1,10 +1,12 @@
 #include "problemjudge.hpp"
 #include "apierror.hpp"
+#include "checker.hpp"
 #include "path_compat.hpp"
 #include "submitstore.hpp"
 #include "testlib_asset.hpp"
 #include <algorithm>
 #include <chrono>
+#include <cstdint>
 #include <cstdio>
 #include <map>
 #include <string_view>
@@ -102,6 +104,14 @@ Program buildChecker(const std::string& source,const fs::path& directory,const J
     for(const auto* key:{L"GCC_EXEC_PREFIX",L"COMPILER_PATH",L"LIBRARY_PATH",L"CPATH",L"CPLUS_INCLUDE_PATH",L"C_INCLUDE_PATH"})
         program.environment.emplace_back(key,L"");
     program.pathEntries.push_back(path.parent_path().wstring());
+    // testlib 版 checker 用 -O2 编译要 6~7 s，而它只取决于 checker 源码、testlib.h 和编译器本身，
+    // 所以按这三者的哈希缓存到 <exe 目录>/.cache/checkers/，导入自检与每次提交都复用同一份。
+    std::uint64_t hash=1469598103934665603ULL;
+    auto mix=[&hash](std::string_view text){ for(unsigned char c:text) { hash^=c; hash*=1099511628211ULL; } hash^=0xff; hash*=1099511628211ULL; };
+    mix(source); mix(testlib_asset::header); mix(utf8(path.wstring())); mix("c++20 -O2 v1");
+    char key[17]; std::snprintf(key,sizeof key,"%016llx",static_cast<unsigned long long>(hash));
+    auto cached=executableDirectory()/L".cache"/L"checkers"/wide(key)/L"checker.exe";
+    if(fs::is_regular_file(cached)) { program.exe=cached.wstring(); return program; }
     RunOptions options;
     options.timeMs=60000;
     options.memoryBytes=2ULL*1024*1024*1024;
@@ -115,7 +125,15 @@ Program buildChecker(const std::string& source,const fs::path& directory,const J
     classifyCompile(program,result);
     if(program.verdict!="AC") return program;
     program.exe=(directory/L"checker.exe").wstring();
-    if(!fs::is_regular_file(directory/L"checker.exe")) { program.verdict="JE"; program.message="g++ 没有产出 checker.exe"; }
+    if(!fs::is_regular_file(directory/L"checker.exe")) { program.verdict="JE"; program.message="g++ 没有产出 checker.exe"; return program; }
+    // 先写临时名再改名：导入（服务线程）与判题（工作线程）可能同时编译同一个 checker。
+    std::error_code ec;
+    fs::create_directories(cached.parent_path(),ec);
+    auto temporary=cached.parent_path()/(L"checker-"+std::to_wstring(GetCurrentThreadId())+L".tmp");
+    if(!ec && fs::copy_file(directory/L"checker.exe",temporary,fs::copy_options::overwrite_existing,ec)) {
+        fs::rename(temporary,cached,ec);
+        if(ec) fs::remove(temporary,ec);
+    }
     return program;
 }
 Program buildUnit(const std::string& language,const std::vector<std::pair<std::string,std::string>>& files,
@@ -162,7 +180,7 @@ Program buildUnit(const std::string& language,const std::vector<std::pair<std::s
     if(!fs::is_regular_file(directory/L"Main.exe")) { program.verdict="JE"; program.message="编译器没有产出 Main.exe"; }
     return program;
 }
-CaseJudgement judgeCase(const Program& program,const fs::path& directory,const CaseFile& test,const Program& checker,
+CaseJudgement judgeCase(const Program& program,const fs::path& directory,const CaseFile& test,const Program* checker,
                         long long timeMs,long long memoryMb,const std::atomic_bool* cancel) {
     CaseJudgement judgement;
     auto stdoutPath=directory/L"out.txt";
@@ -185,6 +203,16 @@ CaseJudgement judgeCase(const Program& program,const fs::path& directory,const C
     if(run.OLE) { judgement.verdict="OLE"; judgement.message="stdout 和 stderr 总量超过输出限制"; return judgement; }
     if(run.TLE) { judgement.verdict="TLE"; judgement.message="超过时间限制 "+std::to_string(timeMs)+" ms"; return judgement; }
     if(run.exit) { judgement.verdict="RE"; judgement.message="程序退出码："+std::to_string(run.exit); return judgement; }
+    if(!checker) {
+        // 题包没有 checker.cpp：按 token 比较（忽略行尾空白与空行差异）
+        auto comparison=compareOutputFiles(stdoutPath,test.answer,"tokens",1e-6);
+        if(comparison.equal) { judgement.verdict="AC"; return judgement; }
+        judgement.verdict="WA";
+        judgement.message=trim(comparison.message);
+        if(judgement.message.size()>4096) judgement.message.resize(4096);
+        if(judgement.message.empty()) judgement.message="输出与答案不一致";
+        return judgement;
+    }
     RunOptions checkOptions;
     checkOptions.timeMs=10000;
     checkOptions.memoryBytes=512ULL*1024*1024;
@@ -192,9 +220,9 @@ CaseJudgement judgeCase(const Program& program,const fs::path& directory,const C
     checkOptions.workingDirectory=directory.wstring();
     checkOptions.cancel=cancel;
     // checker 由内置 g++ 编译出来，运行时同样需要它自己的 bin 目录（libstdc++ 等 DLL）。
-    checkOptions.pathEntries=checker.pathEntries;
-    checkOptions.environment=checker.environment;
-    auto check=runProcess(checker.exe,{test.input.wstring(),stdoutPath.wstring(),test.answer.wstring()},"",checkOptions);
+    checkOptions.pathEntries=checker->pathEntries;
+    checkOptions.environment=checker->environment;
+    auto check=runProcess(checker->exe,{test.input.wstring(),stdoutPath.wstring(),test.answer.wstring()},"",checkOptions);
     if(check.cancelled) { judgement.verdict="CANCELLED"; judgement.message="已停止"; return judgement; }
     if(!check.started || !check.errorMessage.empty() || check.TLE || check.MLE || check.OLE) {
         judgement.verdict="JE";
@@ -288,13 +316,17 @@ void ProblemJudgeEngine::execute(Json request,fs::path directory) {
         auto package=openProblem(dataDir,problemId,directory/"data");
         std::map<std::string,const CaseFile*> index;
         for(const auto& item:package.cases) index[item.id]=&item;
-        update({{"phase","编译 checker"}});
-        auto checkerDirectory=directory/"checker";
-        fs::create_directories(checkerDirectory);
-        writeFile(checkerDirectory/L"testlib.h",testlib_asset::header);
-        auto checker=buildChecker(package.meta.at("checker").get<std::string>(),checkerDirectory,tools,&cancel);
-        if(checker.verdict=="CANCELLED") throw JudgeFailure{"CANCELLED","已停止任务"};
-        if(checker.verdict!="AC") throw JudgeFailure{"JE","checker 编译失败（前 20 行）：\n"+firstLines(checker.log,20)};
+        update({{"phase",package.meta.value("checker",std::string()).empty()?"准备判题":"编译 checker"}});
+        Program checker;
+        bool customChecker=!package.meta.value("checker",std::string()).empty();
+        if(customChecker) {
+            auto checkerDirectory=directory/"checker";
+            fs::create_directories(checkerDirectory);
+            writeFile(checkerDirectory/L"testlib.h",testlib_asset::header);
+            checker=buildChecker(package.meta.value("checker",std::string()),checkerDirectory,tools,&cancel);
+            if(checker.verdict=="CANCELLED") throw JudgeFailure{"CANCELLED","已停止任务"};
+            if(checker.verdict!="AC") throw JudgeFailure{"JE","checker 编译失败（前 20 行）：\n"+firstLines(checker.log,20)};
+        }
         update({{"phase","编译提交"}});
         auto buildDirectory=directory/"build";
         auto function=package.meta.value("function",Json::object());
@@ -327,7 +359,7 @@ void ProblemJudgeEngine::execute(Json request,fs::path directory) {
                 if(found==index.end()) throw JudgeFailure{"JE","题目数据损坏：缺少用例 "+id};
                 auto runDirectory=directory/"run"/wide(id);
                 fs::create_directories(runDirectory);
-                auto judgement=judgeCase(program,runDirectory,*found->second,checker,timeMs,memoryMb,&cancel);
+                auto judgement=judgeCase(program,runDirectory,*found->second,customChecker?&checker:nullptr,timeMs,memoryMb,&cancel);
                 cases.push_back({{"caseId",id},{"group",groupName},{"verdict",judgement.verdict},
                                  {"timeMs",judgement.timeMs},{"memoryBytes",judgement.memoryBytes},{"message",judgement.message}});
                 ++completed;
@@ -385,4 +417,165 @@ void ProblemJudgeEngine::execute(Json request,fs::path directory) {
     catch(const std::exception& e) {
         update({{"message",message+"（提交记录保存失败："+std::string(e.what())+"）"}});
     }
+}
+
+namespace {
+std::string hex64(std::string_view a,std::string_view b,std::string_view c,std::string_view d) {
+    std::uint64_t hash=1469598103934665603ULL;
+    for(auto part:{a,b,c,d}) { for(unsigned char ch:part) { hash^=ch; hash*=1099511628211ULL; } hash^=0xff; hash*=1099511628211ULL; }
+    char key[17]; std::snprintf(key,sizeof key,"%016llx",static_cast<unsigned long long>(hash));
+    return key;
+}
+std::string clip(std::string text,std::size_t limit,bool& truncated) {
+    truncated=text.size()>limit;
+    if(truncated) { text.resize(limit); while(!text.empty() && (static_cast<unsigned char>(text.back())&0xC0)==0x80) text.pop_back(); }
+    return text;
+}
+Json programToJson(const Program& p) {
+    Json env=Json::array(),paths=Json::array(),args=Json::array();
+    for(const auto& [k,v]:p.environment) env.push_back({utf8(k),utf8(v)});
+    for(const auto& x:p.pathEntries) paths.push_back(utf8(x));
+    for(const auto& x:p.args) args.push_back(utf8(x));
+    return {{"exe",utf8(p.exe)},{"args",args},{"pathEntries",paths},{"environment",env}};
+}
+Program programFromJson(const Json& j) {
+    Program p; p.exe=wide(j.at("exe").get<std::string>());
+    for(const auto& x:j.at("args")) p.args.push_back(wide(x.get<std::string>()));
+    for(const auto& x:j.at("pathEntries")) p.pathEntries.push_back(wide(x.get<std::string>()));
+    for(const auto& x:j.at("environment")) p.environment.emplace_back(wide(x.at(0).get<std::string>()),wide(x.at(1).get<std::string>()));
+    return p;
+}
+}
+
+// 题目自测：与正式提交走同一套组装 / 编译（driver + 选手代码），输入由用户给，期望输出可选（交本题 checker 比较）。
+// 同步执行；不写提交记录、不影响 best。编译产物按「题目版本 + 语言 + 源码 + driver」缓存，只改输入时不重新编译。
+Json runCustomTests(const fs::path& cacheRoot,const fs::path& dataDir,const Json& tools,const std::string& problemId,const Json& request) {
+    static const std::string allowed="abcdefghijklmnopqrstuvwxyz0123456789-";
+    if(problemId.size()<2 || problemId.size()>48 || problemId.find_first_not_of(allowed)!=std::string::npos) throw ApiError(404,"题目不存在");
+    auto problemFile=problemsRoot(dataDir)/wide(problemId)/L"problem.json";
+    if(!fs::is_regular_file(problemFile)) throw ApiError(404,"题目不存在");
+    auto meta=Json::parse(readFile(problemFile));
+    auto language=request.value("language",std::string());
+    auto source=request.value("source",std::string());
+    if(language!="cpp" && language!="cangjie") throw ApiError(400,"language 只能是 cpp 或 cangjie");
+    if(source.empty()) throw ApiError(400,"源码为空");
+    if(source.size()>1024*1024) throw ApiError(400,"源码超过 1 MiB");
+    auto tests=request.value("tests",Json::array());
+    if(!tests.is_array() || tests.empty()) throw ApiError(400,"至少需要一组自测输入");
+    if(tests.size()>10) throw ApiError(400,"自测最多 10 组");
+    bool functionMode=meta.value("judgeMode",std::string())=="function";
+    auto function=meta.value("function",Json::object());
+    std::string driver;
+    if(functionMode) {
+        if(!function.value("drivers",Json::object()).contains(language)) throw ApiError(400,"本题没有提供该语言的 driver");
+        driver=function.at("drivers").at(language).get<std::string>();
+    }
+    auto limits=meta.value("limits",Json::object());
+    long long timeMs=limits.value("timeMs",2000LL),memoryMb=limits.value("memoryMb",512LL);
+
+    auto root=cacheRoot/L".cache"/L"selftest";
+    auto key=hex64(problemId+"\n"+meta.value("storedAt",std::string()),language,source,driver);
+    auto buildDirectory=root/wide(key);
+    auto manifest=buildDirectory/L"program.json";
+    Json out={{"compile",{{"ok",true},{"cached",false},{"log",""},{"verdict","AC"},{"message",""},{"ms",0}}},{"results",Json::array()}};
+    Program program;
+    std::error_code ec;
+    bool cached=false;
+    if(fs::is_regular_file(manifest)) {
+        try { program=programFromJson(Json::parse(readFile(manifest))); cached=fs::is_regular_file(fs::path(program.exe)); } catch(...) { cached=false; }
+    }
+    if(!cached) {
+        // 只保留最近几份产物，避免 .cache 无限增长（checker-build / run 是固定目录，不计入）。
+        std::vector<fs::directory_entry> old;
+        if(fs::is_directory(root,ec))
+            for(const auto& entry:fs::directory_iterator(root,ec))
+                if(entry.is_directory() && entry.path().filename().wstring().size()==16) old.push_back(entry);
+        std::sort(old.begin(),old.end(),[](const auto& a,const auto& b){ return a.last_write_time()>b.last_write_time(); });
+        for(std::size_t i=3;i<old.size();++i) fs::remove_all(old[i].path(),ec);
+        fs::remove_all(buildDirectory,ec);
+        fs::create_directories(buildDirectory);
+        auto started=std::chrono::steady_clock::now();
+        if(functionMode) {
+            if(language=="cpp") program=buildUnit(language,{{"Main.cpp",assembleCpp(driver,{source})}},buildDirectory,tools,nullptr);
+            else program=buildUnit(language,assembleCangjie(driver,function.value("package",std::string()),{source},true),buildDirectory,tools,nullptr);
+        } else program=compileProgram(source,language,buildDirectory,tools,nullptr);
+        out["compile"]["ms"]=std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now()-started).count();
+        bool truncated=false;
+        out["compile"]["log"]=clip(program.log,64*1024,truncated);
+        if(program.verdict!="AC") {
+            out["compile"]["ok"]=false; out["compile"]["verdict"]=program.verdict; out["compile"]["message"]=program.message;
+            fs::remove_all(buildDirectory,ec);
+            return out;
+        }
+        writeFile(manifest,programToJson(program).dump());
+    }
+    out["compile"]["cached"]=cached;
+    std::string checkerSource=meta.value("checker",std::string());
+    bool needChecker=false;
+    for(const auto& t:tests) if(!trim(t.value("expected",std::string())).empty()) needChecker=true;
+    Program checker;
+    if(needChecker && !checkerSource.empty()) {
+        auto checkerDirectory=root/L"checker-build";
+        fs::remove_all(checkerDirectory,ec);
+        fs::create_directories(checkerDirectory);
+        writeFile(checkerDirectory/L"testlib.h",testlib_asset::header);
+        checker=buildChecker(meta.value("checker",std::string()),checkerDirectory,tools,nullptr);
+        if(checker.verdict!="AC") throw ApiError(500,"checker 编译失败："+firstLines(checker.log,20));
+    }
+    auto runRoot=root/L"run";
+    fs::remove_all(runRoot,ec);
+    int index=0;
+    for(const auto& t:tests) {
+        auto directory=runRoot/std::to_wstring(index++);
+        fs::create_directories(directory);
+        auto input=t.value("input",std::string());
+        if(input.size()>4*1024*1024) throw ApiError(400,"单组输入超过 4 MiB");
+        if(!input.empty() && input.back()!='\n') input+='\n';
+        auto expected=t.value("expected",std::string());
+        writeFile(directory/L"input.txt",input);
+        RunOptions options;
+        options.timeMs=timeMs;
+        options.memoryBytes=static_cast<std::uint64_t>(memoryMb)*1024*1024;
+        options.outputBytes=std::max<std::size_t>(1024*1024,expected.size()+1024*1024);
+        options.workingDirectory=directory.wstring();
+        options.inputPath=(directory/L"input.txt").wstring();
+        options.stdoutPath=(directory/L"out.txt").wstring();
+        options.pathEntries=program.pathEntries;
+        options.environment=program.environment;
+        auto run=runProcess(program.exe,program.args,"",options);
+        Json item={{"timeMs",run.runTimeMs},{"memoryBytes",run.runMemory},{"exitCode",run.exit},{"message",""}};
+        std::string stdoutText;
+        try { if(fs::is_regular_file(directory/L"out.txt")) stdoutText=readFile(directory/L"out.txt"); } catch(...) {}
+        bool truncated=false;
+        item["stdout"]=clip(stdoutText,64*1024,truncated); item["stdoutTruncated"]=truncated;
+        item["stderr"]=clip(run.errOut,8*1024,truncated);
+        std::string verdict;
+        if(!run.started || !run.errorMessage.empty()) { verdict="JE"; item["message"]="运行失败："+run.errorMessage; }
+        else if(run.MLE) { verdict="MLE"; item["message"]="超过内存限制 "+std::to_string(memoryMb)+" MiB"; }
+        else if(run.OLE) { verdict="OLE"; item["message"]="输出超过限制"; }
+        else if(run.TLE) { verdict="TLE"; item["message"]="超过时间限制 "+std::to_string(timeMs)+" ms"; }
+        else if(run.exit) { verdict="RE"; item["message"]="程序退出码："+std::to_string(run.exit); }
+        else if(trim(expected).empty()) verdict="OK";
+        else {
+            writeFile(directory/L"answer.txt",expected);
+            if(checkerSource.empty()) {
+                // 题包没有 checker.cpp：按 token 比较
+                auto comparison=compareOutputFiles(directory/L"out.txt",directory/L"answer.txt","tokens",1e-6);
+                if(comparison.equal) verdict="AC";
+                else { verdict="WA"; item["message"]=clip(trim(comparison.message),4096,truncated); }
+            } else {
+            RunOptions checkOptions;
+            checkOptions.timeMs=10000; checkOptions.memoryBytes=512ULL*1024*1024; checkOptions.outputBytes=32*1024;
+            checkOptions.workingDirectory=directory.wstring();
+            checkOptions.pathEntries=checker.pathEntries; checkOptions.environment=checker.environment;
+            auto check=runProcess(checker.exe,{(directory/L"input.txt").wstring(),(directory/L"out.txt").wstring(),(directory/L"answer.txt").wstring()},"",checkOptions);
+            if(!check.started || !check.errorMessage.empty() || check.TLE || check.MLE || check.OLE) { verdict="JE"; item["message"]="checker 运行失败（期望输出可能不符合本题的输出格式）"; }
+            else if(check.exit==0) verdict="AC";
+            else { verdict="WA"; item["message"]=clip(trim(check.stdOut+check.errOut),4096,truncated); }
+            }
+        }
+        item["verdict"]=verdict;
+        out["results"].push_back(item);
+    }
+    return out;
 }

@@ -14,6 +14,7 @@ with tempfile.TemporaryDirectory(prefix='JudgeBox browser ') as temp:
             page=browser.new_page(viewport={'width':1440,'height':1080},device_scale_factor=1)
             page.on('pageerror',lambda e:errors.append(str(e)))
             page.goto(url)
+            page.locator('.pb-nav-link[data-route=debug]').click()  # 首页改为题单，调试台在 #/debug
             expect(page.locator('#connectionState')).to_have_text('本地引擎就绪')
             expect(page.locator('#source')).to_have_value('')
             expect(page.locator('#reference')).to_have_value('')

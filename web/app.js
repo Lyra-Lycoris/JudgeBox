@@ -1,7 +1,12 @@
 'use strict';
 const $ = id => document.getElementById(id);
-const token = location.hash.slice(1) || sessionStorage.getItem('judgebox-token') || '';
-if (token) sessionStorage.setItem('judgebox-token', token);
+// 启动地址是 #<token>；之后 hash 用作路由（#/problems、#/problem/<id>、#/debug），token 留在 sessionStorage。
+const token = (() => {
+  const hash = location.hash;
+  if (hash.length > 1 && !hash.startsWith('#/')) { sessionStorage.setItem('judgebox-token', hash.slice(1)); history.replaceState(null, '', location.pathname + location.search + '#/problems'); }
+  else if (!hash.startsWith('#/')) history.replaceState(null, '', location.pathname + location.search + '#/problems');
+  return sessionStorage.getItem('judgebox-token') || '';
+})();
 let mode = 'manual', cases = [], dataset = null, runCaseLabel = null;
 let loaded = false, running = false, tools = {}, currentResult = null, selectedDetail = null;
 let previewIndex = 0, previewInput = null, saveTimer, pollTimer, savePromise = Promise.resolve();
@@ -25,6 +30,7 @@ async function api(path, body) {
   const options = {headers:{'X-JudgeBox-Token':token}};
   if (body !== undefined) { options.method = 'POST'; options.headers['Content-Type'] = 'application/json'; options.body = JSON.stringify(body); }
   const response = await fetch(path, options);
+  if (response.status === 403) window.dispatchEvent(new CustomEvent('judgebox-auth-failed'));
   let result; try { result = await response.json(); } catch { throw new Error('本地引擎没有返回有效响应，请检查启动窗口。'); }
   if (!response.ok) throw new Error(result.error || `请求失败：${response.status}`);
   return result;
@@ -525,7 +531,7 @@ $('judgeSummary').addEventListener('click', event => {
   $('judgeDock').classList.toggle('expanded');
 });
 $('cancelButton').onclick = handle(async () => { await api('/api/cancel',{}); $('resultMessage').textContent = '正在终止进程并清理资源…'; });
-document.addEventListener('keydown',handle(async event => { if ((event.ctrlKey || event.metaKey) && event.key === 'Enter' && !document.querySelector('dialog[open]')) { event.preventDefault(); await submitRun(); } }));
+document.addEventListener('keydown',handle(async event => { if ((event.ctrlKey || event.metaKey) && event.key === 'Enter' && !document.querySelector('dialog[open]') && document.body.dataset.view === 'debug') { event.preventDefault(); await submitRun(); } }));
 document.addEventListener('input',queueSave); document.addEventListener('change',queueSave);
 $('sourceFileButton').onclick = () => $('sourceFile').click();
 $('sourceFile').onchange = handle(async () => { const file = $('sourceFile').files[0]; if (!file) return; if (file.size > 1024*1024) throw new Error('源码文件超过 1 MiB。'); $('source').value = await file.text(); const ext = file.name.split('.').pop().toLowerCase(); const lang = {cpp:'cpp',cc:'cpp',cxx:'cpp',py:'python',java:'java',cj:'cangjie'}[ext]; if (lang) $('language').value = lang; syncSource(); queueSave(); $('sourceFile').value = ''; });

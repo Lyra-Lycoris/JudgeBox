@@ -1,4 +1,4 @@
-/build/
+﻿/build/
 /runs/
 /.cache/
 /.runtime/
@@ -13,3 +13,4 @@ __pycache__/
 /web/editor/node_modules/
 .cph/
 /InstalledPackedge/
+/.vscode/
