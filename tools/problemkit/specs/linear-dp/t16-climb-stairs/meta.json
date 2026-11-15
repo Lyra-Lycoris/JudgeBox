@@ -1,0 +1,19 @@
+{
+  "id": "t16-climb-stairs",
+  "title": {"zh": "爬楼梯方案数", "en": "Climbing Stairs"},
+  "difficulty": 1000,
+  "topic": "线性动态规划",
+  "tags": ["动态规划"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "leetcode", "id": "70", "url": "https://leetcode.cn/problems/climbing-stairs/"},
+  "samples": [
+    {"input": "5\n", "output": "8\n"}
+  ],
+  "signature": {
+    "package": "t16_climb_stairs",
+    "params": [{"name": "n", "type": "int"}],
+    "returns": "int",
+    "hint": {"zh": "返回爬上 n 级台阶的方案数对 1000000007 取模的结果"}
+  }
+}

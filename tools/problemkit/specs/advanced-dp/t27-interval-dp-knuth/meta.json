@@ -1,0 +1,22 @@
+{
+  "id": "t27-interval-dp-knuth",
+  "title": {"zh": "石子合并的决策单调性优化", "en": "Stone Merging with Knuth Optimization"},
+  "difficulty": 2200,
+  "topic": "复杂DP与最优化",
+  "tags": ["区间DP", "动态规划"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "4\n1 2 3 4\n", "output": "19\n"}
+  ],
+  "signature": {
+    "package": "t27_interval_dp_knuth",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回把所有石子合并成一堆的最小总代价"}
+  }
+}

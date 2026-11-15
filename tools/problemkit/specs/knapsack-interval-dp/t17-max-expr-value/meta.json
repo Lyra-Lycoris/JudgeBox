@@ -1,0 +1,23 @@
+{
+  "id": "t17-max-expr-value",
+  "title": {"zh": "括号方案最大表达式值", "en": "Maximum Expression Value by Parenthesizing"},
+  "difficulty": 1600,
+  "topic": "背包与区间DP",
+  "tags": ["区间DP", "动态规划"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "3\n1 2 3\n+ *\n", "output": "9\n"}
+  ],
+  "signature": {
+    "package": "t17_max_expr_value",
+    "params": [
+      {"name": "m", "type": "int"},
+      {"name": "nums", "type": "ints", "count": "m"},
+      {"name": "ops", "type": "strings", "count": "m - 1"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回给表达式任意加括号后能得到的最大值"}
+  }
+}

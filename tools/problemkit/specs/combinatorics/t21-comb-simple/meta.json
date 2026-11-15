@@ -1,0 +1,23 @@
+{
+  "id": "t21-comb-simple",
+  "title": {"zh": "从 n 个物品中选 k 个", "en": "Number of Ways to Choose k of n Items"},
+  "difficulty": 1000,
+  "topic": "组合数学与概率期望",
+  "tags": ["组合数学"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "5 2\n", "output": "10\n"},
+    {"input": "0 0\n", "output": "1\n"}
+  ],
+  "signature": {
+    "package": "t21_comb_simple",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "k", "type": "int"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回从 n 个不同物品中选 k 个的方案数 C(n, k) 对 1000000007 取模的结果"}
+  }
+}

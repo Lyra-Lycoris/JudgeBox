@@ -1,0 +1,22 @@
+{
+  "id": "t28-weighted-interval",
+  "title": {"zh": "加权区间调度", "en": "Weighted Interval Scheduling"},
+  "difficulty": 2200,
+  "topic": "思维难题与构造",
+  "tags": ["排序", "二分", "动态规划"],
+  "limits": {"timeMs": 3000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "4\n1 3 5\n2 5 6\n4 6 5\n6 7 4\n", "output": "10\n"}
+  ],
+  "signature": {
+    "package": "t28_weighted_interval",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "seg", "type": "matrix", "rows": "n", "cols": "3"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回能选出的互不重叠区间的最大总权重"}
+  }
+}

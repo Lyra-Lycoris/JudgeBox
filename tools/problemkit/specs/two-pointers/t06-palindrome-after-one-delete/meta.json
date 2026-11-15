@@ -1,0 +1,50 @@
+{
+  "id": "t06-palindrome-after-one-delete",
+  "title": {
+    "zh": "最多删除一个字符能否成回文",
+    "en": "Valid Palindrome After Deleting At Most One Character"
+  },
+  "difficulty": 2100,
+  "topic": "双指针与滑动窗口",
+  "tags": [
+    "双指针",
+    "字符串"
+  ],
+  "limits": {
+    "timeMs": 2000,
+    "memoryMb": 256
+  },
+  "judgeType": "function",
+  "source": {
+    "platform": "leetcode",
+    "id": "680",
+    "url": "https://leetcode.cn/problems/valid-palindrome-ii/"
+  },
+  "samples": [
+    {
+      "input": "aba\n",
+      "output": "YES\n"
+    },
+    {
+      "input": "abca\n",
+      "output": "YES\n"
+    },
+    {
+      "input": "abc\n",
+      "output": "NO\n"
+    }
+  ],
+  "signature": {
+    "package": "t06_palindrome_after_one_delete",
+    "params": [
+      {
+        "name": "s",
+        "type": "string"
+      }
+    ],
+    "returns": "bool",
+    "hint": {
+      "zh": "判断能否通过最多删除一个字符把 s 变成回文串"
+    }
+  }
+}

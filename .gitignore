@@ -1,4 +1,4 @@
-﻿/build/
+/build/
 /runs/
 /.cache/
 /.runtime/
@@ -14,5 +14,8 @@ __pycache__/
 .cph/
 /InstalledPackedge/
 /.vscode/
-/ProblemDatabase/*
-!/ProblemDatabase/ict-renjian-cihua_人间词话_.zip
+
+# 题库与做题记录各自是独立仓库（ProblemDatabase/、solveRecord/ 下都有自己的 .git），
+# JudgeBox 主仓库不再跟踪这两个目录，只保留本地运行时数据。
+/ProblemDatabase/
+/solveRecord/

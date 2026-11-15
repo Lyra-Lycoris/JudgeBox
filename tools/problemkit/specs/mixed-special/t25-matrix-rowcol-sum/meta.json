@@ -1,0 +1,24 @@
+{
+  "id": "t25-matrix-rowcol-sum",
+  "title": {"zh": "构造满足行列和的矩阵", "en": "Construct a Matrix with Given Row and Column Sums"},
+  "difficulty": 1300,
+  "topic": "综合思维与特殊裁判",
+  "tags": ["构造", "贪心"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "special",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "2 3\n3 3\n2 2 2\n", "output": "2 1 0 0 1 2\n"}
+  ],
+  "signature": {
+    "package": "t25_matrix_rowcol_sum",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "m", "type": "int"},
+      {"name": "r", "type": "ints", "count": "n"},
+      {"name": "c", "type": "ints", "count": "m"}
+    ],
+    "returns": "ints_space",
+    "hint": {"zh": "返回按行优先展开的 n*m 个非负整数，使第 i 行之和为 r[i]、第 j 列之和为 c[j]；本题使用特殊评判"}
+  }
+}

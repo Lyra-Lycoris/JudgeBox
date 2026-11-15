@@ -1,0 +1,20 @@
+{
+  "id": "t22-subset-xor-sum",
+  "title": {"zh": "所有子集的异或和", "en": "Sum of XOR over All Subsets"},
+  "difficulty": 1400,
+  "topic": "位运算与构造",
+  "tags": ["位运算", "数学"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "2\n1 2\n", "output": "6\n"},
+    {"input": "3\n5 5 5\n", "output": "20\n"}
+  ],
+  "signature": {
+    "package": "t22_subset_xor_sum",
+    "params": [{"name": "n", "type": "int"}, {"name": "a", "type": "ints", "count": "n"}],
+    "returns": "int",
+    "hint": {"zh": "返回所有 2^n 个子集的异或和之和对 10^9+7 取模的结果"}
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "id": "t17-palindrome-partition",
+  "title": {"zh": "回文分割最少次数", "en": "Palindrome Partitioning Minimum Cuts"},
+  "difficulty": 1800,
+  "topic": "背包与区间DP",
+  "tags": ["动态规划", "字符串"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "aab\n", "output": "1\n"}
+  ],
+  "signature": {
+    "package": "t17_palindrome_partition",
+    "params": [
+      {"name": "s", "type": "string"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回把 s 切成若干回文串所需的最少刀数"}
+  }
+}

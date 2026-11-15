@@ -1,0 +1,22 @@
+{
+  "id": "t09-meeting-rooms-busiest",
+  "title": {"zh": "会议室安排：最忙的会议室", "en": "Meeting Rooms: Busiest Room"},
+  "difficulty": 2100,
+  "topic": "堆与优先队列",
+  "tags": ["堆", "贪心", "排序"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "leetcode", "id": "2402", "url": "https://leetcode.com/problems/meeting-rooms-iii/"},
+  "samples": [{"input": "2 4\n0 1 2 3\n10 4 5 1\n", "output": "0\n"}],
+  "signature": {
+    "package": "t09_meeting_rooms_busiest",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "m", "type": "int"},
+      {"name": "s", "type": "ints", "count": "m"},
+      {"name": "d", "type": "ints", "count": "m"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回举办会议次数最多的会议室编号（并列取编号最小者）"}
+  }
+}

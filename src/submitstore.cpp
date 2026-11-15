@@ -100,6 +100,7 @@ Json submissionSummary(const Json& submission) {
     auto source=submission.value("source",std::string());
     return {{"id",submission.value("id",std::string())},
             {"language",submission.value("language",std::string())},
+            {"mode",submission.value("mode",std::string("function"))},
             {"verdict",submission.value("verdict",std::string())},
             {"score",submission.value("score",0LL)},
             {"cases",static_cast<long long>(cases)},

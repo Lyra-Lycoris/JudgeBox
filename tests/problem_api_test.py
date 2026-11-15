@@ -1,4 +1,6 @@
-"""End-to-end tests for the problem subsystem (规格 §10.1), against the real executable."""
+import os
+os.environ.setdefault("JUDGEBOX_SYNC_OFF", "1")  # 测试期间不跑 GitHub 题库同步
+"""End-to-end tests for the problem subsystem (题包 v2：四语言 × 两提交方式), against the real executable."""
 import base64, json, os, pathlib, shutil, subprocess, sys, tempfile, time, unittest, urllib.request, urllib.error, zipfile
 
 EXE = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else 'build/JudgeBox.exe').resolve()
@@ -7,6 +9,8 @@ FIXTURES = pathlib.Path(__file__).resolve().parent / 'fixtures'
 PACKAGE = FIXTURES / 'ict-renjian-cihua'
 AC_SOURCE = FIXTURES / 'ict-renjian-cihua-ac.cj'
 PROBLEM_ID = 'ict-renjian-cihua'
+LANGUAGES = ['cpp', 'cangjie', 'python', 'java']
+BOTH = ['function', 'full']
 
 
 def make_zip(folder, archive):
@@ -73,13 +77,13 @@ class ProblemAPI(unittest.TestCase):
         mutate(folder)
         return make_zip(folder, pathlib.Path(self.root.name) / ('variant-' + name + '.zip'))
 
-    def submit(self, language, source):
-        body = self.ok('/api/submit', {'problemId': PROBLEM_ID, 'language': language, 'source': source})
+    def submit(self, language, source, mode='function'):
+        body = self.ok('/api/submit', {'problemId': PROBLEM_ID, 'language': language, 'mode': mode, 'source': source})
         self.assertTrue(body['ok'], body)
         self.assertTrue(body['submissionId'])
         return body['submissionId']
 
-    def wait_done(self, deadline=120):
+    def wait_done(self, deadline=180):
         finish = time.monotonic() + deadline
         while time.monotonic() < finish:
             status = self.ok('/api/submit/status')
@@ -88,9 +92,9 @@ class ProblemAPI(unittest.TestCase):
             time.sleep(0.25)
         self.fail('submission did not finish within %ss' % deadline)
 
-    # 1. 导入题包 zip → 200，参考答案满分，源码落盘
+    # 1. 导入题包 zip → 200，四种语言两种方式的参考答案都满分，源码落盘
     def test_01_import(self):
-        status, body = self.request('/api/problems/import', {'zipPath': str(self.package)}, timeout=180)
+        status, body = self.request('/api/problems/import', {'zipPath': str(self.package)}, timeout=600)
         self.assertEqual(status, 200, body)
         self.assertTrue(body['ok'])
         self.assertEqual(body['id'], PROBLEM_ID)
@@ -98,10 +102,13 @@ class ProblemAPI(unittest.TestCase):
         self.assertEqual(verification['cases'], 8)
         self.assertEqual(verification['checker'], 'custom')
         self.assertEqual(verification['checkerCompiled'], True)
-        self.assertEqual(verification['drivers']['cpp'], True)
-        self.assertEqual(verification['drivers']['cangjie'], True)
-        self.assertEqual(verification['solutions']['cangjie']['score'], 100)
-        self.assertEqual(verification['solutions']['cangjie']['verdict'], 'AC')
+        self.assertEqual(sorted(verification['drivers']), sorted(LANGUAGES))
+        self.assertTrue(all(verification['drivers'].values()), verification['drivers'])
+        self.assertEqual(sorted(verification['solutions']), sorted(LANGUAGES))
+        for language in LANGUAGES:
+            self.assertEqual(verification['solutions'][language]['score'], 100, language)
+            self.assertEqual(verification['solutions'][language]['verdict'], 'AC', language)
+            self.assertEqual(verification['full'][language], True, language)
         self.assertEqual(len(verification['groups']), 4)
         self.assertTrue(all(group['passed'] for group in verification['groups']), verification['groups'])
         files = [path.name for path in self.database.glob('*.zip')]
@@ -113,14 +120,15 @@ class ProblemAPI(unittest.TestCase):
         self.assertEqual(state['verdict'], 'READY')
         self.ok('/api/submissions/clear', {})
 
-    # 2. 题单：totalPoints 100，未做过排前面
+    # 2. 题单：totalPoints 100，未做过排前面，卡片带 modes
     def test_02_list(self):
         body = self.ok('/api/problems')
         self.assertEqual(len(body['problems']), 1, body)
         problem = body['problems'][0]
         self.assertEqual(problem['id'], PROBLEM_ID)
         self.assertEqual(problem['totalPoints'], 100)
-        self.assertEqual(problem['judgeMode'], 'function')
+        self.assertEqual(problem['judgedLanguages'], LANGUAGES)
+        self.assertEqual(problem['modes'], {language: BOTH for language in LANGUAGES})
         self.assertEqual(problem['difficulty'], 1700)
         self.assertIsNone(problem['bestScore'])
         self.assertEqual(problem['attempts'], 0)
@@ -139,9 +147,12 @@ class ProblemAPI(unittest.TestCase):
         self.assertEqual(body['samples'][0]['input'].splitlines()[0], '1')
         self.assertIn('signature', body)
         self.assertTrue(body['signature']['zh'])
-        self.assertEqual(sorted(body['starter'].keys()), ['cangjie', 'cpp'])
-        self.assertEqual(sorted(body['drivers'].keys()), ['cangjie', 'cpp'])
-        self.assertEqual(body['judgedLanguages'], ['cpp', 'cangjie'])
+        self.assertTrue(body['signature']['python'])
+        self.assertEqual(sorted(body['starter'].keys()), sorted(LANGUAGES))
+        self.assertEqual(sorted(body['drivers'].keys()), sorted(LANGUAGES))
+        self.assertEqual(body['judgedLanguages'], LANGUAGES)
+        self.assertEqual(body['modes'], {language: BOTH for language in LANGUAGES})
+        self.assertEqual(body['package'], 'ict02')
         self.assertEqual([group['name'] for group in body['groups']], ['sample', 'simple', 'boundary', 'long'])
         self.assertEqual(sum(group['caseCount'] for group in body['groups']), 8)
         self.assertEqual([group['points'] for group in body['groups']], [1, 20, 29, 50])
@@ -163,11 +174,13 @@ class ProblemAPI(unittest.TestCase):
         self.assertIn('improved', status)
         self.assertFalse(status['improved'])
         self.assertTrue(status['finishedAt'].endswith('Z'))
+        self.assertEqual(status['language'], 'cpp')
+        self.assertEqual(status['mode'], 'function')
 
     # 5. 正确答案：score 100 / AC / improved，且并发提交被 409 拒绝
     def test_05_accepted(self):
         submission = self.submit('cangjie', self.ac_source)
-        status, body = self.request('/api/submit', {'problemId': PROBLEM_ID, 'language': 'cangjie', 'source': self.ac_source})
+        status, body = self.request('/api/submit', {'problemId': PROBLEM_ID, 'language': 'cangjie', 'mode': 'function', 'source': self.ac_source})
         self.assertEqual(status, 409, body)
         self.assertIn('已有提交正在判题', body['error'])
         result = self.wait_done()
@@ -186,7 +199,7 @@ class ProblemAPI(unittest.TestCase):
         self.assertEqual(problems[0]['lastVerdict'], 'AC')
         self.assertTrue(problems[0]['lastSubmittedAt'].endswith('Z'))
 
-    # 6. 历史：两条，明细带 source
+    # 6. 历史：两条，明细带 source / language / mode
     def test_06_submissions(self):
         body = self.ok('/api/submissions?problemId=' + PROBLEM_ID)
         self.assertEqual(len(body['submissions']), 2, body)
@@ -196,11 +209,13 @@ class ProblemAPI(unittest.TestCase):
         self.assertEqual(newest['cases'], 8)
         self.assertEqual(newest['passed'], 8)
         self.assertEqual(newest['language'], 'cangjie')
+        self.assertEqual(newest['mode'], 'function')
         self.assertEqual(oldest['verdict'], 'WA')
         self.assertEqual(oldest['passed'], 0)
         self.assertGreaterEqual(newest['sourceBytes'], len(self.ac_source))
         detail = self.ok('/api/submissions/' + newest['id'])
         self.assertEqual(detail['source'], self.ac_source)
+        self.assertEqual(detail['mode'], 'function')
         self.assertEqual(len(detail['cases']), 8)
         self.assertEqual(len(detail['groups']), 4)
         self.assertTrue(detail['id'])
@@ -225,7 +240,7 @@ class ProblemAPI(unittest.TestCase):
             document['groups'][1]['points'] = 18
             (folder / 'problem.json').write_text(json.dumps(document, ensure_ascii=False), encoding='utf-8')
 
-        status, body = self.request('/api/problems/import', {'zipPath': str(self.variant('points', bad_points))}, timeout=120)
+        status, body = self.request('/api/problems/import', {'zipPath': str(self.variant('points', bad_points))}, timeout=600)
         self.assertEqual(status, 400, body)
         self.assertTrue(body['details'], body)
         self.assertIn('100', body['details'][0]['message'])
@@ -237,16 +252,23 @@ class ProblemAPI(unittest.TestCase):
             document['freeStyle'] = 1
             (folder / 'problem.json').write_text(json.dumps(document, ensure_ascii=False), encoding='utf-8')
 
-        status, body = self.request('/api/problems/import', {'zipPath': str(self.variant('unknown', unknown_field))}, timeout=120)
+        status, body = self.request('/api/problems/import', {'zipPath': str(self.variant('unknown', unknown_field))}, timeout=600)
         self.assertEqual(status, 400, body)
         self.assertTrue(any('未知字段' in item['message'] for item in body['details']), body)
 
         def missing_answer(folder):
             (folder / '05.ans').unlink()
 
-        status, body = self.request('/api/problems/import', {'zipPath': str(self.variant('noans', missing_answer))}, timeout=120)
+        status, body = self.request('/api/problems/import', {'zipPath': str(self.variant('noans', missing_answer))}, timeout=600)
         self.assertEqual(status, 400, body)
         self.assertTrue(any('05.ans' in item['message'] for item in body['details']), body)
+
+        def drop_python_driver(folder):
+            (folder / 'main.py').unlink()
+
+        status, body = self.request('/api/problems/import', {'zipPath': str(self.variant('nopy', drop_python_driver))}, timeout=600)
+        self.assertEqual(status, 400, body)
+        self.assertTrue(any('main.py' in item['message'] for item in body['details']), body)
 
         # 不存在的 zip / 不是 zip
         status, body = self.request('/api/problems/import', {'zipPath': str(pathlib.Path(self.root.name) / 'nope.zip')}, timeout=30)
@@ -259,11 +281,11 @@ class ProblemAPI(unittest.TestCase):
 
     # 9. 重复导入是幂等的；删除接口同时清掉该题提交
     def test_09_replace_and_delete(self):
-        body = self.ok('/api/problems/import', {'zipPath': str(self.package)}, timeout=180)
+        body = self.ok('/api/problems/import', {'zipPath': str(self.package)}, timeout=600)
         self.assertTrue(body['ok'])
         self.assertEqual(body.get('replaced'), True)
         self.assertEqual(len(self.ok('/api/problems')['problems']), 1)
-        self.ok('/api/submit', {'problemId': PROBLEM_ID, 'language': 'cpp', 'source': self.wa_source})
+        self.ok('/api/submit', {'problemId': PROBLEM_ID, 'language': 'cpp', 'mode': 'function', 'source': self.wa_source})
         self.wait_done()
         self.assertEqual(len(self.ok('/api/submissions?problemId=' + PROBLEM_ID)['submissions']), 1)
         request = urllib.request.Request(self.url + '/api/problems/' + PROBLEM_ID, method='DELETE',
@@ -279,9 +301,10 @@ class ProblemAPI(unittest.TestCase):
     # 10. base64 上传同一份题包（浏览器走这条）
     def test_10_base64_import(self):
         encoded = base64.b64encode(pathlib.Path(self.package).read_bytes()).decode('ascii')
-        body = self.ok('/api/problems/import', {'zip': encoded}, timeout=180)
+        body = self.ok('/api/problems/import', {'zip': encoded}, timeout=600)
         self.assertEqual(body['id'], PROBLEM_ID)
         self.assertEqual(body['verification']['solutions']['cangjie']['score'], 100)
+        self.assertEqual(body['verification']['full']['java'], True)
         status, rejected = self.request('/api/problems/import', {'zip': '!!!not-base64!!!'}, timeout=30)
         self.assertEqual(status, 400, rejected)
 
@@ -291,7 +314,7 @@ class ProblemAPI(unittest.TestCase):
         self.submit('cangjie', self.ac_source)
         time.sleep(0.4)
         self.ok('/api/cancel', {})
-        result = self.wait_done(120)
+        result = self.wait_done(180)
         self.assertEqual(result['verdict'], 'CANCELLED')
         self.assertEqual(result['score'], 0)
         self.assertEqual([group['earned'] for group in result['groups']], [0, 0, 0, 0])
@@ -302,41 +325,53 @@ class ProblemAPI(unittest.TestCase):
         self.submit('cangjie', self.ac_source)
         self.assertEqual(self.wait_done()['verdict'], 'AC')
 
-    # 12. 没有 checker.cpp 时用内置 token 比较
-    def test_12_builtin_checker(self):
+    # 12. 只有 C++ 的 v2 题包：完整式和函数式都能提交；没有 checker 时用内置 token 比较
+    def test_12_builtin_checker_and_subset_modes(self):
         folder = pathlib.Path(self.root.name) / 'builtin'
         folder.mkdir()
         document = {
-            'schemaVersion': 1, 'id': 'demo-builtin',
+            'schemaVersion': 2, 'id': 'demo-builtin',
             'title': {'zh': '内置判分示例', 'en': 'Builtin checker demo'},
             'difficulty': 800, 'tags': ['模拟'],
             'limits': {'timeMs': 1000, 'memoryMb': 128},
-            'judgeMode': 'io',
+            'modes': {'cpp': ['function', 'full']},
             'statement': {'zh': '# A+B\n\n读两个整数输出和。\n', 'en': '# A+B\n\nRead two integers and print the sum.\n'},
             'samples': [{'input': '2 3\n', 'output': '5\n'}],
             'groups': [{'name': 'sample', 'points': 1, 'cases': ['01']},
                        {'name': 'main', 'points': 99, 'cases': ['02']}],
+            'function': {'package': 'demo', 'signature': {'zh': 'func solve(a: Int64, b: Int64): Int64', 'en': 'solve(a, b) -> a + b'}},
         }
         (folder / 'problem.json').write_text(json.dumps(document, ensure_ascii=False), encoding='utf-8')
-        source = '#include <cstdio>\nint main() { long long a, b; std::scanf("%lld %lld", &a, &b); std::printf("%lld\\n", a + b); }\n'
-        source = source.replace('std::scanf', 'scanf').replace('std::printf', 'printf')
-        (folder / 'solution.cpp').write_text(source, encoding='utf-8')
+        function_source = 'long long solve(long long a, long long b) { return a + b; }\n'
+        full = '#include <cstdio>\nint main() { long long a, b; scanf("%lld %lld", &a, &b); printf("%lld\\n", a + b); }\n'
+        (folder / 'main.cpp').write_text('#include <cstdio>\nlong long solve(long long a, long long b);\nint main() { long long a, b; scanf("%lld %lld", &a, &b); printf("%lld\\n", solve(a, b)); }\n', encoding='utf-8')
+        (folder / 'starter.cpp').write_text('long long solve(long long a, long long b) { return 0; }\n', encoding='utf-8')
+        (folder / 'solution.cpp').write_text(function_source, encoding='utf-8')
         (folder / '01.in').write_text('2 3\n', encoding='utf-8')
         (folder / '01.ans').write_text('5\n', encoding='utf-8')
         (folder / '02.in').write_text('1000000000 7\n', encoding='utf-8')
         (folder / '02.ans').write_text('1000000007\n', encoding='utf-8')
         archive = make_zip(folder, pathlib.Path(self.root.name) / 'builtin.zip')
-        body = self.ok('/api/problems/import', {'zipPath': str(archive)}, timeout=180)
-        self.assertEqual(body['verification']['checker'], 'builtin')
-        self.assertEqual(body['verification']['checkerCompiled'], False)
-        self.assertEqual(body['verification']['solutions']['cpp']['score'], 100)
+        imported = self.ok('/api/problems/import', {'zipPath': str(archive)}, timeout=300)
+        self.assertEqual(imported['verification']['checker'], 'builtin')
+        self.assertEqual(imported['verification']['checkerCompiled'], False)
+        self.assertEqual(imported['verification']['solutions']['cpp']['score'], 100)
+        self.assertEqual(imported['verification']['full']['cpp'], True)
         self.assertEqual(len(list(self.database.glob('*.zip'))), 2)
         cards = {item['id']: item for item in self.ok('/api/problems')['problems']}
         self.assertEqual(cards['demo-builtin']['title']['zh'], '内置判分示例')
-        self.ok('/api/submit', {'problemId': 'demo-builtin', 'language': 'cpp', 'source': source})
-        result = self.wait_done()
-        self.assertEqual(result['verdict'], 'AC')
-        self.assertEqual(result['score'], 100)
+        self.assertEqual(cards['demo-builtin']['modes'], {'cpp': ['function', 'full']})
+        for mode, source in [('function', function_source), ('full', full)]:
+            self.ok('/api/submit', {'problemId': 'demo-builtin', 'language': 'cpp', 'mode': mode, 'source': source})
+            result = self.wait_done()
+            self.assertEqual(result['verdict'], 'AC', result)
+            self.assertEqual(result['score'], 100)
+        # 未声明的语言/方式要被拒绝
+        status, rejected = self.request('/api/submit', {'problemId': 'demo-builtin', 'language': 'python', 'mode': 'function', 'source': 'def solve(a, b):\n    return a + b\n'})
+        self.assertEqual(status, 400, rejected)
+        status, rejected = self.request('/api/problems/demo-builtin/run', {'language': 'cpp', 'mode': 'python', 'source': function_source,
+                                                                           'tests': [{'input': '2 3\n', 'expected': '5\n'}]})
+        self.assertEqual(status, 400, rejected)
 
     # 13. 直接把题包丢进题库目录（不走导入接口）也会出现，标题取自 problem.json 而不是文件名
     def test_13_manual_drop(self):
@@ -349,14 +384,42 @@ class ProblemAPI(unittest.TestCase):
         self.assertIn('a-plus-b', cards)
         self.assertEqual(cards['a-plus-b']['title']['zh'], 'A+B 问题')
         self.assertEqual(cards['a-plus-b']['difficulty'], 800)
+        self.assertEqual(cards['a-plus-b']['modes'], {language: BOTH for language in LANGUAGES})
         detail = self.ok('/api/problems/a-plus-b')
-        self.assertEqual(detail['judgeMode'], 'function')
-        self.assertTrue(detail['drivers']['cangjie'])
+        self.assertEqual(detail['package'], 'demo')
+        self.assertEqual(sorted(detail['drivers'].keys()), sorted(LANGUAGES))
         request = urllib.request.Request(self.url + '/api/problems/a-plus-b', method='DELETE',
                                          headers={'Content-Type': 'application/json', 'X-JudgeBox-Token': self.token})
         with urllib.request.urlopen(request, timeout=30) as response:
             self.assertEqual(json.load(response), {'ok': True})
         self.assertFalse((self.database / 'zzz-random-name.zip').exists())
+
+    # 14. 模板题：四种语言 × 两种方式各提交一次，全部 AC
+    def test_14_all_eight_combinations(self):
+        template = pathlib.Path(__file__).resolve().parent.parent / 'CreateProblemGuide' / '模板'
+        archive = make_zip(template, pathlib.Path(self.root.name) / 'plus.zip')
+        self.ok('/api/problems/import', {'zipPath': str(archive)}, timeout=300)
+        sources = {
+            ('cpp', 'function'): 'long long solve(long long a, long long b) { return a + b; }\n',
+            ('cpp', 'full'): '#include <iostream>\nint main() { long long a, b; std::cin >> a >> b; std::cout << a + b << \'\\n\'; }\n',
+            ('python', 'function'): 'def solve(a: int, b: int) -> int:\n    return a + b\n',
+            ('python', 'full'): 'import sys\ndata = sys.stdin.buffer.read().split()\nprint(int(data[0]) + int(data[1]))\n',
+            ('java', 'function'): '    static long solve(long a, long b) { return a + b; }\n',
+            ('java', 'full'): 'import java.util.*;\npublic class Main { public static void main(String[] args) { Scanner s = new Scanner(System.in); System.out.println(s.nextLong() + s.nextLong()); } }\n',
+            ('cangjie', 'function'): 'package demo\n\nfunc solve(a: Int64, b: Int64): Int64 {\n    return a + b\n}\n',
+            ('cangjie', 'full'): 'package demo\n\nimport std.convert.Parsable\n\nmain(): Unit {\n    let a = Int64.parse(readln().trimAscii())\n    let b = Int64.parse(readln().trimAscii())\n    println(a + b)\n}\n',
+        }
+        for (language, mode), source in sources.items():
+            self.ok('/api/submit', {'problemId': 'a-plus-b', 'language': language, 'mode': mode, 'source': source})
+            result = self.wait_done()
+            self.assertEqual(result['verdict'], 'AC', (language, mode, result))
+            self.assertEqual(result['score'], 100, (language, mode, result))
+            self.assertEqual(result['language'], language)
+            self.assertEqual(result['mode'], mode)
+        request = urllib.request.Request(self.url + '/api/problems/a-plus-b', method='DELETE',
+                                         headers={'Content-Type': 'application/json', 'X-JudgeBox-Token': self.token})
+        with urllib.request.urlopen(request, timeout=30) as response:
+            self.assertEqual(json.load(response), {'ok': True})
 
 
 if __name__ == '__main__':

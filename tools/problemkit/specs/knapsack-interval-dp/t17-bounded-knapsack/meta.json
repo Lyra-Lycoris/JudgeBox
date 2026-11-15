@@ -1,0 +1,25 @@
+{
+  "id": "t17-bounded-knapsack",
+  "title": {"zh": "多重背包最大价值", "en": "Bounded Knapsack Maximum Value"},
+  "difficulty": 1200,
+  "topic": "背包与区间DP",
+  "tags": ["背包", "动态规划"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "2 10\n3 5\n4 7\n3 2\n", "output": "14\n"}
+  ],
+  "signature": {
+    "package": "t17_bounded_knapsack",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "cap", "type": "int"},
+      {"name": "w", "type": "ints", "count": "n"},
+      {"name": "v", "type": "ints", "count": "n"},
+      {"name": "c", "type": "ints", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回容量 cap 下多重背包能取得的最大价值"}
+  }
+}

@@ -42,6 +42,7 @@ function summary(detail) {
   const box = el('div', 'pb-history-detail');
   const head = el('div', 'pb-history-detail-head');
   head.append(PB.verdictBadge(detail.verdict), el('strong', 'pb-mono', `${detail.score}/100`));
+  if (detail.mode) head.append(el('span', 'pb-muted', PB.modeNames[detail.mode] || detail.mode));
   if (Number.isFinite(detail.durationMs)) head.append(el('span', 'pb-muted', `用时 ${(detail.durationMs / 1000).toFixed(1)} s`));
   if (detail.sourceTruncated) head.append(el('span', 'pb-warn', '源码过大，已截断保存'));
   box.append(head);
@@ -74,10 +75,11 @@ async function load() {
     list.replaceChildren(...subs.map(sub => {
       const item = el('button', 'pb-history-item'); item.type = 'button'; item.setAttribute('aria-expanded', 'false');
       const time = el('span', 'pb-history-time', relative(sub.at)); time.title = PB.absoluteTime(sub.at);
-      item.append(time, el('span', 'pb-history-lang', PB.languageNames[sub.language] || sub.language),
+      const languageText = `${PB.languageNames[sub.language] || sub.language} · ${PB.modeNames[sub.mode] || sub.mode || '函数式'}`;
+      item.append(time, el('span', 'pb-history-lang', languageText),
         el('span', 'pb-history-score', `${sub.score}`), PB.verdictBadge(sub.verdict),
         el('span', 'pb-history-cases', `${sub.passed ?? 0}/${sub.cases ?? 0} 点`));
-      item.setAttribute('aria-label', `${PB.absoluteTime(sub.at)}，${PB.languageNames[sub.language] || sub.language}，${sub.score} 分，${sub.verdict}`);
+      item.setAttribute('aria-label', `${PB.absoluteTime(sub.at)}，${languageText}，${sub.score} 分，${sub.verdict}`);
       item.onclick = () => toggle(item, sub);
       return item;
     }));

@@ -1,0 +1,25 @@
+{
+  "id": "t27-matrix-exp-recur",
+  "title": {"zh": "矩阵快速幂求线性递推", "en": "Linear Recurrence by Matrix Exponentiation"},
+  "difficulty": 1700,
+  "topic": "复杂DP与最优化",
+  "tags": ["动态规划", "数学"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "10 1 1 1 1\n", "output": "89\n"}
+  ],
+  "signature": {
+    "package": "t27_matrix_exp_recur",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "x", "type": "int"},
+      {"name": "y", "type": "int"},
+      {"name": "p", "type": "int"},
+      {"name": "q", "type": "int"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回 f(n) 对 1000000007 取模的结果"}
+  }
+}

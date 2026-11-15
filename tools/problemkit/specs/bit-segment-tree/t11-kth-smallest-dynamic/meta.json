@@ -1,0 +1,20 @@
+{
+  "id": "t11-kth-smallest-dynamic",
+  "title": {"zh": "动态第 k 小", "en": "Dynamic K-th Smallest"},
+  "difficulty": 1600,
+  "topic": "树状数组与线段树",
+  "tags": ["树状数组", "二分"],
+  "limits": {"timeMs": 3000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "7\n1 5\n1 3\n1 9\n3 1\n3 3\n2 3\n3 1\n", "output": "3 9 5\n"}],
+  "signature": {
+    "package": "t11_kth_smallest_dynamic",
+    "params": [
+      {"name": "q", "type": "int"},
+      {"name": "ops", "type": "matrix", "rows": "q", "cols": "2"}
+    ],
+    "returns": "ints_space",
+    "hint": {"zh": "按顺序返回每次第 k 小查询的答案"}
+  }
+}

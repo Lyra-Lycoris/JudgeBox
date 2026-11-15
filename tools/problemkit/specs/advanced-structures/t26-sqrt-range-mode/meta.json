@@ -1,0 +1,22 @@
+{
+  "id": "t26-sqrt-range-mode",
+  "title": {"zh": "区间众数（分块）", "en": "Range Mode Query (Square-Root Decomposition)"},
+  "difficulty": 2100,
+  "topic": "高级数据结构与分块",
+  "tags": ["分治", "哈希"],
+  "limits": {"timeMs": 3000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "6\n1 2 2 3 1 3\n4\n1 6\n2 3\n1 3\n4 6\n", "output": "1 2 2 3\n"}],
+  "signature": {
+    "package": "t26_sqrt_range_mode",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"},
+      {"name": "q", "type": "int"},
+      {"name": "ops", "type": "matrix", "rows": "q", "cols": "2"}
+    ],
+    "returns": "ints_space",
+    "hint": {"zh": "按顺序返回每次询问区间 [l, r] 的众数（并列时取较小值）"}
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "id": "t21-multiset-perm",
+  "title": {"zh": "多重集排列数", "en": "Permutations of a Multiset"},
+  "difficulty": 1600,
+  "topic": "组合数学与概率期望",
+  "tags": ["组合数学", "排序"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "3\n1 1 2\n", "output": "3\n"},
+    {"input": "1\n-5\n", "output": "1\n"}
+  ],
+  "signature": {
+    "package": "t21_multiset_perm",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回数组 a 的 n 个元素作为多重集时不同排列的个数，对 1000000007 取模"}
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "id": "t08-histogram-rect",
+  "title": {"zh": "直方图最大矩形", "en": "Largest Rectangle in Histogram"},
+  "difficulty": 1200,
+  "topic": "栈与队列",
+  "tags": ["单调栈", "栈"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "6\n2 1 5 6 2 3\n", "output": "10\n"},
+    {"input": "5\n7 7 7 7 7\n", "output": "35\n"}
+  ],
+  "signature": {
+    "package": "t08_histogram_rect",
+    "params": [{"name": "n", "type": "int"}, {"name": "h", "type": "ints", "count": "n"}],
+    "returns": "int",
+    "hint": {"zh": "返回直方图中能画出的最大矩形面积"}
+  }
+}

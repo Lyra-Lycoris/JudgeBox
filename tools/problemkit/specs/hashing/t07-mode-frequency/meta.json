@@ -1,0 +1,20 @@
+{
+  "id": "t07-mode-frequency",
+  "title": {"zh": "众数出现次数", "en": "Mode Frequency"},
+  "difficulty": 1100,
+  "topic": "哈希与计数",
+  "tags": ["哈希", "排序"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "7\n1 2 2 3 3 3 4\n", "output": "3\n"}],
+  "signature": {
+    "package": "t07_mode_frequency",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回出现次数最多的数出现了多少次"}
+  }
+}

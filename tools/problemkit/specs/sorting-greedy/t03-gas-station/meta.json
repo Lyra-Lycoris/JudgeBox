@@ -1,0 +1,21 @@
+{
+  "id": "t03-gas-station",
+  "title": {"zh": "加油站环路起点", "en": "Gas Station Circuit Start"},
+  "difficulty": 1200,
+  "topic": "排序与贪心",
+  "tags": ["贪心"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "5\n1 2 3 4 5\n3 4 5 1 2\n", "output": "3\n"}],
+  "signature": {
+    "package": "t03_gas_station",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "gas", "type": "ints", "count": "n"},
+      {"name": "cost", "type": "ints", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回可以绕行一圈的起点下标（从 0 开始），无解返回 -1"}
+  }
+}

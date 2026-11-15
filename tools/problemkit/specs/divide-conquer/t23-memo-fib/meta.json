@@ -1,0 +1,21 @@
+{
+  "id": "t23-memo-fib",
+  "title": {"zh": "记忆化搜索求斐波那契", "en": "Fibonacci by Memoized Recursion"},
+  "difficulty": 1800,
+  "topic": "分治与递归",
+  "tags": ["记忆化搜索", "分治", "数学"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "10\n", "output": "55\n"},
+    {"input": "0\n", "output": "0\n"},
+    {"input": "1\n", "output": "1\n"}
+  ],
+  "signature": {
+    "package": "t23_memo_fib",
+    "params": [{"name": "n", "type": "int"}],
+    "returns": "int",
+    "hint": {"zh": "返回斐波那契数列第 n 项对 1000000007 取模的结果"}
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "id": "t18-hamilton-path",
+  "title": {"zh": "最短哈密顿路", "en": "Shortest Hamiltonian Path"},
+  "difficulty": 1000,
+  "topic": "状压DP与树形DP",
+  "tags": ["状压DP", "动态规划"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "4\n0 3 9 2\n3 0 4 8\n9 4 0 1\n2 8 1 0\n", "output": "8\n"}],
+  "signature": {
+    "package": "t18_hamilton_path",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "w", "type": "matrix", "rows": "n", "cols": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回从 0 号城市出发、到 n-1 号城市结束、恰好经过每个城市一次的最小总费用"}
+  }
+}

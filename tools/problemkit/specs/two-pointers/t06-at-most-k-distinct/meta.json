@@ -1,0 +1,55 @@
+{
+  "id": "t06-at-most-k-distinct",
+  "title": {
+    "zh": "至多 K 个不同字符的最长子串",
+    "en": "Longest Substring with At Most K Distinct Characters"
+  },
+  "difficulty": 1200,
+  "topic": "双指针与滑动窗口",
+  "tags": [
+    "滑动窗口",
+    "哈希",
+    "字符串"
+  ],
+  "limits": {
+    "timeMs": 2000,
+    "memoryMb": 256
+  },
+  "judgeType": "function",
+  "source": {
+    "platform": "leetcode",
+    "id": "340",
+    "url": "https://leetcode.cn/problems/longest-substring-with-at-most-k-distinct-characters/"
+  },
+  "samples": [
+    {
+      "input": "2\neceba\n",
+      "output": "3\n"
+    },
+    {
+      "input": "1\naaabbb\n",
+      "output": "3\n"
+    },
+    {
+      "input": "0\nabc\n",
+      "output": "0\n"
+    }
+  ],
+  "signature": {
+    "package": "t06_at_most_k_distinct",
+    "params": [
+      {
+        "name": "k",
+        "type": "int"
+      },
+      {
+        "name": "s",
+        "type": "string"
+      }
+    ],
+    "returns": "int",
+    "hint": {
+      "zh": "返回不同字符个数不超过 k 的最长子串长度"
+    }
+  }
+}

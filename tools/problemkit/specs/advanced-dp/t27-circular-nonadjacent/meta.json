@@ -1,0 +1,22 @@
+{
+  "id": "t27-circular-nonadjacent",
+  "title": {"zh": "环形数组的最大不邻取和", "en": "Maximum Non-Adjacent Sum on a Circle"},
+  "difficulty": 2100,
+  "topic": "复杂DP与最优化",
+  "tags": ["动态规划", "枚举"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "4\n5 1 1 5\n", "output": "6\n"}
+  ],
+  "signature": {
+    "package": "t27_circular_nonadjacent",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回环形数组中两两不相邻的子集的最大元素和（子集可以为空）"}
+  }
+}

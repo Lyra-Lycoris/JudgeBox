@@ -1,0 +1,19 @@
+{
+  "id": "t16-lcs-len",
+  "title": {"zh": "最长公共子序列", "en": "Longest Common Subsequence"},
+  "difficulty": 1800,
+  "topic": "线性动态规划",
+  "tags": ["动态规划", "字符串"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "leetcode", "id": "1143", "url": "https://leetcode.cn/problems/longest-common-subsequence/"},
+  "samples": [
+    {"input": "abcde\nace\n", "output": "3\n"}
+  ],
+  "signature": {
+    "package": "t16_lcs_len",
+    "params": [{"name": "s", "type": "string"}, {"name": "t", "type": "string"}],
+    "returns": "int",
+    "hint": {"zh": "返回两个字符串的最长公共子序列长度"}
+  }
+}

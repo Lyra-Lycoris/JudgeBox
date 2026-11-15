@@ -1,0 +1,20 @@
+{
+  "id": "t14-floyd-apsp",
+  "title": {"zh": "任意两点最短路（Floyd）", "en": "All-Pairs Shortest Paths (Floyd)"},
+  "difficulty": 1100,
+  "topic": "最短路与最小生成树",
+  "tags": ["图论", "最短路"],
+  "limits": {"timeMs": 3000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "4\n0 3 -1 7\n-1 0 2 -1\n-1 -1 0 1\n-1 -1 -1 0\n", "output": "0 3 5 6 -1 0 2 3 -1 -1 0 1 -1 -1 -1 0\n"}],
+  "signature": {
+    "package": "t14_floyd_apsp",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "w", "type": "matrix", "rows": "n", "cols": "n"}
+    ],
+    "returns": "ints_space",
+    "hint": {"zh": "返回 n×n 个整数，第 (i,j) 个是点 i 到点 j 的最短距离，不可达为 -1"}
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "id": "t14-bellman-ford-negative-cycle",
+  "title": {"zh": "负环判定（Bellman-Ford）", "en": "Negative Cycle Detection (Bellman-Ford)"},
+  "difficulty": 1200,
+  "topic": "最短路与最小生成树",
+  "tags": ["图论", "最短路"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "4 4 1\n1 2 1\n2 3 -3\n3 4 1\n4 2 -1\n", "output": "YES\n"}],
+  "signature": {
+    "package": "t14_bellman_ford_negative_cycle",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "m", "type": "int"},
+      {"name": "s", "type": "int"},
+      {"name": "e", "type": "matrix", "rows": "m", "cols": "3"}
+    ],
+    "returns": "bool",
+    "hint": {"zh": "存在从 s 可达的负环返回 true，否则返回 false"}
+  }
+}

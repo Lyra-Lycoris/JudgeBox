@@ -1,0 +1,20 @@
+{
+  "id": "t21-catalan-brackets",
+  "title": {"zh": "合法括号序列计数", "en": "Counting Valid Bracket Sequences"},
+  "difficulty": 1100,
+  "topic": "组合数学与概率期望",
+  "tags": ["组合数学"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "3\n", "output": "5\n"},
+    {"input": "0\n", "output": "1\n"}
+  ],
+  "signature": {
+    "package": "t21_catalan_brackets",
+    "params": [{"name": "n", "type": "int"}],
+    "returns": "int",
+    "hint": {"zh": "返回由 n 对括号构成的合法括号序列个数对 1000000007 取模的结果"}
+  }
+}

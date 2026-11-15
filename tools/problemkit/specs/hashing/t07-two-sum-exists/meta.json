@@ -1,0 +1,21 @@
+{
+  "id": "t07-two-sum-exists",
+  "title": {"zh": "两数之和是否存在", "en": "Two Sum Existence"},
+  "difficulty": 1000,
+  "topic": "哈希与计数",
+  "tags": ["哈希", "枚举"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "4\n2 7 11 15\n9\n", "output": "YES\n"}],
+  "signature": {
+    "package": "t07_two_sum_exists",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"},
+      {"name": "target", "type": "int"}
+    ],
+    "returns": "bool",
+    "hint": {"zh": "返回是否存在两个不同下标的元素之和等于 target"}
+  }
+}

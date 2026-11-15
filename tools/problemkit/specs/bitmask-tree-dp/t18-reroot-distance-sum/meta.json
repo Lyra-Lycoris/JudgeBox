@@ -1,0 +1,20 @@
+{
+  "id": "t18-reroot-distance-sum",
+  "title": {"zh": "换根求每个点的距离和", "en": "Sum of Distances from Every Node"},
+  "difficulty": 2100,
+  "topic": "状压DP与树形DP",
+  "tags": ["树形DP", "树"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "5\n1 1 3 3\n", "output": "6 9 5 8 8\n"}],
+  "signature": {
+    "package": "t18_reroot_distance_sum",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "p", "type": "ints", "count": "n-1"}
+    ],
+    "returns": "ints_space",
+    "hint": {"zh": "返回 n 个整数，第 i 个是节点 i 到其余所有节点的距离之和"}
+  }
+}

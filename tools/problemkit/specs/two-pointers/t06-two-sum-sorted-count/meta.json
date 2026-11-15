@@ -1,0 +1,57 @@
+{
+  "id": "t06-two-sum-sorted-count",
+  "title": {
+    "zh": "有序数组两数之和的方案数",
+    "en": "Two Sum in a Sorted Array: Number of Pairs"
+  },
+  "difficulty": 1300,
+  "topic": "双指针与滑动窗口",
+  "tags": [
+    "双指针",
+    "二分"
+  ],
+  "limits": {
+    "timeMs": 2000,
+    "memoryMb": 256
+  },
+  "judgeType": "function",
+  "source": {
+    "platform": "other"
+  },
+  "samples": [
+    {
+      "input": "5 5\n1 2 3 4 5\n",
+      "output": "2\n"
+    },
+    {
+      "input": "3 4\n2 2 2\n",
+      "output": "3\n"
+    },
+    {
+      "input": "1 5\n5\n",
+      "output": "0\n"
+    }
+  ],
+  "signature": {
+    "package": "t06_two_sum_sorted_count",
+    "params": [
+      {
+        "name": "n",
+        "type": "int"
+      },
+      {
+        "name": "target",
+        "type": "int"
+      },
+      {
+        "name": "a",
+        "type": "ints",
+        "count": "n"
+      }
+    ],
+    "returns": "int",
+    "hint": {
+      "zh": "返回满足 a[i]+a[j]=target（i<j）的下标对数"
+    }
+  }
+}

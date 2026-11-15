@@ -1,0 +1,21 @@
+{
+  "id": "t04-lower-bound",
+  "title": {"zh": "第一个不小于 x 的位置", "en": "First Position Not Less Than x"},
+  "difficulty": 1000,
+  "topic": "二分与二分答案",
+  "tags": ["二分"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "5\n1 3 5 7 9\n5\n", "output": "2\n"}],
+  "signature": {
+    "package": "t04_lower_bound",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"},
+      {"name": "x", "type": "int"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回最小的下标 i 使 a[i] >= x（下标从 0 开始）；若不存在这样的 i 则返回 n"}
+  }
+}

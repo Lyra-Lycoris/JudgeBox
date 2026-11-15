@@ -1,0 +1,22 @@
+{
+  "id": "t25-perm-prefix-max",
+  "title": {"zh": "构造前缀最大值个数为 k 的排列", "en": "Construct a Permutation with k Prefix Maxima"},
+  "difficulty": 1000,
+  "topic": "综合思维与特殊裁判",
+  "tags": ["构造"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "special",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "5 3\n", "output": "1 2 5 4 3\n"}
+  ],
+  "signature": {
+    "package": "t25_perm_prefix_max",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "k", "type": "int"}
+    ],
+    "returns": "ints_space",
+    "hint": {"zh": "返回任意一个 1..n 的排列，使它的前缀最大值个数恰好为 k；本题使用特殊评判"}
+  }
+}

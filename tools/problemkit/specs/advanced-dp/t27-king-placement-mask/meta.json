@@ -1,0 +1,23 @@
+{
+  "id": "t27-king-placement-mask",
+  "title": {"zh": "状压 DP：棋盘放王方案数", "en": "Placing Kings with Bitmask DP"},
+  "difficulty": 2300,
+  "topic": "复杂DP与最优化",
+  "tags": ["状压DP", "动态规划"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "2 2\n0 0\n", "output": "5\n"}
+  ],
+  "signature": {
+    "package": "t27_king_placement_mask",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "m", "type": "int"},
+      {"name": "blocked", "type": "ints", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回合法摆放方案数对 1000000007 取模的结果"}
+  }
+}

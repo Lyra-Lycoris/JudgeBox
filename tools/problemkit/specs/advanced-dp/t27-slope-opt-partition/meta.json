@@ -1,0 +1,23 @@
+{
+  "id": "t27-slope-opt-partition",
+  "title": {"zh": "斜率优化分段最小代价", "en": "Partition with Convex Segment Cost"},
+  "difficulty": 2000,
+  "topic": "复杂DP与最优化",
+  "tags": ["动态规划", "前缀和"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "3 10\n1 2 3\n", "output": "38\n"}
+  ],
+  "signature": {
+    "package": "t27_slope_opt_partition",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "cost", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回把数组划分成若干连续段后的最小总代价"}
+  }
+}

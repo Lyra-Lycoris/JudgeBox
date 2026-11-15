@@ -1,0 +1,23 @@
+{
+  "id": "t28-orient-graph",
+  "title": {"zh": "给无向图定向", "en": "Orient an Undirected Graph"},
+  "difficulty": 2300,
+  "topic": "思维难题与构造",
+  "tags": ["构造", "图论", "拓扑排序"],
+  "limits": {"timeMs": 3000, "memoryMb": 256},
+  "judgeType": "special",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "4 4\n1 2\n2 3\n3 1\n3 4\n", "output": "2 1 3 2 1 3 3 4\n"}
+  ],
+  "signature": {
+    "package": "t28_orient_graph",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "m", "type": "int"},
+      {"name": "e", "type": "matrix", "rows": "m", "cols": "2"}
+    ],
+    "returns": "ints_space",
+    "hint": {"zh": "依次输出每条边的方向：a_i 指向 b_i（共 2m 个整数）；无解时只输出一个 -1"}
+  }
+}

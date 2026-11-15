@@ -1,0 +1,22 @@
+{
+  "id": "t28-min-cyclic-rotation",
+  "title": {"zh": "最小循环移位", "en": "Smallest Cyclic Rotation"},
+  "difficulty": 1700,
+  "topic": "思维难题与构造",
+  "tags": ["构造", "双指针"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "6\n3 1 4 1 5 9\n", "output": "1 4 1 5 9 3\n"}
+  ],
+  "signature": {
+    "package": "t28_min_cyclic_rotation",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"}
+    ],
+    "returns": "ints_space",
+    "hint": {"zh": "返回字典序最小的循环移位（长度仍为 n）"}
+  }
+}

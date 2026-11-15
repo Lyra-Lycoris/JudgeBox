@@ -1,0 +1,23 @@
+{
+  "id": "t13-rotting-oranges",
+  "title": {"zh": "腐烂的橘子", "en": "Rotting Oranges"},
+  "difficulty": 2100,
+  "topic": "图论与搜索",
+  "tags": ["图论", "队列"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "3 3\n2 1 1\n1 1 0\n0 1 1\n", "output": "4\n"}
+  ],
+  "signature": {
+    "package": "t13_rotting_oranges",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "m", "type": "int"},
+      {"name": "grid", "type": "matrix", "rows": "n", "cols": "m"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回所有新鲜橘子都腐烂所需的最少分钟数，若不可能则返回 -1"}
+  }
+}

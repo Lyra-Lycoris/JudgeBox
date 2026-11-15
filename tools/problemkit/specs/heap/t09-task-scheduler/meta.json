@@ -1,0 +1,21 @@
+{
+  "id": "t09-task-scheduler",
+  "title": {"zh": "任务调度最小总耗时", "en": "Task Scheduler: Minimum Total Time"},
+  "difficulty": 1200,
+  "topic": "堆与优先队列",
+  "tags": ["堆", "贪心", "哈希"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "leetcode", "id": "621", "url": "https://leetcode.com/problems/task-scheduler/"},
+  "samples": [{"input": "6 2\n1 1 1 2 2 2\n", "output": "8\n"}],
+  "signature": {
+    "package": "t09_task_scheduler",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "c", "type": "int"},
+      {"name": "tasks", "type": "ints", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回执行完所有任务所需的最少总时间"}
+  }
+}

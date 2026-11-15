@@ -1,0 +1,23 @@
+{
+  "id": "t15-path-weight-sum",
+  "title": {"zh": "树上路径点权和", "en": "Path Node-Weight Sum"},
+  "difficulty": 1400,
+  "topic": "树与最近公共祖先",
+  "tags": ["树", "最近公共祖先", "前缀和"],
+  "limits": {"timeMs": 3000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "5\n3 -1 4 1 5\n1 2\n2 3\n2 4\n4 5\n3\n3 5\n1 5\n1 1\n", "output": "9 8 3\n"}],
+  "signature": {
+    "package": "t15_path_weight_sum",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "w", "type": "ints", "count": "n"},
+      {"name": "e", "type": "ints", "count": "2*(n-1)"},
+      {"name": "q", "type": "int"},
+      {"name": "queries", "type": "ints", "count": "2*q"}
+    ],
+    "returns": "ints_space",
+    "hint": {"zh": "返回 q 个整数：每次询问路径上所有节点的点权之和（含两端点）"}
+  }
+}

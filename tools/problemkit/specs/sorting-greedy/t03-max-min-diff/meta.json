@@ -1,0 +1,21 @@
+{
+  "id": "t03-max-min-diff",
+  "title": {"zh": "最大化最小相邻差", "en": "Maximize the Minimum Adjacent Difference"},
+  "difficulty": 2100,
+  "topic": "排序与贪心",
+  "tags": ["排序", "二分", "贪心"],
+  "limits": {"timeMs": 3000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "5\n1 5 3 9 11\n3\n", "output": "4\n"}],
+  "signature": {
+    "package": "t03_max_min_diff",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"},
+      {"name": "k", "type": "int"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回选出恰好 k 个元素后，相邻元素之差最小值的最大可能值"}
+  }
+}

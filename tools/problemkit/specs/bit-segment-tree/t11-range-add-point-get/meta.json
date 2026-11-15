@@ -1,0 +1,22 @@
+{
+  "id": "t11-range-add-point-get",
+  "title": {"zh": "区间加与单点查询", "en": "Range Add and Point Query"},
+  "difficulty": 1100,
+  "topic": "树状数组与线段树",
+  "tags": ["树状数组", "差分"],
+  "limits": {"timeMs": 3000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "5\n1 2 3 4 5\n4\n1 1 3 10\n2 2 0 0\n1 2 5 -4\n2 3 0 0\n", "output": "12 9\n"}],
+  "signature": {
+    "package": "t11_range_add_point_get",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"},
+      {"name": "q", "type": "int"},
+      {"name": "ops", "type": "matrix", "rows": "q", "cols": "4"}
+    ],
+    "returns": "ints_space",
+    "hint": {"zh": "按顺序返回每次单点查询的答案"}
+  }
+}

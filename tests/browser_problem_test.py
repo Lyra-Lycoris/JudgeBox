@@ -2,7 +2,8 @@
 
 用法：python tests/browser_problem_test.py [build/JudgeBox.exe]
 """
-import sys, json, time, pathlib, subprocess, tempfile, urllib.request
+import os, sys, json, time, pathlib, shutil, subprocess, tempfile, urllib.request, zipfile
+os.environ.setdefault("JUDGEBOX_SYNC_OFF", "1")  # 测试期间不跑 GitHub 题库同步
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -11,6 +12,7 @@ from playwright.sync_api import sync_playwright, expect
 
 EXE = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / 'build/JudgeBox.exe'
 FIXTURE = ROOT / 'tests/fixtures/ict-renjian-cihua'
+AC_SOURCE = ROOT / 'tests/fixtures/ict-renjian-cihua-ac.cj'
 PID = 'ict-renjian-cihua'
 CHROME = r'C:\Program Files\Google\Chrome\Application\chrome.exe'
 
@@ -55,18 +57,29 @@ document = json.loads((FIXTURE / 'problem.json').read_text(encoding='utf-8'))
 # 题面加一行公式，覆盖 MathJax 路径（只改导入请求，不动 fixture 文件）。
 document['statement']['zh'] += '\n\n规模：$1 \\le |verse| \\le 200$，且\n\n$$\\sum_{i=1}^{n} |w_i| \\le 2\\times 10^4$$\n'
 document['statement']['en'] += '\n\nScale: $1 \\le |verse| \\le 200$ and\n\n$$\\sum_{i=1}^{n} |w_i| \\le 2\\times 10^4$$\n'
-starter_cpp = document['function']['starter']['cpp']
-wa_source = starter_cpp  # starter 本身就是“固定返回空数组”
-ac_source = (FIXTURE / 'ac-solution.cj').read_text(encoding='utf-8')
+wa_source = (FIXTURE / 'starter.cpp').read_text(encoding='utf-8')  # starter 本身就是“固定返回空数组”
+ac_source = AC_SOURCE.read_text(encoding='utf-8')
 
 with tempfile.TemporaryDirectory(prefix='JudgeBox problem ui ') as temp:
+    package = pathlib.Path(temp) / 'package'
+    shutil.copytree(FIXTURE, package)
+    (package / 'problem.json').write_text(json.dumps(document, ensure_ascii=False), encoding='utf-8')
+    archive = pathlib.Path(temp) / 'problem.zip'
+    with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for path in sorted(package.iterdir()):
+            if path.is_file():
+                zf.write(path, path.name)
+    database = pathlib.Path(temp) / 'ProblemDatabase'
+    database.mkdir()
+    env = dict(os.environ)
+    env['JUDGEBOX_PROBLEM_DATABASE'] = str(database)
     proc = subprocess.Popen([str(EXE), '--no-browser', '--data-dir', temp], stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE, text=True, encoding='utf-8')
+                            stderr=subprocess.PIPE, text=True, encoding='utf-8', env=env)
     url = proc.stdout.readline().strip()
     base, token = url.split('/#', 1)
     errors = []
     try:
-        imported = call(base, token, '/api/problems/import', {'json': json.dumps(document, ensure_ascii=False)}, timeout=240)
+        imported = call(base, token, '/api/problems/import', {'zipPath': str(archive)}, timeout=600)
         assert imported['ok'] and imported['id'] == PID, imported
         call(base, token, '/api/submissions/clear', {'problemId': PID})
         with sync_playwright() as p:

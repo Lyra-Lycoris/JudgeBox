@@ -1,0 +1,20 @@
+{
+  "id": "t09-stone-merge-free",
+  "title": {"zh": "合并石子（一次免费合并）", "en": "Stone Merge with One Free Merge"},
+  "difficulty": 1600,
+  "topic": "堆与优先队列",
+  "tags": ["堆", "贪心"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "4\n4 3 2 6\n", "output": "14\n"}],
+  "signature": {
+    "package": "t09_stone_merge_free",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回把所有石子合并成一堆的最小总代价（允许一次免费合并）"}
+  }
+}

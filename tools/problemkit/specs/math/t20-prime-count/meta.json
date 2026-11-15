@@ -1,0 +1,22 @@
+{
+  "id": "t20-prime-count",
+  "title": {"zh": "素数筛计数", "en": "Prime Counting with a Sieve"},
+  "difficulty": 1200,
+  "topic": "数学与数论",
+  "tags": ["数学", "数论", "枚举"],
+  "limits": {"timeMs": 3000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "3\n10 1 100\n", "output": "4 0 25\n"}
+  ],
+  "signature": {
+    "package": "t20_prime_count",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"}
+    ],
+    "returns": "ints_space",
+    "hint": {"zh": "返回每个查询的答案：不超过 a[i] 的素数个数"}
+  }
+}

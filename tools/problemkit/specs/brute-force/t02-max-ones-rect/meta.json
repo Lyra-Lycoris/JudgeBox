@@ -1,0 +1,21 @@
+{
+  "id": "t02-max-ones-rect",
+  "title": {"zh": "最大全 1 子矩形", "en": "Largest All-Ones Subrectangle"},
+  "difficulty": 1300,
+  "topic": "枚举与暴力",
+  "tags": ["枚举", "前缀和", "单调栈"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "3 4\n1 0 1 1\n1 0 1 1\n1 1 1 1\n", "output": "6\n"}],
+  "signature": {
+    "package": "t02_max_ones_rect",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "m", "type": "int"},
+      {"name": "g", "type": "matrix", "rows": "n", "cols": "m"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回只由 1 组成的子矩形中面积的最大值，没有 1 时返回 0"}
+  }
+}

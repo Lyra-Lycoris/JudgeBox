@@ -1,0 +1,26 @@
+{
+  "id": "t23-median-two-sorted",
+  "title": {"zh": "两个有序数组的中位数", "en": "Median of Two Sorted Arrays"},
+  "difficulty": 1400,
+  "topic": "分治与递归",
+  "tags": ["分治", "二分"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "leetcode", "id": "4", "url": "https://leetcode.cn/problems/median-of-two-sorted-arrays/"},
+  "samples": [
+    {"input": "2\n1 3\n1\n2\n", "output": "4\n"},
+    {"input": "2\n1 2\n2\n3 4\n", "output": "5\n"},
+    {"input": "1\n-5\n1\n5\n", "output": "0\n"}
+  ],
+  "signature": {
+    "package": "t23_median_two_sorted",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"},
+      {"name": "m", "type": "int"},
+      {"name": "b", "type": "ints", "count": "m"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回合并后数组中位数的两倍（一定是整数）"}
+  }
+}

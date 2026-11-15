@@ -1,0 +1,23 @@
+{
+  "id": "t27-random-walk-expect",
+  "title": {"zh": "随机游走的期望步数", "en": "Expected Steps of a Random Walk"},
+  "difficulty": 2200,
+  "topic": "复杂DP与最优化",
+  "tags": ["概率期望", "动态规划"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "5 1 1\n", "output": "62500004\n"}
+  ],
+  "signature": {
+    "package": "t27_random_walk_expect",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "p", "type": "int"},
+      {"name": "q", "type": "int"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回从 0 出发首次到达 >= n 的期望步数对 1000000007 取模的结果"}
+  }
+}

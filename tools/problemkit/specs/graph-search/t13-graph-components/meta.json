@@ -1,0 +1,23 @@
+{
+  "id": "t13-graph-components",
+  "title": {"zh": "连通分量计数", "en": "Counting Connected Components"},
+  "difficulty": 1100,
+  "topic": "图论与搜索",
+  "tags": ["图论", "并查集"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "5 3\n1 2\n2 3\n4 5\n", "output": "2\n"}
+  ],
+  "signature": {
+    "package": "t13_graph_components",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "m", "type": "int"},
+      {"name": "e", "type": "matrix", "rows": "m", "cols": "2"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回无向图的连通分量个数，孤立点也算一个分量"}
+  }
+}

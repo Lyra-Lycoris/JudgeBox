@@ -1,0 +1,20 @@
+{
+  "id": "t07-first-unique-index",
+  "title": {"zh": "第一个只出现一次的字符位置", "en": "First Unique Character Position"},
+  "difficulty": 1300,
+  "topic": "哈希与计数",
+  "tags": ["哈希", "字符串"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "8\nabacabad\n", "output": "4\n"}],
+  "signature": {
+    "package": "t07_first_unique_index",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "s", "type": "string"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回第一个只出现一次的字符的下标（从 1 开始），不存在返回 -1"}
+  }
+}

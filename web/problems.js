@@ -15,7 +15,22 @@ PB.store = {
   set(key, value) { try { localStorage.setItem(key, value); } catch {} },
   remove(key) { try { localStorage.removeItem(key); } catch {} }
 };
-PB.languageNames = {cpp: 'C++ 20', cangjie: '仓颉'};
+PB.languageNames = {cpp: 'C++ 20', cangjie: '仓颉', python: 'Python 3', java: 'Java 21'};
+PB.modeNames = {function: '函数式', full: '完整程序'};
+// 评判方式与题目来源：做题页卡片与题单筛选共用。
+PB.judgeNames = {standard: '普通裁判', special: '特殊裁判', interactive: '交互裁判', function: '函数裁判'};
+PB.sourceNames = {luogu: '洛谷', leetcode: '力扣', codeforces: 'Codeforces', other: '自建'};
+PB.sourceLabels = {luogu: '洛谷', leetcode: '力扣', codeforces: 'Codeforces', other: '其他'};
+// 题包声明了哪些语言/提交方式，就显示成「4 语言 · 函数式 + 完整程序」。
+PB.modeSummary = problem => {
+  const modes = problem?.modes || {};
+  const languages = Object.keys(modes);
+  if (!languages.length) return '';
+  const set = new Set();
+  languages.forEach(l => (modes[l] || []).forEach(m => set.add(m)));
+  const text = ['function', 'full'].filter(m => set.has(m)).map(m => PB.modeNames[m]).join(' + ');
+  return `${languages.length} 语言${text ? ` · ${text}` : ''}`;
+};
 PB.diffColor = d => d < 1200 ? '#9ca3af' : d < 1400 ? '#4ccb7f' : d < 1600 ? '#22d3ee' : d < 1900 ? '#52a8ff'
   : d < 2200 ? '#a855f7' : d < 2500 ? '#f59e0b' : d < 3000 ? '#ef4444' : '#b91c1c';
 PB.diffBadge = d => { const b = PB.el('span', 'pb-diff', d); b.style.setProperty('--pb-diff', PB.diffColor(Number(d))); b.title = `难度 ${d}`; return b; };
@@ -73,7 +88,7 @@ const ranges = [
   {label: '1600–2000', test: d => d > 1600 && d <= 2000}, {label: '2000–2500', test: d => d > 2000 && d < 2500},
   {label: '≥2500', test: d => d >= 2500}
 ];
-const filters = {range: -1, tags: new Set(), status: 'all', query: ''};
+const filters = {range: -1, tags: new Set(), status: 'all', query: '', topic: ''};
 let problems = [], loadedOnce = false, importAbort = null, openMenu = null;
 
 function chip(label, pressed, onClick, extra) {
@@ -96,13 +111,22 @@ function renderFilters() {
     if (tags.slice(15).some(t => filters.tags.has(t))) more.open = true;
     more.append(s, pop); tagNodes.push(more);
   }
+  const topicNames = [...new Set(problems.map(p => p.topic).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'zh'));
+  const topicNodes = topicNames.length ? [
+    chip('全部', !filters.topic, () => { filters.topic = ''; update(); }),
+    ...topicNames.map(t => {
+      const c = chip(t, filters.topic === t, () => { filters.topic = filters.topic === t ? '' : t; update(); });
+      c.dataset.key = 'topic-' + t; return c;
+    })
+  ] : [];
   const status = ['all', 'todo', 'tried', 'solved'].map(k => chip(k === 'all' ? '全部' : PB.statusName[k], filters.status === k, () => { filters.status = k; update(); }));
   const searchWrap = PB.el('label', 'pb-search');
   const search = PB.el('input'); search.type = 'search'; search.id = 'pbSearch'; search.placeholder = '搜索标题或 id'; search.value = filters.query;
   search.setAttribute('aria-label', '搜索标题或 id（按 / 聚焦）');
   search.oninput = () => { filters.query = search.value; renderGrid(); };
   searchWrap.append(search, PB.el('kbd', '', '/'));
-  root.replaceChildren(group('难度', diff), ...(tags.length ? [group('标签', tagNodes)] : []), group('状态', status), searchWrap);
+  root.replaceChildren(group('难度', diff), ...(topicNodes.length ? [group('专题', topicNodes)] : []),
+    ...(tags.length ? [group('标签', tagNodes)] : []), group('状态', status), searchWrap);
   if (focusedKey) root.querySelector(`[data-key="${CSS.escape(focusedKey)}"]`)?.focus();
 }
 function update() {
@@ -113,6 +137,7 @@ function update() {
 }
 function matches(p) {
   if (filters.range >= 0 && !ranges[filters.range].test(p.difficulty)) return false;
+  if (filters.topic && p.topic !== filters.topic) return false;
   for (const t of filters.tags) if (!(p.tags || []).includes(t)) return false;
   if (filters.status !== 'all' && PB.status(p) !== filters.status) return false;
   const q = filters.query.trim().toLowerCase();
@@ -131,15 +156,25 @@ function card(p) {
   menuButton.setAttribute('aria-label', `${p.title?.zh || p.id} 的更多操作`); menuButton.setAttribute('aria-haspopup', 'menu'); menuButton.setAttribute('aria-expanded', 'false');
   const menu = PB.el('div', 'pb-card-menu'); menu.setAttribute('role', 'menu'); menu.hidden = true;
   const openItem = PB.el('button', '', '打开'); openItem.type = 'button'; openItem.setAttribute('role', 'menuitem');
+  const editItem = PB.el('button', '', '编辑题目'); editItem.type = 'button'; editItem.setAttribute('role', 'menuitem');
+  const recordItem = PB.el('button', '', '做题记录目录'); recordItem.type = 'button'; recordItem.setAttribute('role', 'menuitem');
   const deleteItem = PB.el('button', 'pb-danger', '删除'); deleteItem.type = 'button'; deleteItem.setAttribute('role', 'menuitem');
   openItem.onclick = e => { e.stopPropagation(); closeMenu(); location.hash = '#/problem/' + encodeURIComponent(p.id); };
+  editItem.onclick = e => { e.stopPropagation(); closeMenu(); PB.editor?.open(p.id); };
+  recordItem.onclick = async e => {
+    e.stopPropagation(); closeMenu();
+    try {
+      const r = await PB.api('/api/record/scaffold', {body: {problemId: p.id}});
+      PB.toast(`已准备 ${r.problem}（${r.leaves.length} 个目录）`);
+    } catch (err) { PB.toast(err.message); }
+  };
   deleteItem.onclick = async e => {
     e.stopPropagation(); closeMenu();
     if (!confirm(`删除题目「${p.title?.zh || p.id}」？题包与该题的全部提交记录都会被删除。`)) return;
     try { await PB.api('/api/problems/' + encodeURIComponent(p.id), {method: 'DELETE'}); PB.forgetProblem?.(p.id); await PB.list.refresh(); }
     catch (err) { PB.toast(err.message); }
   };
-  menu.append(openItem, deleteItem);
+  menu.append(openItem, editItem, recordItem, deleteItem);
   menuButton.onclick = e => {
     e.stopPropagation(); const wasOpen = openMenu?.menu === menu; closeMenu();
     if (!wasOpen) { menu.hidden = false; menuButton.setAttribute('aria-expanded', 'true'); openMenu = {menu, button: menuButton}; openItem.focus(); }
@@ -148,13 +183,16 @@ function card(p) {
   const title = PB.el('h3', 'pb-card-title', p.title?.zh || p.id);
   const sub = PB.el('p', 'pb-card-sub', p.title?.en || '');
   const tags = PB.el('div', 'pb-card-tags'); (p.tags || []).forEach(t => tags.append(PB.el('span', 'pb-tag', t)));
+  const facts = PB.el('div', 'pb-card-facts');
+  if (p.topic) { const t = PB.el('span', 'pb-card-fact', p.topic); t.dataset.kind = 'topic'; facts.append(t); }
+  if (p.selfJudge) facts.append(PB.el('span', 'pb-card-fact', '自判题'));
+  else facts.append(PB.el('span', 'pb-card-fact', PB.judgeNames[p.judgeType] || '普通裁判'));
+  if (p.source?.platform) facts.append(PB.el('span', 'pb-card-fact', PB.sourceNames[p.source.platform] || p.source.platform));
   const score = PB.el('div', 'pb-card-score');
   const bar = PB.el('div', 'pb-bar'); bar.setAttribute('role', 'progressbar'); bar.setAttribute('aria-valuemin', '0'); bar.setAttribute('aria-valuemax', String(total)); bar.setAttribute('aria-valuenow', String(best)); bar.setAttribute('aria-label', '最佳得分');
   const fill = PB.el('span'); fill.style.width = `${Math.max(0, Math.min(100, best / total * 100))}%`; bar.append(fill);
   score.append(bar, PB.el('span', 'pb-card-points', p.bestScore == null ? `—/${total}` : `${best}/${total}`));
-  const foot = PB.el('div', 'pb-card-foot');
-  foot.append(PB.el('span', 'pb-card-id', p.id), PB.el('span', 'pb-card-meta', p.attempts ? `${p.attempts} 次提交` : (p.judgeMode === 'io' ? '完整程序' : '函数式')));
-  c.append(top, title, sub, tags, score, foot);
+  c.append(top, title, sub, tags, facts, score);
   const open = () => { location.hash = '#/problem/' + encodeURIComponent(p.id); };
   c.onclick = e => { if (!e.target.closest('.pb-card-menu, .pb-card-menu-btn')) open(); };
   c.onkeydown = e => { if (e.target === c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); open(); } };
@@ -174,7 +212,8 @@ PB.list = {
     try { const data = await PB.api('/api/problems'); problems = data.problems || []; loadedOnce = true; }
     catch (e) { if (e.status !== 403 && e.status !== 0) PB.toast(e.message); if (!loadedOnce) return; }
     renderFilters(); renderGrid();
-  }
+  },
+  topics: () => [...new Set(problems.map(p => p.topic).filter(Boolean))]
 };
 
 // ---- 导入 ----
@@ -192,7 +231,7 @@ async function importPackage(body, name) {
   importAbort = new AbortController();
   const buttons = [byId('pbImportButton'), byId('pbEmptyImport')];
   buttons.forEach(b => { b.disabled = true; });
-  byId('pbImportText').textContent = `正在导入并自检 ${name || '题包'}（编译 checker、driver 并跑参考答案，约 5–30 秒）…`;
+  byId('pbImportText').textContent = `正在导入并自检 ${name || '题包'}（编译 checker、四种语言的 driver 并跑参考答案，约 10–60 秒）…`;
   byId('pbImportProgress').hidden = false;
   try {
     const result = await PB.api('/api/problems/import', {body, signal: importAbort.signal});
@@ -240,10 +279,33 @@ function route() {
   }
 }
 
+// ---- GitHub 题库静默同步：后台在跑，跑完自动刷新题单，不影响当前做题 ----
+let syncTimer = null, syncRefreshed = false;
+async function pollSync() {
+  clearTimeout(syncTimer);
+  try {
+    const status = await PB.api('/api/sync/status');
+    if (status.running) {
+      if (!problems.length) byId('pbListStats').textContent = `正在从 GitHub 同步题库…${status.added ? ` 已下载 ${status.added} 道` : ''}`;
+      syncTimer = setTimeout(pollSync, 2000);
+      return;
+    }
+    if ((status.added || status.updated) && !syncRefreshed) {
+      syncRefreshed = true;
+      await PB.list.refresh();
+      PB.toast(`已从 GitHub 同步 ${status.added + status.updated} 道题`);
+      return;
+    }
+    if (status.error && !problems.length) byId('pbListStats').textContent = `题库同步失败：${status.error}`;
+    else renderGrid();
+  } catch { syncTimer = setTimeout(pollSync, 5000); }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   // 题目视图里的输入不应触发调试台的草稿自动保存（app.js 在 document 上监听 input/change）。
   ['pbProblemsView', 'pbProblemView', 'pbHistory', 'pbErrorDialog'].forEach(id => ['input', 'change'].forEach(t => byId(id).addEventListener(t, e => e.stopPropagation())));
   byId('pbImportButton').onclick = byId('pbEmptyImport').onclick = () => byId('pbImportFile').click();
+  byId('pbNewProblem').onclick = () => PB.editor?.open(null);
   byId('pbImportFile').onchange = async () => { const f = byId('pbImportFile').files[0]; byId('pbImportFile').value = ''; await importFile(f); };
   byId('pbImportCancel').onclick = () => importAbort?.abort();
   byId('pbErrorCopy').onclick = () => PB.copy(byId('pbErrorDetails').textContent, byId('pbErrorCopy'));
@@ -266,5 +328,6 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('pb-reconnected', () => { if (document.body.dataset.view === 'problems') PB.list.refresh(); });
   if (!PB.token()) PB.authFailed();
   route();
+  setTimeout(pollSync, 1200);
 });
 })();

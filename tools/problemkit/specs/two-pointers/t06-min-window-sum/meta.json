@@ -1,0 +1,59 @@
+{
+  "id": "t06-min-window-sum",
+  "title": {
+    "zh": "和至少为 S 的最短子数组",
+    "en": "Shortest Subarray with Sum at Least S"
+  },
+  "difficulty": 1100,
+  "topic": "双指针与滑动窗口",
+  "tags": [
+    "滑动窗口",
+    "双指针"
+  ],
+  "limits": {
+    "timeMs": 2000,
+    "memoryMb": 256
+  },
+  "judgeType": "function",
+  "source": {
+    "platform": "leetcode",
+    "id": "209",
+    "url": "https://leetcode.cn/problems/minimum-size-subarray-sum/"
+  },
+  "samples": [
+    {
+      "input": "6 7\n2 3 1 2 4 3\n",
+      "output": "2\n"
+    },
+    {
+      "input": "1 6\n5\n",
+      "output": "0\n"
+    },
+    {
+      "input": "5 100\n1 1 1 1 1\n",
+      "output": "0\n"
+    }
+  ],
+  "signature": {
+    "package": "t06_min_window_sum",
+    "params": [
+      {
+        "name": "n",
+        "type": "int"
+      },
+      {
+        "name": "s",
+        "type": "int"
+      },
+      {
+        "name": "a",
+        "type": "ints",
+        "count": "n"
+      }
+    ],
+    "returns": "int",
+    "hint": {
+      "zh": "返回和不少于 s 的连续子数组的最小长度，不存在时返回 0"
+    }
+  }
+}

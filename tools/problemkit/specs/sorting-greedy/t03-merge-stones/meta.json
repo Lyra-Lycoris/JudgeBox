@@ -1,0 +1,20 @@
+{
+  "id": "t03-merge-stones",
+  "title": {"zh": "合并石子", "en": "Merge Stones"},
+  "difficulty": 1300,
+  "topic": "排序与贪心",
+  "tags": ["排序", "贪心", "堆"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "4\n4 3 2 6\n", "output": "29\n"}],
+  "signature": {
+    "package": "t03_merge_stones",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回把所有石子合并成一堆的最小总代价"}
+  }
+}

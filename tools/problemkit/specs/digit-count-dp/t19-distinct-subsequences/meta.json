@@ -1,0 +1,20 @@
+{
+  "id": "t19-distinct-subsequences",
+  "title": {"zh": "不同子序列个数", "en": "Count Distinct Subsequences"},
+  "difficulty": 2100,
+  "topic": "数位DP与计数DP",
+  "tags": ["动态规划", "字符串", "组合数学"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "3\naba\n", "output": "6\n"}],
+  "signature": {
+    "package": "t19_distinct_subsequences",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "s", "type": "string"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回字符串 s 的不同非空子序列个数对 1000000007 取模的结果"}
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "id": "t12-rle-substring-length",
+  "title": {"zh": "游程编码压缩长度查询", "en": "Run-Length Encoded Length Queries"},
+  "difficulty": 1800,
+  "topic": "字符串与匹配",
+  "tags": ["字符串", "前缀和", "二分"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "6\naaabbc\n4\n1 6\n1 3\n4 6\n1 1\n", "output": "5 2 3 1\n"}],
+  "signature": {
+    "package": "t12_rle_substring_length",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "s", "type": "string"},
+      {"name": "q", "type": "int"},
+      {"name": "qs", "type": "matrix", "rows": "q", "cols": "2"}
+    ],
+    "returns": "ints_space",
+    "hint": {"zh": "对每个询问返回子串 s[l..r] 的游程编码长度"}
+  }
+}

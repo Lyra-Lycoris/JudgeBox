@@ -1,0 +1,24 @@
+{
+  "id": "t13-word-ladder",
+  "title": {"zh": "单词接龙", "en": "Word Ladder"},
+  "difficulty": 1800,
+  "topic": "图论与搜索",
+  "tags": ["图论", "哈希", "队列"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "6 hit cog\nhot dot dog lot log cog\n", "output": "5\n"}
+  ],
+  "signature": {
+    "package": "t13_word_ladder",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "begin", "type": "string"},
+      {"name": "end", "type": "string"},
+      {"name": "w", "type": "strings", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回最短接龙序列的单词个数，无法接龙返回 0"}
+  }
+}

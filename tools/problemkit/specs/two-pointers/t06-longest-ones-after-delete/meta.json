@@ -1,0 +1,55 @@
+{
+  "id": "t06-longest-ones-after-delete",
+  "title": {
+    "zh": "删除一个元素后的最长连续 1",
+    "en": "Longest Run of Ones After Deleting One Element"
+  },
+  "difficulty": 1600,
+  "topic": "双指针与滑动窗口",
+  "tags": [
+    "滑动窗口",
+    "双指针"
+  ],
+  "limits": {
+    "timeMs": 2000,
+    "memoryMb": 256
+  },
+  "judgeType": "function",
+  "source": {
+    "platform": "leetcode",
+    "id": "1493",
+    "url": "https://leetcode.cn/problems/longest-subarray-of-1s-after-deleting-one-element/"
+  },
+  "samples": [
+    {
+      "input": "4\n1 1 0 1\n",
+      "output": "3\n"
+    },
+    {
+      "input": "5\n1 0 1 0 1\n",
+      "output": "2\n"
+    },
+    {
+      "input": "7\n0 0 1 1 1 0 0\n",
+      "output": "3\n"
+    }
+  ],
+  "signature": {
+    "package": "t06_longest_ones_after_delete",
+    "params": [
+      {
+        "name": "n",
+        "type": "int"
+      },
+      {
+        "name": "a",
+        "type": "ints",
+        "count": "n"
+      }
+    ],
+    "returns": "int",
+    "hint": {
+      "zh": "返回恰好删除一个元素后，剩余数组中最长连续 1 的长度"
+    }
+  }
+}

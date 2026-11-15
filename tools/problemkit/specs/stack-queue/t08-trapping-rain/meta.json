@@ -1,0 +1,20 @@
+{
+  "id": "t08-trapping-rain",
+  "title": {"zh": "接雨水", "en": "Trapping Rain Water"},
+  "difficulty": 1800,
+  "topic": "栈与队列",
+  "tags": ["单调栈", "双指针"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "12\n0 1 0 2 1 0 1 3 2 1 2 1\n", "output": "6\n"},
+    {"input": "6\n4 2 0 3 2 5\n", "output": "9\n"}
+  ],
+  "signature": {
+    "package": "t08_trapping_rain",
+    "params": [{"name": "n", "type": "int"}, {"name": "h", "type": "ints", "count": "n"}],
+    "returns": "int",
+    "hint": {"zh": "返回总共能接住的雨水体积"}
+  }
+}

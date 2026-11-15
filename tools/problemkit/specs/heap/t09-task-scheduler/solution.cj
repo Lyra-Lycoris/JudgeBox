@@ -1,0 +1,103 @@
+package t09_task_scheduler
+
+import std.collection.*
+
+class MinHeap {
+    var data: ArrayList<Int64> = ArrayList<Int64>()
+
+    init() {}
+
+    func size(): Int64 {
+        return data.size
+    }
+
+    func top(): Int64 {
+        return data[0]
+    }
+
+    func push(x: Int64) {
+        data.add(x)
+        var i = data.size - 1
+        while (i > 0) {
+            let p = (i - 1) / 2
+            if (data[p] <= data[i]) {
+                break
+            }
+            let t = data[p]
+            data[p] = data[i]
+            data[i] = t
+            i = p
+        }
+    }
+
+    func pop(): Int64 {
+        let first = data[0]
+        let last = data[data.size - 1]
+        data.remove(at: data.size - 1)
+        if (data.size > 0) {
+            data[0] = last
+            var i = 0
+            while (true) {
+                let l = 2 * i + 1
+                let r = 2 * i + 2
+                var m = i
+                if (l < data.size && data[l] < data[m]) {
+                    m = l
+                }
+                if (r < data.size && data[r] < data[m]) {
+                    m = r
+                }
+                if (m == i) {
+                    break
+                }
+                let t = data[m]
+                data[m] = data[i]
+                data[i] = t
+                i = m
+            }
+        }
+        return first
+    }
+}
+
+func solve(n: Int64, c: Int64, tasks: Array<Int64>): Int64 {
+    let count = HashMap<Int64, Int64>()
+    for (x in tasks) {
+        if (count.contains(x)) {
+            count[x] = count[x] + 1
+        } else {
+            count[x] = 1
+        }
+    }
+    let heap = MinHeap()
+    for ((_, value) in count) {
+        heap.push(-value)
+    }
+    var time = 0
+    for (round in 0..n) {
+        if (heap.size() == 0) {
+            break
+        }
+        var slot = c + 1
+        if (slot > heap.size()) {
+            slot = heap.size()
+        }
+        var used = 0
+        let rest = ArrayList<Int64>()
+        while (used < slot) {
+            let top = -heap.pop()
+            used += 1
+            if (top > 1) {
+                rest.add(top - 1)
+            }
+        }
+        time += c + 1
+        for (x in rest) {
+            heap.push(-x)
+        }
+        if (heap.size() == 0) {
+            time -= c + 1 - slot
+        }
+    }
+    return time
+}

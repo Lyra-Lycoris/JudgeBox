@@ -1,0 +1,23 @@
+{
+  "id": "t21-coprime-count",
+  "title": {"zh": "与 m 互素的整数个数", "en": "Numbers Coprime to m"},
+  "difficulty": 2100,
+  "topic": "组合数学与概率期望",
+  "tags": ["数论", "组合数学"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "10 6\n", "output": "3\n"},
+    {"input": "100 12\n", "output": "33\n"}
+  ],
+  "signature": {
+    "package": "t21_coprime_count",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "m", "type": "int"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回 1 到 n 中与 m 互素（gcd(x, m) = 1）的整数个数"}
+  }
+}

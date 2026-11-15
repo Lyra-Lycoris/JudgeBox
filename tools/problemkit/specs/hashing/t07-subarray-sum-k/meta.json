@@ -1,0 +1,21 @@
+{
+  "id": "t07-subarray-sum-k",
+  "title": {"zh": "子数组和为 k 的个数", "en": "Count Subarrays with Sum K"},
+  "difficulty": 1800,
+  "topic": "哈希与计数",
+  "tags": ["哈希", "前缀和"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "5 3\n1 1 1 1 1\n", "output": "3\n"}],
+  "signature": {
+    "package": "t07_subarray_sum_k",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "k", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回所有元素和恰好为 k 的连续子数组个数"}
+  }
+}

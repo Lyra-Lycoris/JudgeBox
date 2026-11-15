@@ -1,0 +1,19 @@
+{
+  "id": "t16-edit-distance",
+  "title": {"zh": "编辑距离", "en": "Edit Distance"},
+  "difficulty": 2100,
+  "topic": "线性动态规划",
+  "tags": ["动态规划", "字符串"],
+  "limits": {"timeMs": 3000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "leetcode", "id": "72", "url": "https://leetcode.cn/problems/edit-distance/"},
+  "samples": [
+    {"input": "kitten\nsitting\n", "output": "3\n"}
+  ],
+  "signature": {
+    "package": "t16_edit_distance",
+    "params": [{"name": "s", "type": "string"}, {"name": "t", "type": "string"}],
+    "returns": "int",
+    "hint": {"zh": "返回把 s 变成 t 所需的最少单字符编辑次数"}
+  }
+}

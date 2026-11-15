@@ -1,0 +1,22 @@
+{
+  "id": "t11-range-max-query",
+  "title": {"zh": "静态区间最大值", "en": "Static Range Maximum Query"},
+  "difficulty": 1300,
+  "topic": "树状数组与线段树",
+  "tags": ["线段树"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "6\n1 7 3 9 2 8\n4\n1 3\n4 6\n2 2\n1 6\n", "output": "7 9 7 9\n"}],
+  "signature": {
+    "package": "t11_range_max_query",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"},
+      {"name": "q", "type": "int"},
+      {"name": "queries", "type": "matrix", "rows": "q", "cols": "2"}
+    ],
+    "returns": "ints_space",
+    "hint": {"zh": "按顺序返回每次询问的区间最大值"}
+  }
+}

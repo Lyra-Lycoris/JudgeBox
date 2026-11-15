@@ -1,0 +1,21 @@
+{
+  "id": "t19-obstacle-paths",
+  "title": {"zh": "带障碍的路径计数", "en": "Count Paths with Obstacles"},
+  "difficulty": 1400,
+  "topic": "数位DP与计数DP",
+  "tags": ["动态规划", "组合数学"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "3 3\n0 0 0\n0 1 0\n0 0 0\n", "output": "2\n"}],
+  "signature": {
+    "package": "t19_obstacle_paths",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "m", "type": "int"},
+      {"name": "g", "type": "matrix", "rows": "n", "cols": "m"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回从左上角走到右下角、只向右或向下且不经过障碍的路径数对 1000000007 取模的结果"}
+  }
+}

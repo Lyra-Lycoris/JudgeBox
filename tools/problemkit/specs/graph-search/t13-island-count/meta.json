@@ -1,0 +1,23 @@
+{
+  "id": "t13-island-count",
+  "title": {"zh": "岛屿数量", "en": "Number of Islands"},
+  "difficulty": 1400,
+  "topic": "图论与搜索",
+  "tags": ["图论", "队列"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "4 5\n1 1 0 0 0\n1 1 0 0 0\n0 0 1 0 0\n0 0 0 1 1\n", "output": "3\n"}
+  ],
+  "signature": {
+    "package": "t13_island_count",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "m", "type": "int"},
+      {"name": "grid", "type": "matrix", "rows": "n", "cols": "m"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回四连通（上下左右）的 1 连通块个数"}
+  }
+}

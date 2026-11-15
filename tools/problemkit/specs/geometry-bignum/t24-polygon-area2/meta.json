@@ -1,0 +1,23 @@
+{
+  "id": "t24-polygon-area2",
+  "title": {"zh": "多边形面积的二倍", "en": "Twice the Polygon Area"},
+  "difficulty": 1200,
+  "topic": "计算几何与高精度",
+  "tags": ["计算几何"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "3\n0 4 0\n0 0 3\n", "output": "12\n"}
+  ],
+  "signature": {
+    "package": "t24_polygon_area2",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "xs", "type": "ints", "count": "n"},
+      {"name": "ys", "type": "ints", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回多边形面积的二倍（即鞋带公式求和的绝对值）"}
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "id": "t22-and-zero-array",
+  "title": {"zh": "构造相邻按位与为 0 的数组", "en": "Construct an Array with Zero Adjacent AND"},
+  "difficulty": 1200,
+  "topic": "位运算与构造",
+  "tags": ["构造", "位运算"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "special",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "4\n", "output": "1 2 1 2\n"},
+    {"input": "1\n", "output": "1\n"}
+  ],
+  "signature": {
+    "package": "t22_and_zero_array",
+    "params": [{"name": "n", "type": "int"}],
+    "returns": "ints_space",
+    "hint": {"zh": "输出任意一个长度为 n、每项在 [1, 10^9] 内且相邻两项按位与为 0 的数组"}
+  }
+}

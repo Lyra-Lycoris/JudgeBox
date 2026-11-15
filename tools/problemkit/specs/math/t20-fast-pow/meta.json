@@ -1,0 +1,23 @@
+{
+  "id": "t20-fast-pow",
+  "title": {"zh": "快速幂取模", "en": "Fast Modular Exponentiation"},
+  "difficulty": 1100,
+  "topic": "数学与数论",
+  "tags": ["数学", "位运算"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "2 10 1000\n", "output": "24\n"}
+  ],
+  "signature": {
+    "package": "t20_fast_pow",
+    "params": [
+      {"name": "a", "type": "int"},
+      {"name": "b", "type": "int"},
+      {"name": "m", "type": "int"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回 a 的 b 次方对 m 取模的结果"}
+  }
+}

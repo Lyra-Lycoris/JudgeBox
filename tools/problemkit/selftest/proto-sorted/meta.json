@@ -1,0 +1,17 @@
+{
+  "id": "proto-sorted",
+  "title": {"zh": "排序输出原型", "en": "Sorted Output Prototype"},
+  "difficulty": 1000,
+  "topic": "排序与贪心",
+  "tags": ["排序"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "3\n3 1 2\n", "output": "1 2 3\n"}],
+  "signature": {
+    "package": "proto_sorted",
+    "params": [{"name": "n", "type": "int"}, {"name": "a", "type": "ints", "count": "n"}],
+    "returns": "ints_space",
+    "hint": {"zh": "返回升序排列后的数组"}
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "id": "t26-sqrt-range-add-max",
+  "title": {"zh": "分块：区间加与区间最大值", "en": "Square-Root Decomposition: Range Add and Range Maximum"},
+  "difficulty": 1900,
+  "topic": "高级数据结构与分块",
+  "tags": ["分治", "线段树"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "5\n1 3 -2 4 5\n6\n2 1 5 0\n1 2 4 10\n2 1 5 0\n2 2 3 0\n1 1 5 -20\n2 1 5 0\n", "output": "5 14 13 -6\n"}],
+  "signature": {
+    "package": "t26_sqrt_range_add_max",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"},
+      {"name": "q", "type": "int"},
+      {"name": "ops", "type": "matrix", "rows": "q", "cols": "4"}
+    ],
+    "returns": "ints_space",
+    "hint": {"zh": "按顺序返回每次区间最大值询问的答案"}
+  }
+}

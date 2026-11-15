@@ -1,0 +1,54 @@
+{
+  "id": "t06-three-sum-zero-count",
+  "title": {
+    "zh": "三数之和为零的组合数",
+    "en": "Number of Triples Summing to Zero"
+  },
+  "difficulty": 1400,
+  "topic": "双指针与滑动窗口",
+  "tags": [
+    "双指针",
+    "排序",
+    "枚举"
+  ],
+  "limits": {
+    "timeMs": 3000,
+    "memoryMb": 256
+  },
+  "judgeType": "function",
+  "source": {
+    "platform": "other"
+  },
+  "samples": [
+    {
+      "input": "6\n-1 0 1 2 -1 -4\n",
+      "output": "3\n"
+    },
+    {
+      "input": "5\n0 0 0 0 0\n",
+      "output": "10\n"
+    },
+    {
+      "input": "4\n1 2 3 4\n",
+      "output": "0\n"
+    }
+  ],
+  "signature": {
+    "package": "t06_three_sum_zero_count",
+    "params": [
+      {
+        "name": "n",
+        "type": "int"
+      },
+      {
+        "name": "a",
+        "type": "ints",
+        "count": "n"
+      }
+    ],
+    "returns": "int",
+    "hint": {
+      "zh": "返回满足 a[i]+a[j]+a[k]=0（i<j<k）的三元组个数"
+    }
+  }
+}

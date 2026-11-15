@@ -1,0 +1,20 @@
+{
+  "id": "t22-max-gap-between-ones",
+  "title": {"zh": "二进制中相邻 1 的最大间隔", "en": "Maximum Gap Between Adjacent Ones"},
+  "difficulty": 1800,
+  "topic": "位运算与构造",
+  "tags": ["位运算", "枚举"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "3\n9\n5\n100\n", "output": "2\n1\n2\n"}
+  ],
+  "signature": {
+    "package": "t22_max_gap_between_ones",
+    "params": [{"name": "n", "type": "int"}],
+    "returns": "int",
+    "repeat": true,
+    "hint": {"zh": "返回 n 的二进制表示中相邻两个 1 之间夹着的 0 的个数的最大值"}
+  }
+}

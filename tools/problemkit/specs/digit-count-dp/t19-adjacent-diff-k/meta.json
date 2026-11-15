@@ -1,0 +1,21 @@
+{
+  "id": "t19-adjacent-diff-k",
+  "title": {"zh": "相邻数位差不超过 k", "en": "Adjacent Digits Differ by at Most k"},
+  "difficulty": 1200,
+  "topic": "数位DP与计数DP",
+  "tags": ["数位DP", "动态规划"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "1 20 1\n", "output": "12\n"}],
+  "signature": {
+    "package": "t19_adjacent_diff_k",
+    "params": [
+      {"name": "l", "type": "int"},
+      {"name": "r", "type": "int"},
+      {"name": "k", "type": "int"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回 [l, r] 中任意相邻两位数字之差都不超过 k 的整数个数"}
+  }
+}

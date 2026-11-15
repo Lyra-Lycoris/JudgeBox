@@ -1,0 +1,23 @@
+{
+  "id": "t20-gcd-lcm",
+  "title": {"zh": "最大公约数与最小公倍数", "en": "GCD and LCM"},
+  "difficulty": 1000,
+  "topic": "数学与数论",
+  "tags": ["数学", "数论"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "3\n12 18\n7 5\n1000000000 999999999\n", "output": "6 36\n1 35\n1 999999999000000000\n"}
+  ],
+  "signature": {
+    "package": "t20_gcd_lcm",
+    "params": [
+      {"name": "a", "type": "int"},
+      {"name": "b", "type": "int"}
+    ],
+    "returns": "ints_space",
+    "repeat": true,
+    "hint": {"zh": "返回 [a 与 b 的最大公约数, a 与 b 的最小公倍数]"}
+  }
+}

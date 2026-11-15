@@ -1,0 +1,21 @@
+{
+  "id": "t02-max-sum-submatrix",
+  "title": {"zh": "矩阵最大和子矩形", "en": "Maximum Sum Submatrix"},
+  "difficulty": 2100,
+  "topic": "枚举与暴力",
+  "tags": ["枚举", "前缀和", "动态规划"],
+  "limits": {"timeMs": 3000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "3 4\n1 2 -3 4\n-5 6 7 -8\n9 -1 2 3\n", "output": "18\n"}],
+  "signature": {
+    "package": "t02_max_sum_submatrix",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "m", "type": "int"},
+      {"name": "g", "type": "matrix", "rows": "n", "cols": "m"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回和最大的非空子矩形的元素和"}
+  }
+}

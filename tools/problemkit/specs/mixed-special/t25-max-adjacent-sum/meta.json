@@ -1,0 +1,21 @@
+{
+  "id": "t25-max-adjacent-sum",
+  "title": {"zh": "构造相邻差之和最大的排列", "en": "Construct a Permutation Maximizing the Adjacent Difference Sum"},
+  "difficulty": 2100,
+  "topic": "综合思维与特殊裁判",
+  "tags": ["构造", "贪心", "数学"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "special",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "5\n", "output": "3 5 1 4 2\n"}
+  ],
+  "signature": {
+    "package": "t25_max_adjacent_sum",
+    "params": [
+      {"name": "n", "type": "int"}
+    ],
+    "returns": "ints_space",
+    "hint": {"zh": "返回任意一个使相邻元素差的绝对值之和最大的 1..n 排列；本题使用特殊评判"}
+  }
+}

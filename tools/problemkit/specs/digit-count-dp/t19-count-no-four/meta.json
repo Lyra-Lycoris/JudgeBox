@@ -1,0 +1,20 @@
+{
+  "id": "t19-count-no-four",
+  "title": {"zh": "不含数字 4 的整数个数", "en": "Count Integers Without Digit 4"},
+  "difficulty": 1000,
+  "topic": "数位DP与计数DP",
+  "tags": ["数位DP"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "1 10\n", "output": "9\n"}],
+  "signature": {
+    "package": "t19_count_no_four",
+    "params": [
+      {"name": "l", "type": "int"},
+      {"name": "r", "type": "int"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回 [l, r] 中十进制表示不含数字 4 的整数个数"}
+  }
+}

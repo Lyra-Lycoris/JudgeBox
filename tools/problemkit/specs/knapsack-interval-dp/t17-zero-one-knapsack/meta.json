@@ -1,0 +1,24 @@
+{
+  "id": "t17-zero-one-knapsack",
+  "title": {"zh": "0/1 背包最大价值", "en": "0/1 Knapsack Maximum Value"},
+  "difficulty": 1000,
+  "topic": "背包与区间DP",
+  "tags": ["背包", "动态规划"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "3 10\n5 4 6\n10 40 30\n", "output": "70\n"}
+  ],
+  "signature": {
+    "package": "t17_zero_one_knapsack",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "cap", "type": "int"},
+      {"name": "w", "type": "ints", "count": "n"},
+      {"name": "v", "type": "ints", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回容量 cap 下 0/1 背包能取得的最大价值"}
+  }
+}

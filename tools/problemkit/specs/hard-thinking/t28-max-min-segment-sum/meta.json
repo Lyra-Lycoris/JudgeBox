@@ -1,0 +1,23 @@
+{
+  "id": "t28-max-min-segment-sum",
+  "title": {"zh": "最大化的最小段和", "en": "Maximise the Minimum Segment Sum"},
+  "difficulty": 1900,
+  "topic": "思维难题与构造",
+  "tags": ["二分", "贪心"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "5 3\n1 2 3 4 5\n", "output": "4\n"}
+  ],
+  "signature": {
+    "package": "t28_max_min_segment_sum",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "k", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回所有切分方案中「最小段和」的最大值"}
+  }
+}

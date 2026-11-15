@@ -1,0 +1,25 @@
+{
+  "id": "t01-combination-lock",
+  "title": {"zh": "环形密码锁", "en": "Circular Combination Lock"},
+  "difficulty": 1300,
+  "topic": "模拟与实现",
+  "tags": ["模拟", "队列", "哈希"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "0000\n0202\n5\n0201 0101 0102 1212 2002\n", "output": "6\n"},
+    {"input": "0000\n9000\n0\n", "output": "1\n"}
+  ],
+  "signature": {
+    "package": "t01_combination_lock",
+    "params": [
+      {"name": "start", "type": "string"},
+      {"name": "target", "type": "string"},
+      {"name": "n", "type": "int"},
+      {"name": "dead", "type": "strings", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回最少转动次数，无法到达返回 -1"}
+  }
+}

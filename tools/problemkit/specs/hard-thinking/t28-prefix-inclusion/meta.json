@@ -1,0 +1,21 @@
+{
+  "id": "t28-prefix-inclusion",
+  "title": {"zh": "容斥计数：至少一个条件的数", "en": "Inclusion-Exclusion: Numbers Matching at Least One Condition"},
+  "difficulty": 2100,
+  "topic": "思维难题与构造",
+  "tags": ["组合数学", "位运算", "枚举"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "10 2\n1 2\n2 1\n", "output": "7\n"}],
+  "signature": {
+    "package": "t28_prefix_inclusion",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "m", "type": "int"},
+      {"name": "cond", "type": "matrix", "rows": "m", "cols": "2"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回 [1, n] 中至少满足一个条件的整数个数"}
+  }
+}

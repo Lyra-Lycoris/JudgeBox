@@ -1,0 +1,17 @@
+{
+  "id": "proto-words",
+  "title": {"zh": "字符串同异原型", "en": "Words Equal Prototype"},
+  "difficulty": 1000,
+  "topic": "字符串与匹配",
+  "tags": ["字符串"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "3\nabc abc abc\n", "output": "YES\n"}],
+  "signature": {
+    "package": "proto_words",
+    "params": [{"name": "k", "type": "int"}, {"name": "w", "type": "strings", "count": "k"}],
+    "returns": "bool",
+    "hint": {"zh": "判断所有字符串是否相同"}
+  }
+}

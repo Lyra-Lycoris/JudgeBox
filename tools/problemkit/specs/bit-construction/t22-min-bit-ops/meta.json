@@ -1,0 +1,20 @@
+{
+  "id": "t22-min-bit-ops",
+  "title": {"zh": "把数字变 0 的最少位运算次数", "en": "Minimum Bit Operations to Zero"},
+  "difficulty": 1300,
+  "topic": "位运算与构造",
+  "tags": ["位运算", "贪心"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "8\n", "output": "4\n"},
+    {"input": "3\n", "output": "3\n"}
+  ],
+  "signature": {
+    "package": "t22_min_bit_ops",
+    "params": [{"name": "n", "type": "int"}],
+    "returns": "int",
+    "hint": {"zh": "返回把 n 变成 0 所需的最少操作次数"}
+  }
+}

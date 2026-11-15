@@ -1,0 +1,21 @@
+{
+  "id": "t03-interval-schedule",
+  "title": {"zh": "区间调度：最多不重叠区间", "en": "Interval Scheduling: Maximum Non-overlapping Intervals"},
+  "difficulty": 1000,
+  "topic": "排序与贪心",
+  "tags": ["排序", "贪心"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "4\n1 2 3 0\n3 4 5 1\n", "output": "3\n"}],
+  "signature": {
+    "package": "t03_interval_schedule",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "l", "type": "ints", "count": "n"},
+      {"name": "r", "type": "ints", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回最多能选出的互不重叠区间个数"}
+  }
+}

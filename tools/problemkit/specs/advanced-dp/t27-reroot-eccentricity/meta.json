@@ -1,0 +1,22 @@
+{
+  "id": "t27-reroot-eccentricity",
+  "title": {"zh": "换根 DP 求每个点的最远距离", "en": "Eccentricity of Every Node"},
+  "difficulty": 2000,
+  "topic": "复杂DP与最优化",
+  "tags": ["树形DP", "树"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "5\n1 1 3 3\n", "output": "2 3 2 3 3\n"}
+  ],
+  "signature": {
+    "package": "t27_reroot_eccentricity",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "p", "type": "ints", "count": "n-1"}
+    ],
+    "returns": "ints_space",
+    "hint": {"zh": "返回 n 个整数，第 i 个是节点 i 到最远节点的距离"}
+  }
+}

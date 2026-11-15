@@ -1,0 +1,20 @@
+{
+  "id": "t18-tsp-cycle",
+  "title": {"zh": "TSP 最短环路", "en": "Shortest TSP Tour"},
+  "difficulty": 1800,
+  "topic": "状压DP与树形DP",
+  "tags": ["状压DP", "图论"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "4\n0 5 -1 9\n7 0 4 -1\n-1 6 0 3\n2 -1 8 0\n", "output": "14\n"}],
+  "signature": {
+    "package": "t18_tsp_cycle",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "w", "type": "matrix", "rows": "n", "cols": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回从 0 号城市出发、恰好经过每座城市一次并回到 0 号城市的最小花费，无解返回 -1"}
+  }
+}

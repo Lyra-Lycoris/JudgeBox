@@ -1,0 +1,22 @@
+{
+  "id": "t20-mod-inverse",
+  "title": {"zh": "扩展欧几里得求逆元", "en": "Modular Inverse via Extended Euclid"},
+  "difficulty": 1400,
+  "topic": "数学与数论",
+  "tags": ["数学", "数论"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "3 11\n", "output": "4\n"}
+  ],
+  "signature": {
+    "package": "t20_mod_inverse",
+    "params": [
+      {"name": "a", "type": "int"},
+      {"name": "m", "type": "int"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回 a 模 m 的最小非负逆元，不存在逆元时返回 -1"}
+  }
+}

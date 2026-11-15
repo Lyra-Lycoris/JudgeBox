@@ -1,0 +1,20 @@
+{
+  "id": "t01-robot-moves",
+  "title": {"zh": "机器人指令模拟", "en": "Robot Command Simulation"},
+  "difficulty": 1200,
+  "topic": "模拟与实现",
+  "tags": ["模拟"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "FFRFF\n", "output": "2 2\n"},
+    {"input": "RRFF\n", "output": "0 -2\n"}
+  ],
+  "signature": {
+    "package": "t01_robot_moves",
+    "params": [{"name": "s", "type": "string"}],
+    "returns": "ints_space",
+    "hint": {"zh": "返回机器人最终坐标 x y"}
+  }
+}

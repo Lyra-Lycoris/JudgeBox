@@ -1,0 +1,21 @@
+{
+  "id": "t05-max-average-k",
+  "title": {"zh": "长度至少为 K 的最大平均值", "en": "Maximum Average of a Segment of Length at Least K"},
+  "difficulty": 1800,
+  "topic": "前缀和与差分",
+  "tags": ["前缀和", "二分"],
+  "limits": {"timeMs": 3000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "5 2\n1 12 -5 -6 50\n", "output": "22000\n"}],
+  "signature": {
+    "package": "t05_max_average_k",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "k", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回 1000 倍最大平均值的下取整，二分答案 + 前缀和判定"}
+  }
+}

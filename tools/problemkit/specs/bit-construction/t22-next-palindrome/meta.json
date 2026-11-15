@@ -1,0 +1,20 @@
+{
+  "id": "t22-next-palindrome",
+  "title": {"zh": "回文数构造", "en": "Next Palindrome"},
+  "difficulty": 1600,
+  "topic": "位运算与构造",
+  "tags": ["构造", "数学"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "1234\n", "output": "1331\n"},
+    {"input": "102\n", "output": "111\n"}
+  ],
+  "signature": {
+    "package": "t22_next_palindrome",
+    "params": [{"name": "n", "type": "int"}],
+    "returns": "int",
+    "hint": {"zh": "返回不小于 n 的最小回文数"}
+  }
+}

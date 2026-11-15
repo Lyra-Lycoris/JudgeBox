@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "ict-renjian-cihua",
   "title": {
     "zh": "人间词话",
@@ -14,7 +14,6 @@
     "timeMs": 2000,
     "memoryMb": 512
   },
-  "judgeMode": "function",
   "statement": {
     "zh": "# 人间词话\n\n## 题目描述\n\n> 仓颉之初作书，盖依类象形，故谓之文。其后形声相益，即谓之字  —— 《说文解字》\n\n仓颉创语，造就无数人间词话，其中\n\n有情趣：却是荷池跳雨，散了真珠还聚。\n\n有别离：水是眼波横，山是眉峰聚，欲问行人去那边，眉眼盈盈处。\n\n有欣喜：春风得意马蹄疾，一日看尽长安花。\n\n有叹息：最是人间留不住，朱颜辞镜花辞树。\n\n......\n\n从字词到诗篇，是文脉才情的彰显，是文心雕龙的修炼。\n\n现在，给你一个汉语词表和一段诗句，请你在词表中找出一些词，使其组成给定诗句，**要求用词数量最少**。\n\n### 输入\n\n- `verse: String`：完全由汉字组成的字符串\n- `words: Array<String>`：数组元素是汉语字词\n\n### 输出\n\n- `Array<String>`：从`words`中引用一些词组成`verse`，要求用词数量最少，请找出符合要求的全部组合，每组按`verse`顺序用空格拼接成一个字符串，作为返回数组的元素。如果不存在这样的组合，请返回空数组。\n\n### 约束\n\n- `words`和`verse`中的字符串只包含汉字\n- `words`中的词可能有重复\n- `words`中同一个词可以被引用多次，但统计词数时只算一个（参见示例2）\n- `1 ≤ verse.size ≤ 200`\n- `1 ≤ words.size ≤ 1000, words[i].size ≤ 20`\n\n## 示例\n\n### 示例 1\n\n**输入：**\n\n```\nverse = \"却是荷池跳雨\"\nwords = [\"荷花\", \"荷池\", \"却\", \"是荷池\", \"却是\", \"雨露\", \"跳雨\", \"是\"]\n```\n\n**输出：**\n\n```\n[\"却 是荷池 跳雨\", \"却是 荷池 跳雨\"]\n```\n\n**解释：**从`words`中最少可以选 3 个词组成`verse`，这样的词有 2 组。注意`\"却 是 荷池 跳雨\"`是不符合要求的组合，它用了 4 个词。\n\n### 示例 2\n\n**输入：**\n\n```\nverse = \"山外青山楼外楼\"\nwords = [\"青\", \"山\", \"楼\", \"人\", \"山外\", \"楼外\", \"外\", \"青山\"]\n```\n\n**输出：**\n\n```\n[\"山外 青山 楼 外 楼\", \"山外 青山 楼外 楼\", \"山 外 青 山 楼 外 楼\", \"山 外 青山 楼 外 楼\"]\n```\n\n**解释：**从`words`中最少可以选 4 个词组成`verse`。注意在以上组合中，`山`、`外`、`楼`都被使用了多次，但并不重复计数。\n\n### 示例 3\n\n**输入：**\n\n```\nverse = \"八千里路云和月\"\nwords = [\"云\", \"月\", \"千里路\", \"八千\", \"路\", \"三万里\", \"和\"]\n```\n\n**输出：**\n\n```\n[]\n```\n\n**解释：**`words`中找不出能组成`verse`的词，返回空数组。\n",
     "en": "# Words of the Human World\n\n## Problem Description\n\n> When Cangjie first devised writing, he modeled its forms on the shapes of things; these were called *wen*, or written signs. Later, form and sound were combined, giving rise to *zi*, or characters. — *Shuowen Jiezi*\n\nCangjie's creation of writing gave rise to countless words and poems, expressing:\n\n**Playfulness:** Rain skips across the lotus pond; pearls scatter, then gather once more.\n\n**Parting:** The water is a sidelong glance; the mountains, gathered brows. Where is the traveler bound? To that lovely place of brows and eyes.\n\n**Joy:** Elated in the spring breeze, I ride at a gallop; in a single day, I see all the flowers of Chang'an.\n\n**Lament:** Hardest of all to keep in this world: youth, fading from the mirror, and blossoms, falling from the tree.\n\nAnd much more.\n\nFrom individual characters and words to entire poems, literary tradition and talent find expression through the craft of writing.\n\nGiven a dictionary of Chinese words and a passage of verse, use words from the dictionary to form the verse while **minimizing the number of distinct words used**. Concatenating the chosen words in order must reproduce the verse exactly.\n\n### Input\n\n- `verse: String`: A string consisting entirely of Chinese characters.\n- `words: Array<String>`: A dictionary whose entries are strings of Chinese characters.\n\n### Output\n\n`Array<String>`: All segmentations of `verse` that use the minimum possible number of distinct words from `words`. Represent each segmentation as a string containing its words in their order in `verse`, separated by a single space. If no segmentation is possible, return an empty array.\n\n### Constraints\n\n- The strings in `words` and the string `verse` contain only Chinese characters.\n- `words` may contain duplicate entries. Identical strings count as the same word.\n- The same word may be used multiple times, but it counts only once toward the number of distinct words used in a segmentation (see Example 2).\n- `1 ≤ verse.size ≤ 200`\n- `1 ≤ words.size ≤ 1000, words[i].size ≤ 20`\n\n## Examples\n\n### Example 1\n\n**Input:**\n\n```text\nverse = \"却是荷池跳雨\"\nwords = [\"荷花\", \"荷池\", \"却\", \"是荷池\", \"却是\", \"雨露\", \"跳雨\", \"是\"]\n```\n\n**Output:**\n\n```text\n[\"却 是荷池 跳雨\", \"却是 荷池 跳雨\"]\n```\n\n**Explanation:** At least three distinct words from `words` are needed to form `verse`, and there are two segmentations that achieve this minimum. The segmentation `\"却 是 荷池 跳雨\"` is not optimal because it uses four distinct words.\n\n### Example 2\n\n**Input:**\n\n```text\nverse = \"山外青山楼外楼\"\nwords = [\"青\", \"山\", \"楼\", \"人\", \"山外\", \"楼外\", \"外\", \"青山\"]\n```\n\n**Output:**\n\n```text\n[\"山外 青山 楼 外 楼\", \"山外 青山 楼外 楼\", \"山 外 青 山 楼 外 楼\", \"山 外 青山 楼 外 楼\"]\n```\n\n**Explanation:** The minimum number of distinct words needed to form `verse` is four. In these segmentations, repeated occurrences of words such as `山`, `外`, and `楼` do not increase the count: each distinct word is counted only once within a segmentation.\n\n### Example 3\n\n**Input:**\n\n```text\nverse = \"八千里路云和月\"\nwords = [\"云\", \"月\", \"千里路\", \"八千\", \"路\", \"三万里\", \"和\"]\n```\n\n**Output:**\n\n```text\n[]\n```\n\n**Explanation:** The words in `words` cannot be combined to form `verse`, so return an empty array.\n"
@@ -83,11 +82,33 @@
     "package": "ict02",
     "signature": {
       "zh": "func solve(verse: String, words: Array<String>): Array<String>",
-      "en": "solve(verse: str, words: list[str]) -> list[str]"
+      "en": "solve(verse, words) -> list of optimal segmentations",
+      "cpp": "vector<string> solve(const string& verse, const vector<string>& words)",
+      "cangjie": "func solve(verse: String, words: Array<String>): Array<String>",
+      "python": "def solve(verse: str, words: list[str]) -> list[str]",
+      "java": "static List<String> solve(String verse, String[] words)"
     }
   },
   "notes": {
-    "zh": "来自第十届华为 ICT 大赛编程赛赛题「人间词话」。参考答案是仓颉的 solve.cj + word_graph.cj 两个文件；此处用例直接内嵌，导入后会落成 data.zip。",
-    "en": "Adapted from the 10th Huawei ICT Competition problem \"Words of the Human World\". The reference is the two-file Cangjie solution solve.cj + word_graph.cj; cases are embedded and become data.zip on import."
+    "zh": "来自第十届华为 ICT 大赛编程赛赛题「人间词话」。参考答案是仓颉的 solve.cj + word_graph.cj 两个文件；此处用例直接内嵌，导入后会落成 data.zip。 题包 v2：C++/仓颉/Python/Java 四种语言都支持完整式与函数式提交。",
+    "en": "Adapted from the 10th Huawei ICT Competition problem \"Words of the Human World\". The reference is the two-file Cangjie solution solve.cj + word_graph.cj; cases are embedded and become data.zip on import. Package v2: C++, Cangjie, Python and Java each support both full-program and function submissions."
+  },
+  "modes": {
+    "cpp": [
+      "function",
+      "full"
+    ],
+    "cangjie": [
+      "function",
+      "full"
+    ],
+    "python": [
+      "function",
+      "full"
+    ],
+    "java": [
+      "function",
+      "full"
+    ]
   }
 }

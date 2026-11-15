@@ -1,0 +1,19 @@
+{
+  "id": "t05-bracket-substrings",
+  "title": {"zh": "合法括号子串计数", "en": "Counting Valid Bracket Substrings"},
+  "difficulty": 2100,
+  "topic": "前缀和与差分",
+  "tags": ["前缀和", "单调栈"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "()()\n", "output": "3\n"}],
+  "signature": {
+    "package": "t05_bracket_substrings",
+    "params": [
+      {"name": "s", "type": "string"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回满足合法括号序列的连续子串个数"}
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "id": "t21-expected-inversion-swap",
+  "title": {"zh": "随机交换后的逆序对期望", "en": "Expected Inversions After a Random Swap"},
+  "difficulty": 1800,
+  "topic": "组合数学与概率期望",
+  "tags": ["概率期望", "组合数学", "树状数组"],
+  "limits": {"timeMs": 3000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "3\n3 1 2\n", "output": "666666673\n"},
+    {"input": "1\n5\n", "output": "0\n"}
+  ],
+  "signature": {
+    "package": "t21_expected_inversion_swap",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回等概率随机选一对下标并交换后，数组逆序对数的期望，按 p * q^{-1} mod 1000000007 输出"}
+  }
+}

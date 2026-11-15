@@ -1,0 +1,21 @@
+{
+  "id": "t05-range-cover-max",
+  "title": {"zh": "覆盖次数最多的地方", "en": "Most Frequently Covered Position"},
+  "difficulty": 1600,
+  "topic": "前缀和与差分",
+  "tags": ["差分", "前缀和"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "6\n3\n1 4\n3 5\n5 6\n", "output": "2 3\n"}],
+  "signature": {
+    "package": "t05_range_cover_max",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "q", "type": "int"},
+      {"name": "segs", "type": "matrix", "rows": "q", "cols": "2"}
+    ],
+    "returns": "ints_space",
+    "hint": {"zh": "返回两个整数：最大覆盖次数、以及达到它的最左位置"}
+  }
+}

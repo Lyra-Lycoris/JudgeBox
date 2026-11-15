@@ -1,0 +1,19 @@
+{
+  "id": "t16-lis-len",
+  "title": {"zh": "最长上升子序列", "en": "Longest Increasing Subsequence"},
+  "difficulty": 1600,
+  "topic": "线性动态规划",
+  "tags": ["动态规划", "二分"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "luogu", "id": "B3637", "url": "https://www.luogu.com.cn/problem/B3637"},
+  "samples": [
+    {"input": "8\n10 9 2 5 3 7 101 18\n", "output": "4\n"}
+  ],
+  "signature": {
+    "package": "t16_lis_len",
+    "params": [{"name": "n", "type": "int"}, {"name": "a", "type": "ints", "count": "n"}],
+    "returns": "int",
+    "hint": {"zh": "返回最长严格上升子序列的长度"}
+  }
+}

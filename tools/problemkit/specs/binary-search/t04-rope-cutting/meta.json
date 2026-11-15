@@ -1,0 +1,21 @@
+{
+  "id": "t04-rope-cutting",
+  "title": {"zh": "切绳子", "en": "Cutting Ropes"},
+  "difficulty": 1100,
+  "topic": "二分与二分答案",
+  "tags": ["二分", "贪心"],
+  "limits": {"timeMs": 3000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "4\n8 7 6 5\n4\n", "output": "5\n"}],
+  "signature": {
+    "package": "t04_rope_cutting",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"},
+      {"name": "k", "type": "int"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回能切出的 k 段等长绳子的最大长度（整数厘米）；若长度为 1 也切不出 k 段则返回 0"}
+  }
+}

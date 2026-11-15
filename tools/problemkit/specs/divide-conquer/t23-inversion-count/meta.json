@@ -1,0 +1,21 @@
+{
+  "id": "t23-inversion-count",
+  "title": {"zh": "归并排序求逆序对", "en": "Inversion Count with Merge Sort"},
+  "difficulty": 1000,
+  "topic": "分治与递归",
+  "tags": ["分治", "排序"],
+  "limits": {"timeMs": 3000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "luogu", "id": "P1908", "url": "https://www.luogu.com.cn/problem/P1908"},
+  "samples": [
+    {"input": "6\n2 3 4 5 6 1\n", "output": "5\n"},
+    {"input": "5\n3 3 3 3 3\n", "output": "0\n"},
+    {"input": "6\n6 5 4 3 2 1\n", "output": "15\n"}
+  ],
+  "signature": {
+    "package": "t23_inversion_count",
+    "params": [{"name": "n", "type": "int"}, {"name": "a", "type": "ints", "count": "n"}],
+    "returns": "int",
+    "hint": {"zh": "返回满足 i<j 且 a[i]>a[j] 的下标对个数"}
+  }
+}

@@ -1,3 +1,5 @@
+import os
+os.environ.setdefault("JUDGEBOX_SYNC_OFF", "1")  # 测试期间不跑 GitHub 题库同步
 """End-to-end tests against the real compiled Windows executable."""
 import json, subprocess, tempfile, time, urllib.request, urllib.error, pathlib, unittest, sys, os
 EXE = pathlib.Path(sys.argv[1] if len(sys.argv)>1 else 'build/JudgeBox.exe').resolve()

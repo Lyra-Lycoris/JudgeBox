@@ -1,0 +1,23 @@
+{
+  "id": "t24-convex-hull-count",
+  "title": {"zh": "凸包顶点数", "en": "Number of Convex Hull Vertices"},
+  "difficulty": 1400,
+  "topic": "计算几何与高精度",
+  "tags": ["计算几何", "排序"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "6\n0 4 4 0 2 1\n0 0 4 4 2 1\n", "output": "4\n"}
+  ],
+  "signature": {
+    "package": "t24_convex_hull_count",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "xs", "type": "ints", "count": "n"},
+      {"name": "ys", "type": "ints", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回凸包的顶点个数（落在凸包边上的中间点不计入）"}
+  }
+}

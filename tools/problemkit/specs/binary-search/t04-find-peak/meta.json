@@ -1,0 +1,20 @@
+{
+  "id": "t04-find-peak",
+  "title": {"zh": "峰值元素", "en": "Find a Peak Element"},
+  "difficulty": 1400,
+  "topic": "二分与二分答案",
+  "tags": ["二分"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "special",
+  "source": {"platform": "other"},
+  "samples": [{"input": "4\n1 2 3 0\n", "output": "2\n"}],
+  "signature": {
+    "package": "t04_find_peak",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回任意一个峰值元素的下标（从 0 开始），评测使用特殊评判"}
+  }
+}

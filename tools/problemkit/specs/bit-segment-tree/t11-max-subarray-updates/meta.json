@@ -1,0 +1,22 @@
+{
+  "id": "t11-max-subarray-updates",
+  "title": {"zh": "带修改的最大子段和", "en": "Maximum Subarray Sum with Updates"},
+  "difficulty": 2100,
+  "topic": "树状数组与线段树",
+  "tags": ["线段树", "分治"],
+  "limits": {"timeMs": 3000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "5\n1 -2 3 -1 2\n4\n2 1 5\n1 2 3\n2 1 5\n2 2 2\n", "output": "4 8 3\n"}],
+  "signature": {
+    "package": "t11_max_subarray_updates",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"},
+      {"name": "q", "type": "int"},
+      {"name": "ops", "type": "matrix", "rows": "q", "cols": "3"}
+    ],
+    "returns": "ints_space",
+    "hint": {"zh": "按顺序返回每次询问区间的最大子段和"}
+  }
+}

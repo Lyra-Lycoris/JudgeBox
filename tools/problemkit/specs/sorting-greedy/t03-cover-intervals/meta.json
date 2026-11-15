@@ -1,0 +1,22 @@
+{
+  "id": "t03-cover-intervals",
+  "title": {"zh": "最少区间覆盖", "en": "Minimum Intervals to Cover"},
+  "difficulty": 1800,
+  "topic": "排序与贪心",
+  "tags": ["排序", "贪心", "双指针"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "3\n0 2 4\n3 6 8\n6\n", "output": "2\n"}],
+  "signature": {
+    "package": "t03_cover_intervals",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "l", "type": "ints", "count": "n"},
+      {"name": "r", "type": "ints", "count": "n"},
+      {"name": "m", "type": "int"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回覆盖 [0, m] 所需的最少区间数，无解返回 -1"}
+  }
+}

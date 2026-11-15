@@ -1,0 +1,21 @@
+{
+  "id": "t12-cyclic-shift-equal",
+  "title": {"zh": "循环移位相等判定", "en": "Cyclic Shift Equality"},
+  "difficulty": 1000,
+  "topic": "字符串与匹配",
+  "tags": ["哈希", "字符串"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "5\nabcde\ncdeab\n", "output": "YES\n"}],
+  "signature": {
+    "package": "t12_cyclic_shift_equal",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "s", "type": "string"},
+      {"name": "t", "type": "string"}
+    ],
+    "returns": "bool",
+    "hint": {"zh": "返回 t 是否可以由 s 循环移位得到"}
+  }
+}

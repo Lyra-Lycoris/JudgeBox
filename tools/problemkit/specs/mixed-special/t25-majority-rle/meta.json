@@ -1,0 +1,23 @@
+{
+  "id": "t25-majority-rle",
+  "title": {"zh": "游程编码数组的多数元素", "en": "Majority Element of a Run-Length Encoded Array"},
+  "difficulty": 1400,
+  "topic": "综合思维与特殊裁判",
+  "tags": ["贪心", "模拟"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "4\n1 2 1 3\n2 1 3 1\n", "output": "1\n"}
+  ],
+  "signature": {
+    "package": "t25_majority_rle",
+    "params": [
+      {"name": "k", "type": "int"},
+      {"name": "v", "type": "ints", "count": "k"},
+      {"name": "c", "type": "ints", "count": "k"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回出现次数严格大于总长度一半的那个数（保证存在）"}
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "id": "t01-tic-tac-toe",
+  "title": {"zh": "井字棋胜负判定", "en": "Tic-Tac-Toe Result"},
+  "difficulty": 1100,
+  "topic": "模拟与实现",
+  "tags": ["模拟", "枚举"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "1 4 2 5 3 6 7 8 9\n", "output": "5\n"},
+    {"input": "1 2 3 5 4 6 8 7 9\n", "output": "0\n"}
+  ],
+  "signature": {
+    "package": "t01_tic_tac_toe",
+    "params": [{"name": "moves", "type": "ints", "count": "9"}],
+    "returns": "int",
+    "hint": {"zh": "返回第一次连成三子的步数（1..9），平局返回 0"}
+  }
+}

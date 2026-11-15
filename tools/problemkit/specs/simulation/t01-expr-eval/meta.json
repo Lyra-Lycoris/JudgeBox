@@ -1,0 +1,20 @@
+{
+  "id": "t01-expr-eval",
+  "title": {"zh": "中缀表达式求值", "en": "Infix Expression Evaluation"},
+  "difficulty": 1800,
+  "topic": "模拟与实现",
+  "tags": ["模拟", "栈", "字符串"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "(1+2)*3\n", "output": "9\n"},
+    {"input": "(3-10)/2\n", "output": "-3\n"}
+  ],
+  "signature": {
+    "package": "t01_expr_eval",
+    "params": [{"name": "expr", "type": "string"}],
+    "returns": "int",
+    "hint": {"zh": "返回表达式求值结果（除法向零取整）"}
+  }
+}

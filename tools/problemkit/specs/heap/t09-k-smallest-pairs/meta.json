@@ -1,0 +1,23 @@
+{
+  "id": "t09-k-smallest-pairs",
+  "title": {"zh": "最小 k 对和", "en": "K Smallest Pair Sums"},
+  "difficulty": 1400,
+  "topic": "堆与优先队列",
+  "tags": ["堆", "排序"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "leetcode", "id": "373", "url": "https://leetcode.com/problems/find-k-pairs-with-smallest-sums/"},
+  "samples": [{"input": "3 3 3\n1 7 11\n2 4 6\n", "output": "3 5 7\n"}],
+  "signature": {
+    "package": "t09_k_smallest_pairs",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "m", "type": "int"},
+      {"name": "k", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"},
+      {"name": "b", "type": "ints", "count": "m"}
+    ],
+    "returns": "ints_space",
+    "hint": {"zh": "返回最小的 k 个 a[i]+b[j]，按非降序排列"}
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "id": "t06-max-average-window",
+  "title": {
+    "zh": "固定长度窗口的最大平均值",
+    "en": "Maximum Average of a Fixed-Length Window"
+  },
+  "difficulty": 1800,
+  "topic": "双指针与滑动窗口",
+  "tags": [
+    "滑动窗口",
+    "前缀和",
+    "数学"
+  ],
+  "limits": {
+    "timeMs": 2000,
+    "memoryMb": 256
+  },
+  "judgeType": "function",
+  "source": {
+    "platform": "leetcode",
+    "id": "643",
+    "url": "https://leetcode.cn/problems/maximum-average-subarray-i/"
+  },
+  "samples": [
+    {
+      "input": "3 2\n1 3 4\n",
+      "output": "7/2\n"
+    },
+    {
+      "input": "1 1\n5\n",
+      "output": "5/1\n"
+    },
+    {
+      "input": "4 4\n-1 -2 -3 -4\n",
+      "output": "-5/2\n"
+    }
+  ],
+  "signature": {
+    "package": "t06_max_average_window",
+    "params": [
+      {
+        "name": "n",
+        "type": "int"
+      },
+      {
+        "name": "k",
+        "type": "int"
+      },
+      {
+        "name": "a",
+        "type": "ints",
+        "count": "n"
+      }
+    ],
+    "returns": "string",
+    "hint": {
+      "zh": "返回最大平均值的最简分数形式 p/q（q 为正，形如 7/2）"
+    }
+  }
+}

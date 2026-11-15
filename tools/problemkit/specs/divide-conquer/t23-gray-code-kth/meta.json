@@ -1,0 +1,21 @@
+{
+  "id": "t23-gray-code-kth",
+  "title": {"zh": "格雷码的第 k 项", "en": "The k-th Gray Code"},
+  "difficulty": 1600,
+  "topic": "分治与递归",
+  "tags": ["分治", "位运算", "数学"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "3 5\n", "output": "7\n"},
+    {"input": "1 1\n", "output": "1\n"},
+    {"input": "2 2\n", "output": "3\n"}
+  ],
+  "signature": {
+    "package": "t23_gray_code_kth",
+    "params": [{"name": "n", "type": "int"}, {"name": "k", "type": "int"}],
+    "returns": "int",
+    "hint": {"zh": "返回 n 位格雷码序列中下标为 k（从 0 开始）的那一项的十进制值"}
+  }
+}

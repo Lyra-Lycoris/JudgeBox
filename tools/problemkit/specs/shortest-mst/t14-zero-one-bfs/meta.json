@@ -1,0 +1,21 @@
+{
+  "id": "t14-zero-one-bfs",
+  "title": {"zh": "0-1 BFS 最少消耗", "en": "Minimum Cost with 0-1 BFS"},
+  "difficulty": 1800,
+  "topic": "最短路与最小生成树",
+  "tags": ["图论", "最短路", "队列"],
+  "limits": {"timeMs": 3000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "luogu", "id": "P4554", "url": "https://www.luogu.com.cn/problem/P4554"},
+  "samples": [{"input": "3 4\n0 0 1 1\n1 0 1 0\n1 1 1 0\n", "output": "1\n"}],
+  "signature": {
+    "package": "t14_zero_one_bfs",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "m", "type": "int"},
+      {"name": "g", "type": "matrix", "rows": "n", "cols": "m"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回从 (1,1) 走到 (n,m) 的最小消耗"}
+  }
+}

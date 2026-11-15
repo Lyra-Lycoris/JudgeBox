@@ -1,0 +1,22 @@
+{
+  "id": "t24-big-add",
+  "title": {"zh": "高精度加法", "en": "Big Integer Addition"},
+  "difficulty": 1600,
+  "topic": "计算几何与高精度",
+  "tags": ["高精度"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "12345678901234567890\n98765432109876543210\n", "output": "111111111011111111100\n"}
+  ],
+  "signature": {
+    "package": "t24_big_add",
+    "params": [
+      {"name": "a", "type": "string"},
+      {"name": "b", "type": "string"}
+    ],
+    "returns": "string",
+    "hint": {"zh": "返回 a+b 的十进制字符串（不含前导零）"}
+  }
+}

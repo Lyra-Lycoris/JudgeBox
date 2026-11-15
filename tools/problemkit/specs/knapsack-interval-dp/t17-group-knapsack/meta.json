@@ -1,0 +1,25 @@
+{
+  "id": "t17-group-knapsack",
+  "title": {"zh": "分组背包：每组选一个", "en": "Grouped Knapsack: At Most One per Group"},
+  "difficulty": 1300,
+  "topic": "背包与区间DP",
+  "tags": ["背包", "动态规划"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "3 15\n1 1 2\n5 6 7\n10 11 20\n", "output": "31\n"}
+  ],
+  "signature": {
+    "package": "t17_group_knapsack",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "cap", "type": "int"},
+      {"name": "g", "type": "ints", "count": "n"},
+      {"name": "w", "type": "ints", "count": "n"},
+      {"name": "v", "type": "ints", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回容量 cap 下每组至多选一件物品时的最大价值"}
+  }
+}

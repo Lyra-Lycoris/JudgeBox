@@ -1,0 +1,24 @@
+{
+  "id": "t08-min-stack-queries",
+  "title": {"zh": "最小栈的查询结果", "en": "Min Stack Query Results"},
+  "difficulty": 1600,
+  "topic": "栈与队列",
+  "tags": ["栈", "模拟"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "6\n1 1 3 2 3 3\n5 -3 0 0 0 0\n", "output": "-3 5 5\n"},
+    {"input": "4\n1 1 3 2\n2 2 0 0\n", "output": "2\n"}
+  ],
+  "signature": {
+    "package": "t08_min_stack_queries",
+    "params": [
+      {"name": "m", "type": "int"},
+      {"name": "op", "type": "ints", "count": "m"},
+      {"name": "val", "type": "ints", "count": "m"}
+    ],
+    "returns": "ints_space",
+    "hint": {"zh": "按顺序执行操作，返回所有查询操作（op=3）得到的最小值，按发生顺序排列"}
+  }
+}

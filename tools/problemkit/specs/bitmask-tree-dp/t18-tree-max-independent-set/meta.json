@@ -1,0 +1,21 @@
+{
+  "id": "t18-tree-max-independent-set",
+  "title": {"zh": "树的最大权独立集", "en": "Maximum Weight Independent Set on a Tree"},
+  "difficulty": 1300,
+  "topic": "状压DP与树形DP",
+  "tags": ["树形DP", "树", "动态规划"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "6\n3 -2 5 4 -1 2\n1 1 2 2 4\n", "output": "9\n"}],
+  "signature": {
+    "package": "t18_tree_max_independent_set",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "w", "type": "ints", "count": "n"},
+      {"name": "p", "type": "ints", "count": "n-1"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回树上不相邻点集的最大权值和（可以不选任何点，答案为 0 时表示不选）"}
+  }
+}

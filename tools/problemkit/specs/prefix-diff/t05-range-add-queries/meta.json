@@ -1,0 +1,22 @@
+{
+  "id": "t05-range-add-queries",
+  "title": {"zh": "区间加与还原", "en": "Range Add and Restore"},
+  "difficulty": 1100,
+  "topic": "前缀和与差分",
+  "tags": ["差分", "前缀和"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "5\n1 2 3 4 5\n2\n1 3 10\n2 5 -4\n", "output": "11 8 9 0 1\n"}],
+  "signature": {
+    "package": "t05_range_add_queries",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"},
+      {"name": "q", "type": "int"},
+      {"name": "ops", "type": "matrix", "rows": "q", "cols": "3"}
+    ],
+    "returns": "ints_space",
+    "hint": {"zh": "返回所有区间加操作执行完毕后的数组"}
+  }
+}

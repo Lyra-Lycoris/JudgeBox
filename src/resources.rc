@@ -20,12 +20,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "JudgeBox"
             VALUE "FileDescription", "JudgeBox offline judge"
-            VALUE "FileVersion", "1.4.0.0"
+            VALUE "FileVersion", "1.5.0.0"
             VALUE "InternalName", "JudgeBox"
             VALUE "LegalCopyright", "Copyright (C) 2026 JudgeBox"
             VALUE "OriginalFilename", "JudgeBox.exe"
             VALUE "ProductName", "JudgeBox"
-            VALUE "ProductVersion", "1.4.0"
+            VALUE "ProductVersion", "1.5.0"
         END
     END
     BLOCK "VarFileInfo"

@@ -1,0 +1,22 @@
+{
+  "id": "t20-josephus",
+  "title": {"zh": "约瑟夫环最后剩下的人", "en": "Josephus Problem Survivor"},
+  "difficulty": 2100,
+  "topic": "数学与数论",
+  "tags": ["数学", "数论"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "5 2\n", "output": "3\n"}
+  ],
+  "signature": {
+    "package": "t20_josephus",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "k", "type": "int"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回最后剩下的人的编号（从 1 开始）"}
+  }
+}

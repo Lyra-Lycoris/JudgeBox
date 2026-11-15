@@ -1,0 +1,22 @@
+{
+  "id": "t25-k-positive-sum",
+  "title": {"zh": "构造和为 s 的 k 个正整数", "en": "Construct k Positive Integers with Sum s"},
+  "difficulty": 1100,
+  "topic": "综合思维与特殊裁判",
+  "tags": ["构造", "贪心"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "special",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "10 3\n", "output": "1 1 8\n"}
+  ],
+  "signature": {
+    "package": "t25_k_positive_sum",
+    "params": [
+      {"name": "s", "type": "int"},
+      {"name": "k", "type": "int"}
+    ],
+    "returns": "ints_space",
+    "hint": {"zh": "返回恰好 k 个正整数，它们的和等于 s；本题使用特殊评判"}
+  }
+}

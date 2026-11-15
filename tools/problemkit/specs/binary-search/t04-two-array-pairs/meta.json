@@ -1,0 +1,23 @@
+{
+  "id": "t04-two-array-pairs",
+  "title": {"zh": "两数之和不超过 x 的数对", "en": "Pairs with Sum at Most x"},
+  "difficulty": 2100,
+  "topic": "二分与二分答案",
+  "tags": ["二分", "排序"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "3\n1 2 3\n3\n4 5 6\n7\n", "output": "6\n"}],
+  "signature": {
+    "package": "t04_two_array_pairs",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"},
+      {"name": "m", "type": "int"},
+      {"name": "b", "type": "ints", "count": "m"},
+      {"name": "x", "type": "int"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回满足 a[i] + b[j] <= x 的下标对 (i, j) 的数量"}
+  }
+}

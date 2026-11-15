@@ -1,0 +1,19 @@
+{
+  "id": "t16-stock-once",
+  "title": {"zh": "股票买卖最大收益（一次交易）", "en": "Best Time to Buy and Sell Stock"},
+  "difficulty": 1300,
+  "topic": "线性动态规划",
+  "tags": ["动态规划", "贪心"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "leetcode", "id": "121", "url": "https://leetcode.cn/problems/best-time-to-buy-and-sell-stock/"},
+  "samples": [
+    {"input": "6\n7 1 5 3 6 4\n", "output": "5\n"}
+  ],
+  "signature": {
+    "package": "t16_stock_once",
+    "params": [{"name": "n", "type": "int"}, {"name": "a", "type": "ints", "count": "n"}],
+    "returns": "int",
+    "hint": {"zh": "返回最多进行一次买卖能获得的最大收益（不能获利时返回 0）"}
+  }
+}

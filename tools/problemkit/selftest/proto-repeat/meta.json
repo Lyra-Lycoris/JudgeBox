@@ -1,0 +1,18 @@
+{
+  "id": "proto-repeat",
+  "title": {"zh": "多组平方原型", "en": "Multi Case Square Prototype"},
+  "difficulty": 1000,
+  "topic": "模拟与实现",
+  "tags": ["模拟"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "2\n3\n4\n", "output": "9\n16\n"}],
+  "signature": {
+    "package": "proto_repeat",
+    "params": [{"name": "n", "type": "int"}],
+    "returns": "int",
+    "repeat": true,
+    "hint": {"zh": "返回 n 的平方，输入有多组"}
+  }
+}

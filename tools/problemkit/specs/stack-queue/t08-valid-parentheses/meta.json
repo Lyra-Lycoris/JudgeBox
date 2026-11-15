@@ -1,0 +1,20 @@
+{
+  "id": "t08-valid-parentheses",
+  "title": {"zh": "括号序列合法性", "en": "Valid Bracket Sequence"},
+  "difficulty": 1000,
+  "topic": "栈与队列",
+  "tags": ["栈", "字符串"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "()[]{}\n", "output": "YES\n"},
+    {"input": "([)]\n", "output": "NO\n"}
+  ],
+  "signature": {
+    "package": "t08_valid_parentheses",
+    "params": [{"name": "s", "type": "string"}],
+    "returns": "bool",
+    "hint": {"zh": "判断括号序列是否合法：合法返回 true（输出 YES），否则返回 false（输出 NO）"}
+  }
+}

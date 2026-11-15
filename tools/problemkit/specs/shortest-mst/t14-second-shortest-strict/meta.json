@@ -1,0 +1,21 @@
+{
+  "id": "t14-second-shortest-strict",
+  "title": {"zh": "严格次短路", "en": "Strictly Second Shortest Route"},
+  "difficulty": 1600,
+  "topic": "最短路与最小生成树",
+  "tags": ["图论", "最短路"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "luogu", "id": "P2865", "url": "https://www.luogu.com.cn/problem/P2865"},
+  "samples": [{"input": "4 4\n1 2 1\n2 4 3\n1 3 2\n3 4 4\n", "output": "6\n"}],
+  "signature": {
+    "package": "t14_second_shortest_strict",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "m", "type": "int"},
+      {"name": "e", "type": "matrix", "rows": "m", "cols": "3"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回 1 到 n 的严格次短路长度，不存在则返回 -1"}
+  }
+}

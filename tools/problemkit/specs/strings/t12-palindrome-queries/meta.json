@@ -1,0 +1,22 @@
+{
+  "id": "t12-palindrome-queries",
+  "title": {"zh": "回文子串判定", "en": "Palindrome Substring Queries"},
+  "difficulty": 1600,
+  "topic": "字符串与匹配",
+  "tags": ["哈希", "字符串"],
+  "limits": {"timeMs": 3000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "5\nabcba\n3\n1 5\n1 3\n2 4\n", "output": "1 0 1\n"}],
+  "signature": {
+    "package": "t12_palindrome_queries",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "s", "type": "string"},
+      {"name": "q", "type": "int"},
+      {"name": "qs", "type": "matrix", "rows": "q", "cols": "2"}
+    ],
+    "returns": "ints_space",
+    "hint": {"zh": "对每个询问返回 1（子串是回文）或 0（不是）"}
+  }
+}

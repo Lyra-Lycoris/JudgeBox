@@ -14,10 +14,13 @@ endif()
 add_library(judge_process src/process_win32.cpp)
 target_include_directories(judge_process PUBLIC src third_party)
 add_library(judge_core src/generator.cpp src/checker.cpp src/dataset.cpp src/compiler.cpp src/judge.cpp src/path_compat.cpp
-    src/ziputil.cpp src/submitstore.cpp src/problems.cpp src/problemjudge.cpp)
-target_link_libraries(judge_core PUBLIC judge_process shell32 ole32 advapi32)
+    src/ziputil.cpp src/submitstore.cpp src/problems.cpp src/problemjudge.cpp src/records.cpp src/sync.cpp)
+target_link_libraries(judge_core PUBLIC judge_process shell32 ole32 advapi32 winhttp)
 target_include_directories(judge_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/third_party/testlib" "${CMAKE_CURRENT_BINARY_DIR}/generated")
-set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS web/index.html web/style.css web/app.js web/editor.js src/JudgeBox.ico src/JudgeBox.manifest src/resources.rc)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+    web/index.html web/style.css web/app.js web/editor.js web/problems.js web/problemview.js
+    web/statement.js web/reveal.js web/submissions.js web/selftest.js
+    src/JudgeBox.ico src/JudgeBox.manifest src/resources.rc)
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/web/editor.js" JBOX_EDITOR_JS)
 string(FIND "${JBOX_EDITOR_JS}" ")JBOXED\"" JBOX_EDITOR_COLLISION)
 if(NOT JBOX_EDITOR_COLLISION EQUAL -1)
@@ -102,5 +105,9 @@ if(BUILD_TESTING)
         set_tests_properties(api PROPERTIES TIMEOUT 180)
         add_test(NAME problem COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/problem_api_test.py" $<TARGET_FILE:JudgeBox>)
         set_tests_properties(problem PROPERTIES TIMEOUT 900)
+        add_test(NAME selfjudge COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/selfjudge_api_test.py" $<TARGET_FILE:JudgeBox>)
+        set_tests_properties(selfjudge PROPERTIES TIMEOUT 300)
+        # 测试期间不联网同步题库
+        set_tests_properties(api problem selfjudge PROPERTIES ENVIRONMENT "JUDGEBOX_SYNC_OFF=1")
     endif()
 endif()

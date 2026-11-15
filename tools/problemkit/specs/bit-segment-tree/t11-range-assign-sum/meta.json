@@ -1,0 +1,22 @@
+{
+  "id": "t11-range-assign-sum",
+  "title": {"zh": "区间赋值与总和", "en": "Range Assign and Total Sum"},
+  "difficulty": 1400,
+  "topic": "树状数组与线段树",
+  "tags": ["线段树"],
+  "limits": {"timeMs": 3000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "5\n1 2 3 4 5\n3\n1 3 7\n2 5 0\n1 5 2\n", "output": "30 7 10\n"}],
+  "signature": {
+    "package": "t11_range_assign_sum",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"},
+      {"name": "q", "type": "int"},
+      {"name": "ops", "type": "matrix", "rows": "q", "cols": "3"}
+    ],
+    "returns": "ints_space",
+    "hint": {"zh": "依次返回每次赋值操作之后整个序列的总和"}
+  }
+}

@@ -12,6 +12,8 @@
 #include "apierror.hpp"
 #include "problems.hpp"
 #include "problemjudge.hpp"
+#include "records.hpp"
+#include "sync.hpp"
 #include "submitstore.hpp"
 #include <algorithm>
 #include <array>
@@ -94,6 +96,8 @@ int serve(const fs::path& dataDirectory,bool openBrowser,unsigned short requeste
         std::cout<<"JudgeBox is running locally. Keep this window open. Ctrl+C to stop.\n"<<std::flush;
         if(openBrowser) ShellExecuteW(nullptr,L"open",wide(url).c_str(),nullptr,nullptr,SW_SHOWNORMAL);
     }
+    // 题库增量同步放到后台线程：界面和判题完全不等它，同步完前端再刷新题单。
+    startProblemSync();
     while(!stopping.load()) {
         fd_set reads; FD_ZERO(&reads); FD_SET(listener.value,&reads); timeval wait{0,200000};
         if(select(0,&reads,nullptr,nullptr,&wait)<=0) continue;
@@ -109,7 +113,7 @@ int serve(const fs::path& dataDirectory,bool openBrowser,unsigned short requeste
                     body=Json::parse(r.body); if(!body.is_object()) throw std::runtime_error("请求应为 JSON 对象");
                 }
                 Json result;
-                if(r.path=="/api/config" && r.method=="GET") result={{"tools",tools},{"version","1.4.0"},{"dataDirectory",utf8(fs::absolute(dataDirectory).wstring())},{"bundled",bundledRuntime()}};
+                if(r.path=="/api/config" && r.method=="GET") result={{"tools",tools},{"version","1.5.0"},{"dataDirectory",utf8(fs::absolute(dataDirectory).wstring())},{"bundled",bundledRuntime()}};
                 else if(r.path=="/api/status" && r.method=="GET") result=engine.status();
                 else if(r.path=="/api/run" && r.method=="POST") result=engine.start(body);
                 else if(r.path=="/api/cancel" && r.method=="POST") { engine.stop(); problemEngine.stop(); result={{"ok",true}}; }
@@ -122,6 +126,20 @@ int serve(const fs::path& dataDirectory,bool openBrowser,unsigned short requeste
                 else if(r.path=="/api/diagnostics" && r.method=="POST") result=diagnoseSource(body.value("source",std::string()),body.value("language",std::string("cpp")),bundledTools(executableDirectory()),engineData);
                 else if(r.path=="/api/problems" && r.method=="GET") result=listProblems(engineData);
                 else if(r.path=="/api/problems/import" && r.method=="POST") result=importProblem(engineData,body);
+                else if(r.path=="/api/problems/save" && r.method=="POST") result=saveProblem(engineData,body);
+                else if(r.path=="/api/problems/scan-cases" && r.method=="POST") result=scanCaseDirectory(body.value("directory",std::string()));
+                else if(r.path=="/api/sync/status" && r.method=="GET") result=syncStatus();
+                else if(r.method=="GET" && r.path.starts_with("/api/records") && (r.path.size()==12 || r.path[12]=='?')) {
+                    auto query=r.path.find('?');
+                    auto filter=query==std::string::npos?std::string():r.path.substr(query+1);
+                    result=listSolveRecords(filter.starts_with("problemId=")?filter.substr(10):std::string());
+                }
+                else if(r.path=="/api/record/save" && r.method=="POST")
+                    result=saveSolveRecord(body.value("problemId",std::string()),body.value("language",std::string()),
+                                           body.value("mode",std::string()),body.value("source",std::string()));
+                else if(r.path=="/api/record/scaffold" && r.method=="POST") result=scaffoldSolveRecord(body.value("problemId",std::string()));
+                else if(r.path.starts_with("/api/problems/") && r.path.ends_with("/raw") && r.method=="GET") result=packageDetail(engineData,r.path.substr(14,r.path.size()-18));
+                else if(r.path.starts_with("/api/problems/") && r.path.ends_with("/cases") && r.method=="GET") result=problemCases(engineData,r.path.substr(14,r.path.size()-20));
                 else if(r.path.starts_with("/api/problems/") && r.path.ends_with("/run") && r.method=="POST") { if(!problemEngine.status().at("done").get<bool>()) throw ApiError(409,"正在判题，请等提交结束后再自测"); result=runCustomTests(executableDirectory(),engineData,tools,r.path.substr(14,r.path.size()-18),body); }
                 else if(r.path.starts_with("/api/problems/") && r.method=="GET") result=loadProblem(engineData,r.path.substr(14));
                 else if(r.path.starts_with("/api/problems/") && r.method=="DELETE") { if(!deleteProblem(engineData,r.path.substr(14))) throw ApiError(404,"题目不存在"); result={{"ok",true}}; }

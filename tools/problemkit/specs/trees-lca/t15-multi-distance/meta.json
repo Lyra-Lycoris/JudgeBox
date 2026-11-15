@@ -1,0 +1,23 @@
+{
+  "id": "t15-multi-distance",
+  "title": {"zh": "多组两点距离查询", "en": "Multiple Distance Queries"},
+  "difficulty": 2200,
+  "topic": "树与最近公共祖先",
+  "tags": ["树", "最近公共祖先"],
+  "limits": {"timeMs": 3000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "2\n3\n1 2\n2 3\n2\n1 3\n2 2\n1\n1\n1 1\n", "output": "2 0\n0\n"}],
+  "signature": {
+    "package": "t15_multi_distance",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "e", "type": "ints", "count": "2*(n-1)"},
+      {"name": "q", "type": "int"},
+      {"name": "queries", "type": "ints", "count": "2*q"}
+    ],
+    "returns": "ints_space",
+    "repeat": true,
+    "hint": {"zh": "每组询问返回 q 个整数：该组内每次询问的两点距离"}
+  }
+}

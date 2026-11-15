@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <map>
+#include <sstream>
 #include <string_view>
 
 namespace {
@@ -63,6 +64,15 @@ fs::path compilerPath(const std::string& tool) {
     else path=asciiDirectory(parent)/path.filename();
     return path;
 }
+// Java 的 -Xmx 要跟着题目的内存上限走，否则 128 MiB 的题会被 JVM 的默认堆拖成 MLE。
+std::vector<std::wstring> runtimeArgsFor(const Program& program,long long memoryMb) {
+    auto args=program.args;
+    if(program.java) {
+        auto heap=std::max<long long>(16,memoryMb>192?memoryMb-128:memoryMb/2);
+        for(auto& arg:args) if(arg.starts_with(L"-Xmx")) arg=L"-Xmx"+std::to_wstring(heap)+L"m";
+    }
+    return args;
+}
 void classifyCompile(Program& program,const runResult& result) {
     program.log=result.stdOut+result.errOut;
     if(result.cancelled) { program.verdict="CANCELLED"; program.message="已停止编译"; }
@@ -90,6 +100,65 @@ std::vector<std::pair<std::string,std::string>> assembleCangjie(const std::strin
         files.emplace_back(name,functionMode?ensurePackage(units[i],package):stripBom(units[i]));
     }
     return files;
+}
+namespace {
+// Java 函数式提交只给方法体/方法，平台补上 import 与 class Main 外壳。
+std::string javaPrelude() { return "import java.util.*;\nimport java.io.*;\nimport java.math.*;\n\n"; }
+// 把多份仓颉源码拼成一份：package 只留一个，文件开头的 import 去重后统一提到最前面。
+// 约定：driver 与参考解/选手代码都必须把 package 与 import 写在文件最前面（与 cjc 的要求一致）。
+std::string mergeCangjie(const std::string& package,const std::vector<std::string>& sources) {
+    std::vector<std::string> imports,leadingComments; std::string body;
+    for(const auto& raw:sources) {
+        std::istringstream stream(stripBom(raw)); std::string line; bool header=true;
+        while(std::getline(stream,line)) {
+            if(!line.empty() && line.back()=='\r') line.pop_back();
+            if(header) {
+                auto text=trim(line);
+                if(text.empty()) continue;
+                if(text=="package" || text.starts_with("package ")) continue;
+                if(text.starts_with("import ")) {
+                    if(std::find(imports.begin(),imports.end(),text)==imports.end()) imports.push_back(text);
+                    continue;
+                }
+                // package/import 之间的行注释不影响 import 提前，先挂起，遇到第一行声明时再放回正文。
+                if(text.starts_with("//")) { leadingComments.push_back(line); continue; }
+                header=false;
+                for(const auto& comment:leadingComments) { body+=comment; body+='\n'; }
+                leadingComments.clear();
+            }
+            body+=line; body+='\n';
+        }
+        body+='\n';
+    }
+    std::string result;
+    if(!package.empty()) result="package "+package+"\n\n";
+    for(const auto& item:imports) { result+=item; result+='\n'; }
+    if(!imports.empty()) result+='\n';
+    result+=body;
+    return result;
+}
+}
+std::string assembleFullSource(const std::string& language,const std::string& driver,const std::string& source,
+                               const std::string& package) {
+    if(language=="cpp") return assembleCpp(driver,{source});
+    if(language=="cangjie") return mergeCangjie(package,{driver,source});
+    if(language=="python") {
+        std::string result=source;
+        if(!result.empty() && result.back()!='\n') result+='\n';
+        result+='\n';
+        result+=driver;
+        return result;
+    }
+    if(language=="java") return javaPrelude()+"public class Main {\n"+driver+"\n"+source+"\n}\n";
+    return {};
+}
+std::vector<std::pair<std::string,std::string>> assembleFunction(const std::string& language,const std::string& driver,
+                                                                 const std::string& source,const std::string& package) {
+    if(language=="cangjie") return assembleCangjie(driver,package,{source},true);
+    if(language=="cpp") return {{"Main.cpp",assembleCpp(driver,{source})}};
+    if(language=="python") return {{"main.py",assembleFullSource("python",driver,source,package)}};
+    if(language=="java") return {{"Main.java",assembleFullSource("java",driver,source,package)}};
+    return {};
 }
 Program buildChecker(const std::string& source,const fs::path& directory,const Json& tools,const std::atomic_bool* cancel) {
     Program program;
@@ -140,23 +209,23 @@ Program buildUnit(const std::string& language,const std::vector<std::pair<std::s
                   const fs::path& directory,const Json& tools,const std::atomic_bool* cancel) {
     Program program;
     if(files.empty()) { program.verdict="JE"; program.message="没有可编译的源码"; return program; }
-    auto compiler=tools.value(language=="cpp"?"cpp":"cangjie",std::string());
+    // 仓颉是一次编译多个 .cj；其余三种语言都只有一个源文件，直接复用 compileProgram，
+    // 保证函数式提交、完整式提交、调试台三条路径的编译/运行参数完全一致。
+    if(language!="cangjie") {
+        if(files.size()!=1) { program.verdict="JE"; program.message="只有仓颉支持多文件编译"; return program; }
+        return compileProgram(files[0].second,language,directory,tools,cancel);
+    }
+    auto compiler=tools.value("cangjie",std::string());
     if(compiler.empty() || !fs::is_regular_file(fs::path(wide(compiler)))) {
         program.verdict="JE";
-        program.message=std::string("找不到")+(language=="cpp"?"C++ 编译器（g++）":"仓颉编译器（cjc）")+"，请在工具链设置里配置";
+        program.message="找不到仓颉编译器（cjc），请在工具链设置里配置";
         return program;
     }
     fs::create_directories(directory);
     auto path=compilerPath(compiler);
     auto bin=path.parent_path();
     std::vector<std::wstring> args;
-    if(language=="cpp") {
-        for(const auto* key:{L"GCC_EXEC_PREFIX",L"COMPILER_PATH",L"LIBRARY_PATH",L"CPATH",L"CPLUS_INCLUDE_PATH",L"C_INCLUDE_PATH"})
-            program.environment.emplace_back(key,L"");
-        args={L"-std=c++20",L"-O2",L"-pipe",L"-fdiagnostics-color=never",L"-finput-charset=UTF-8"};
-        for(const auto& [name,content]:files) { writeFile(directory/wide(name),content); args.push_back(wide(name)); }
-        args.insert(args.end(),{L"-o",L"Main.exe"});
-    } else {
+    {
         auto home=bin.parent_path();
         program.environment.emplace_back(L"CANGJIE_HOME",home.wstring());
         for(const auto& part:{L"runtime/lib/windows_x86_64_cjnative",L"lib/windows_x86_64_cjnative",L"tools/bin",L"tools/lib"})
@@ -188,13 +257,14 @@ CaseJudgement judgeCase(const Program& program,const fs::path& directory,const C
     options.timeMs=timeMs;
     options.memoryBytes=static_cast<std::uint64_t>(memoryMb)*1024*1024;
     options.outputBytes=std::max<std::size_t>(1024*1024,static_cast<std::size_t>(test.answerBytes)+1024*1024);
-    options.workingDirectory=directory.wstring();
+    // Java 的 class 文件在编译目录里（-cp .），运行时工作目录必须是那个目录。
+    options.workingDirectory=(program.java && !program.classDirectory.empty()?program.classDirectory:directory).wstring();
     options.inputPath=test.input.wstring();
     options.stdoutPath=stdoutPath.wstring();
     options.cancel=cancel;
     options.pathEntries=program.pathEntries;
     options.environment=program.environment;
-    auto run=runProcess(program.exe,program.args,"",options);
+    auto run=runProcess(program.exe,runtimeArgsFor(program,memoryMb),"",options);
     judgement.timeMs=run.runTimeMs;
     judgement.memoryBytes=run.runMemory;
     if(run.cancelled) { judgement.verdict="CANCELLED"; judgement.message="已停止"; return judgement; }
@@ -244,7 +314,8 @@ CaseJudgement judgeCase(const Program& program,const fs::path& directory,const C
 ProblemJudgeEngine::ProblemJudgeEngine(fs::path cache,fs::path data,Json toolchain)
     : cacheRoot(std::move(cache)),dataDir(std::move(data)),tools(std::move(toolchain)) {
     state={{"submissionId",""},{"done",true},{"phase","就绪"},{"completed",0},{"total",0},{"verdict","READY"},
-           {"score",0},{"best",Json(nullptr)},{"previousBest",Json(nullptr)},{"improved",false},{"finishedAt",""},
+           {"score",0},{"best",Json(nullptr)},{"previousBest",Json(nullptr)},{"improved",false},
+           {"language",""},{"mode",""},{"finishedAt",""},
            {"groups",Json::array()},{"cases",Json::array()},{"message",""},{"compileLog",""}};
 }
 ProblemJudgeEngine::~ProblemJudgeEngine() {
@@ -267,15 +338,24 @@ Json ProblemJudgeEngine::start(const Json& request) {
     }
     auto problemId=request.value("problemId",std::string());
     auto language=request.value("language",std::string());
+    auto mode=request.value("mode",std::string());
     auto source=request.value("source",std::string());
     if(problemId.empty()) throw ApiError(400,"缺少 problemId");
-    if(language!="cpp" && language!="cangjie") throw ApiError(400,"language 只能是 cpp 或 cangjie");
+    if(language!="cpp" && language!="cangjie" && language!="python" && language!="java")
+        throw ApiError(400,"language 只能是 cpp、cangjie、python 或 java");
     if(source.empty()) throw ApiError(400,"源码不能为空");
     if(source.size()>1024*1024) throw ApiError(400,"源码不能超过 1 MiB");
     auto problem=loadProblem(dataDir,problemId);
+    auto modes=problem.value("modes",Json::object());
+    if(!modes.contains(language)) throw ApiError(400,"该题不支持所选语言");
+    const auto& languageModes=modes.at(language);
+    if(mode.empty() && languageModes.is_array() && !languageModes.empty()) mode=languageModes.at(0).get<std::string>();
     bool supported=false;
-    for(const auto& item:problem.at("judgedLanguages")) if(item.get<std::string>()==language) supported=true;
-    if(!supported) throw ApiError(400,"该题不支持所选语言");
+    if(languageModes.is_array()) for(const auto& item:languageModes) if(item.get<std::string>()==mode) supported=true;
+    if(!supported) throw ApiError(400,"该题不支持所选提交方式");
+    Json normalized=request;
+    normalized["language"]=language;
+    normalized["mode"]=mode;
     long long total=0;
     Json groups=Json::array();
     for(const auto& group:problem.at("groups")) {
@@ -293,14 +373,16 @@ Json ProblemJudgeEngine::start(const Json& request) {
         std::lock_guard lock(mutex);
         state={{"submissionId",submissionId},{"done",false},{"phase","准备题包"},{"completed",0},{"total",total},
                {"verdict","RUNNING"},{"score",0},{"best",best},{"previousBest",best},{"improved",false},
+               {"language",language},{"mode",mode},
                {"finishedAt",""},{"groups",groups},{"cases",Json::array()},{"message",""},{"compileLog",""}};
     }
-    worker=std::thread(&ProblemJudgeEngine::execute,this,request,directory);
-    return {{"ok",true},{"submissionId",submissionId}};
+    worker=std::thread(&ProblemJudgeEngine::execute,this,normalized,directory);
+    return {{"ok",true},{"submissionId",submissionId},{"language",language},{"mode",mode}};
 }
 void ProblemJudgeEngine::execute(Json request,fs::path directory) {
     auto problemId=request.value("problemId",std::string());
     auto language=request.value("language",std::string());
+    auto mode=request.value("mode",std::string("function"));
     auto source=request.value("source",std::string());
     auto snapshot=status();
     auto submissionId=snapshot.value("submissionId",std::string());
@@ -331,11 +413,10 @@ void ProblemJudgeEngine::execute(Json request,fs::path directory) {
         auto buildDirectory=directory/"build";
         auto function=package.meta.value("function",Json::object());
         Program program;
-        if(package.meta.value("judgeMode",std::string())=="function") {
+        if(mode=="function") {
             auto driver=function.at("drivers").at(language).get<std::string>();
-            auto packageName=function.at("package").get<std::string>();
-            if(language=="cpp") program=buildUnit(language,{{"Main.cpp",assembleCpp(driver,{source})}},buildDirectory,tools,&cancel);
-            else program=buildUnit(language,assembleCangjie(driver,packageName,{source},true),buildDirectory,tools,&cancel);
+            auto packageName=function.value("package",std::string());
+            program=buildUnit(language,assembleFunction(language,driver,source,packageName),buildDirectory,tools,&cancel);
         } else program=compileProgram(source,language,buildDirectory,tools,&cancel);
         compileLog=program.log;
         if(compileLog.size()>64*1024) { compileLog.resize(64*1024); compileLog+="\n…（编译日志已截断）"; }
@@ -400,7 +481,7 @@ void ProblemJudgeEngine::execute(Json request,fs::path directory) {
     auto finishedAt=nowIso();
     update({{"done",true},{"phase","已完成"},{"verdict",verdict},{"score",score},{"best",best},{"improved",improved},
             {"finishedAt",finishedAt},{"message",message},{"groups",groups},{"cases",cases},{"completed",completed}});
-    Json record={{"id",submissionId},{"problemId",problemId},{"language",language},{"source",source},
+    Json record={{"id",submissionId},{"problemId",problemId},{"language",language},{"mode",mode},{"source",source},
                  {"verdict",verdict},{"score",score},{"cases",cases},{"groups",groups},{"compileLog",compileLog},
                  {"at",startedAt},{"durationMs",duration},{"message",message},{"improved",improved},
                  {"previousBest",previousBest}};
@@ -436,13 +517,16 @@ Json programToJson(const Program& p) {
     for(const auto& [k,v]:p.environment) env.push_back({utf8(k),utf8(v)});
     for(const auto& x:p.pathEntries) paths.push_back(utf8(x));
     for(const auto& x:p.args) args.push_back(utf8(x));
-    return {{"exe",utf8(p.exe)},{"args",args},{"pathEntries",paths},{"environment",env}};
+    return {{"exe",utf8(p.exe)},{"args",args},{"pathEntries",paths},{"environment",env},
+            {"java",p.java},{"classDirectory",utf8(p.classDirectory.wstring())}};
 }
 Program programFromJson(const Json& j) {
     Program p; p.exe=wide(j.at("exe").get<std::string>());
     for(const auto& x:j.at("args")) p.args.push_back(wide(x.get<std::string>()));
     for(const auto& x:j.at("pathEntries")) p.pathEntries.push_back(wide(x.get<std::string>()));
     for(const auto& x:j.at("environment")) p.environment.emplace_back(wide(x.at(0).get<std::string>()),wide(x.at(1).get<std::string>()));
+    p.java=j.value("java",false);
+    p.classDirectory=fs::path(wide(j.value("classDirectory",std::string())));
     return p;
 }
 }
@@ -454,17 +538,25 @@ Json runCustomTests(const fs::path& cacheRoot,const fs::path& dataDir,const Json
     if(problemId.size()<2 || problemId.size()>48 || problemId.find_first_not_of(allowed)!=std::string::npos) throw ApiError(404,"题目不存在");
     auto meta=problemMeta(problemId);
     auto language=request.value("language",std::string());
+    auto mode=request.value("mode",std::string());
     auto source=request.value("source",std::string());
-    if(language!="cpp" && language!="cangjie") throw ApiError(400,"language 只能是 cpp 或 cangjie");
+    if(language!="cpp" && language!="cangjie" && language!="python" && language!="java")
+        throw ApiError(400,"language 只能是 cpp、cangjie、python 或 java");
     if(source.empty()) throw ApiError(400,"源码为空");
     if(source.size()>1024*1024) throw ApiError(400,"源码超过 1 MiB");
     auto tests=request.value("tests",Json::array());
     if(!tests.is_array() || tests.empty()) throw ApiError(400,"至少需要一组自测输入");
     if(tests.size()>10) throw ApiError(400,"自测最多 10 组");
-    bool functionMode=meta.value("judgeMode",std::string())=="function";
+    auto modes=meta.value("modes",Json::object());
+    if(!modes.contains(language) || !modes.at(language).is_array()) throw ApiError(400,"本题不支持所选语言");
+    const auto& languageModes=modes.at(language);
+    if(mode.empty() && !languageModes.empty()) mode=languageModes.at(0).get<std::string>();
+    bool supported=false;
+    for(const auto& item:languageModes) if(item.get<std::string>()==mode) supported=true;
+    if(!supported) throw ApiError(400,"本题不支持所选提交方式");
     auto function=meta.value("function",Json::object());
     std::string driver;
-    if(functionMode) {
+    if(mode=="function") {
         if(!function.value("drivers",Json::object()).contains(language)) throw ApiError(400,"本题没有提供该语言的 driver");
         driver=function.at("drivers").at(language).get<std::string>();
     }
@@ -472,7 +564,7 @@ Json runCustomTests(const fs::path& cacheRoot,const fs::path& dataDir,const Json
     long long timeMs=limits.value("timeMs",2000LL),memoryMb=limits.value("memoryMb",512LL);
 
     auto root=cacheRoot/L".cache"/L"selftest";
-    auto key=hex64(problemId+"\n"+meta.value("storedAt",std::string()),language,source,driver);
+    auto key=hex64(problemId+"\n"+meta.value("storedAt",std::string()),language+"\n"+mode,source,driver);
     auto buildDirectory=root/wide(key);
     auto manifest=buildDirectory/L"program.json";
     Json out={{"compile",{{"ok",true},{"cached",false},{"log",""},{"verdict","AC"},{"message",""},{"ms",0}}},{"results",Json::array()}};
@@ -493,10 +585,8 @@ Json runCustomTests(const fs::path& cacheRoot,const fs::path& dataDir,const Json
         fs::remove_all(buildDirectory,ec);
         fs::create_directories(buildDirectory);
         auto started=std::chrono::steady_clock::now();
-        if(functionMode) {
-            if(language=="cpp") program=buildUnit(language,{{"Main.cpp",assembleCpp(driver,{source})}},buildDirectory,tools,nullptr);
-            else program=buildUnit(language,assembleCangjie(driver,function.value("package",std::string()),{source},true),buildDirectory,tools,nullptr);
-        } else program=compileProgram(source,language,buildDirectory,tools,nullptr);
+        if(mode=="function") program=buildUnit(language,assembleFunction(language,driver,source,function.value("package",std::string())),buildDirectory,tools,nullptr);
+        else program=compileProgram(source,language,buildDirectory,tools,nullptr);
         out["compile"]["ms"]=std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now()-started).count();
         bool truncated=false;
         out["compile"]["log"]=clip(program.log,64*1024,truncated);
@@ -535,12 +625,12 @@ Json runCustomTests(const fs::path& cacheRoot,const fs::path& dataDir,const Json
         options.timeMs=timeMs;
         options.memoryBytes=static_cast<std::uint64_t>(memoryMb)*1024*1024;
         options.outputBytes=std::max<std::size_t>(1024*1024,expected.size()+1024*1024);
-        options.workingDirectory=directory.wstring();
+        options.workingDirectory=(program.java && !program.classDirectory.empty()?program.classDirectory:directory).wstring();
         options.inputPath=(directory/L"input.txt").wstring();
         options.stdoutPath=(directory/L"out.txt").wstring();
         options.pathEntries=program.pathEntries;
         options.environment=program.environment;
-        auto run=runProcess(program.exe,program.args,"",options);
+        auto run=runProcess(program.exe,runtimeArgsFor(program,memoryMb),"",options);
         Json item={{"timeMs",run.runTimeMs},{"memoryBytes",run.runMemory},{"exitCode",run.exit},{"message",""}};
         std::string stdoutText;
         try { if(fs::is_regular_file(directory/L"out.txt")) stdoutText=readFile(directory/L"out.txt"); } catch(...) {}

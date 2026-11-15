@@ -1,0 +1,22 @@
+{
+  "id": "t15-lca-queries",
+  "title": {"zh": "最近公共祖先（倍增）", "en": "Lowest Common Ancestor (Binary Lifting)"},
+  "difficulty": 1100,
+  "topic": "树与最近公共祖先",
+  "tags": ["树", "最近公共祖先"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "7\n1 2\n1 3\n2 4\n2 5\n3 6\n6 7\n4\n4 5\n5 7\n6 7\n4 4\n", "output": "2 1 6 4\n"}],
+  "signature": {
+    "package": "t15_lca_queries",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "e", "type": "ints", "count": "2*(n-1)"},
+      {"name": "q", "type": "int"},
+      {"name": "queries", "type": "ints", "count": "2*q"}
+    ],
+    "returns": "ints_space",
+    "hint": {"zh": "返回 q 个整数：每次询问的两个节点的最近公共祖先编号"}
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "id": "t02-triple-zero",
+  "title": {"zh": "和为零的三元组计数", "en": "Counting Zero-Sum Triples"},
+  "difficulty": 1100,
+  "topic": "枚举与暴力",
+  "tags": ["枚举", "排序", "双指针"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "3\n-1 0 1\n", "output": "1\n"}],
+  "signature": {
+    "package": "t02_triple_zero",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "统计满足 i < j < k 且 a[i] + a[j] + a[k] = 0 的三元组个数"}
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "id": "t07-anagram-groups",
+  "title": {"zh": "异位词分组后的组数", "en": "Number of Anagram Groups"},
+  "difficulty": 1400,
+  "topic": "哈希与计数",
+  "tags": ["哈希", "字符串", "排序"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "6\nlisten silent enlist inlets google gogole\n", "output": "2\n"}],
+  "signature": {
+    "package": "t07_anagram_groups",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "words", "type": "strings", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回互不相同的异位词分组个数"}
+  }
+}

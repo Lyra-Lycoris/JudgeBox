@@ -1,0 +1,20 @@
+{
+  "id": "t02-max-xor-pair",
+  "title": {"zh": "最大异或对", "en": "Maximum XOR Pair"},
+  "difficulty": 1200,
+  "topic": "枚举与暴力",
+  "tags": ["枚举", "位运算"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "3\n1 2 3\n", "output": "3\n"}],
+  "signature": {
+    "package": "t02_max_xor_pair",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回所有数对 a[i] xor a[j] (i < j) 的最大值"}
+  }
+}

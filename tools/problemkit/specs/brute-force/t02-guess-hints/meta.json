@@ -1,0 +1,23 @@
+{
+  "id": "t02-guess-hints",
+  "title": {"zh": "猜数字：根据提示枚举答案", "en": "Guess the Code from Hints"},
+  "difficulty": 1800,
+  "topic": "枚举与暴力",
+  "tags": ["枚举", "模拟"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "3 3\n123 720 247\n1 1 1\n0 1 2\n", "output": "4 2 7\n"}],
+  "signature": {
+    "package": "t02_guess_hints",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "k", "type": "int"},
+      {"name": "guesses", "type": "ints", "count": "k"},
+      {"name": "exact", "type": "ints", "count": "k"},
+      {"name": "loose", "type": "ints", "count": "k"}
+    ],
+    "returns": "ints_space",
+    "hint": {"zh": "返回唯一满足全部提示的 n 位密码，按位输出（允许前导零）"}
+  }
+}

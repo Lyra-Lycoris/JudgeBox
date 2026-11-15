@@ -1,0 +1,22 @@
+{
+  "id": "t28-misere-nim",
+  "title": {"zh": "反尼姆游戏", "en": "Misere Nim"},
+  "difficulty": 2000,
+  "topic": "思维难题与构造",
+  "tags": ["数学", "位运算"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "2\n1 1\n", "output": "YES\n"}
+  ],
+  "signature": {
+    "package": "t28_misere_nim",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"}
+    ],
+    "returns": "bool",
+    "hint": {"zh": "返回 true 表示先手必胜（输出 YES），否则返回 false（输出 NO）"}
+  }
+}

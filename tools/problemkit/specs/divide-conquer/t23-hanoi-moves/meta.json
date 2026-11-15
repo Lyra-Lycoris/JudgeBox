@@ -1,0 +1,21 @@
+{
+  "id": "t23-hanoi-moves",
+  "title": {"zh": "汉诺塔的最少移动步数", "en": "Minimum Moves for the Tower of Hanoi"},
+  "difficulty": 1200,
+  "topic": "分治与递归",
+  "tags": ["分治", "数学"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "1\n", "output": "1\n"},
+    {"input": "3\n", "output": "7\n"},
+    {"input": "60\n", "output": "1152921504606846975\n"}
+  ],
+  "signature": {
+    "package": "t23_hanoi_moves",
+    "params": [{"name": "n", "type": "int"}],
+    "returns": "int",
+    "hint": {"zh": "返回把 n 个圆盘从 A 柱移到 C 柱的最少移动次数"}
+  }
+}

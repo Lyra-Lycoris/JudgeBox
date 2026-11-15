@@ -1,0 +1,22 @@
+{
+  "id": "t12-kmp-count",
+  "title": {"zh": "模式串出现次数", "en": "Count Pattern Occurrences"},
+  "difficulty": 1100,
+  "topic": "字符串与匹配",
+  "tags": ["KMP", "字符串"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "9\nababababa\n3\naba\n", "output": "4\n"}],
+  "signature": {
+    "package": "t12_kmp_count",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "s", "type": "string"},
+      {"name": "m", "type": "int"},
+      {"name": "p", "type": "string"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回模式串 p 在文本串 s 中出现的次数，重叠的匹配分别计数"}
+  }
+}

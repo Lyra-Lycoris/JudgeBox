@@ -1,0 +1,22 @@
+{
+  "id": "t24-factorial-digits",
+  "title": {"zh": "阶乘的位数", "en": "Number of Digits of a Factorial"},
+  "difficulty": 2100,
+  "topic": "计算几何与高精度",
+  "tags": ["数学", "高精度"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "5\n1\n2\n5\n10\n20\n", "output": "1\n1\n3\n7\n19\n"}
+  ],
+  "signature": {
+    "package": "t24_factorial_digits",
+    "repeat": true,
+    "params": [
+      {"name": "n", "type": "int"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回 n! 的十进制位数"}
+  }
+}

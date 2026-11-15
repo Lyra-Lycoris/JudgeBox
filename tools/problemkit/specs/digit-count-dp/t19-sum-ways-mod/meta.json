@@ -1,0 +1,20 @@
+{
+  "id": "t19-sum-ways-mod",
+  "title": {"zh": "和为 n 的拆分方案数", "en": "Number of Ways to Sum to n"},
+  "difficulty": 1300,
+  "topic": "数位DP与计数DP",
+  "tags": ["动态规划", "组合数学"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "4 2\n", "output": "5\n"}],
+  "signature": {
+    "package": "t19_sum_ways_mod",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "m", "type": "int"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回把 n 拆成不超过 m 的正整数之和的方案数对 1000000007 取模的结果"}
+  }
+}

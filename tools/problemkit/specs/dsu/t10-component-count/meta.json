@@ -1,0 +1,21 @@
+{
+  "id": "t10-component-count",
+  "title": {"zh": "连通块数量", "en": "Number of Connected Components"},
+  "difficulty": 1000,
+  "topic": "并查集",
+  "tags": ["并查集", "图论"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "5 2\n1 2\n2 3\n", "output": "3\n"}],
+  "signature": {
+    "package": "t10_component_count",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "m", "type": "int"},
+      {"name": "e", "type": "matrix", "rows": "m", "cols": "2"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回这张无向图的连通块数量"}
+  }
+}

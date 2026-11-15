@@ -1,0 +1,20 @@
+{
+  "id": "t18-king-placement",
+  "title": {"zh": "棋盘放国王", "en": "Placing Kings on a Board"},
+  "difficulty": 1200,
+  "topic": "状压DP与树形DP",
+  "tags": ["状压DP", "组合数学"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "3 3\n", "output": "35\n"}],
+  "signature": {
+    "package": "t18_king_placement",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "m", "type": "int"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回在 n 行 m 列棋盘上放置互不攻击的国王的方案数（可以一个都不放）"}
+  }
+}

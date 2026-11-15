@@ -16,6 +16,14 @@ struct CaseJudgement {
 std::string assembleCpp(const std::string& driver,const std::vector<std::string>& units);
 std::vector<std::pair<std::string,std::string>> assembleCangjie(const std::string& driver,const std::string& package,
                                                                  const std::vector<std::string>& units,bool functionMode);
+// 把 driver 与选手源码拼成一份完整程序（完整式提交的参考程序 / 一次性源码）。
+// cpp：driver + 源码；python：源码 + driver（driver 自带 import 与入口）；java：平台补 import 与 class Main；
+// cangjie：合并 package/import 后拼成一个 .cj 文件。
+std::string assembleFullSource(const std::string& language,const std::string& driver,
+                               const std::string& source,const std::string& package);
+// 函数式提交的编译单元：cpp/python/java 是单文件，cangjie 是 main.cj + solve.cj。
+std::vector<std::pair<std::string,std::string>> assembleFunction(const std::string& language,const std::string& driver,
+                                                                 const std::string& source,const std::string& package);
 Program buildChecker(const std::string& source,const fs::path& directory,const Json& tools,const std::atomic_bool* cancel);
 Program buildUnit(const std::string& language,const std::vector<std::pair<std::string,std::string>>& files,
                   const fs::path& directory,const Json& tools,const std::atomic_bool* cancel);

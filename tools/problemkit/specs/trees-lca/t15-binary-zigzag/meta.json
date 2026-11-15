@@ -1,0 +1,21 @@
+{
+  "id": "t15-binary-zigzag",
+  "title": {"zh": "二叉树之字形层序遍历", "en": "Zigzag Level Order of a Binary Tree"},
+  "difficulty": 1800,
+  "topic": "树与最近公共祖先",
+  "tags": ["树", "队列"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "7 1\n2 3\n4 5\n6 7\n0 0\n0 0\n0 0\n0 0\n", "output": "1 3 2 4 5 6 7\n"}],
+  "signature": {
+    "package": "t15_binary_zigzag",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "r", "type": "int"},
+      {"name": "ch", "type": "ints", "count": "2*n"}
+    ],
+    "returns": "ints_space",
+    "hint": {"zh": "返回之字形层序遍历得到的节点编号序列"}
+  }
+}

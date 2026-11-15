@@ -1,0 +1,20 @@
+{
+  "id": "t21-dice-target-prob",
+  "title": {"zh": "掷骰子凑出目标和", "en": "Dice Rolls Summing to a Target"},
+  "difficulty": 1400,
+  "topic": "组合数学与概率期望",
+  "tags": ["概率期望", "动态规划"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "2\n", "output": "194444446\n"},
+    {"input": "1\n", "output": "166666668\n"}
+  ],
+  "signature": {
+    "package": "t21_dice_target_prob",
+    "params": [{"name": "n", "type": "int"}],
+    "returns": "int",
+    "hint": {"zh": "返回反复掷六面骰子后点数之和恰好为 n 的概率，按 p * q^{-1} mod 1000000007 输出"}
+  }
+}

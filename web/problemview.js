@@ -5,45 +5,48 @@ const PB = window.PB = window.PB || {};
 const byId = id => document.getElementById(id);
 const el = (...a) => PB.el(...a);
 const ACTIVE_KEY = 'judgebox-pb-active';   // sessionStorage：{problemId, submissionId}，刷新后据此恢复判题
-const templates = {
-  io: {cpp: '#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n\n    return 0;\n}\n', cangjie: 'main(): Int64 {\n    return 0\n}\n'},
-  function: {cpp: '#include <bits/stdc++.h>\nusing namespace std;\n\n', cangjie: ''}
+// 完整程序模式的初始骨架（函数式模式用题包里的 starter.*）。
+const fullTemplates = {
+  cpp: '#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n\n    return 0;\n}\n',
+  cangjie: 'main(): Int64 {\n    return 0\n}\n',
+  python: 'import sys\n\n\ndef main():\n    data = sys.stdin.buffer.read().split()\n\n\nmain()\n',
+  java: 'import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    public static void main(String[] args) throws Exception {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n    }\n}\n'
 };
-let problem = null, language = 'cpp', editor = null, statementLang = PB.store.get('judgebox-statement-lang') === 'en' ? 'en' : 'zh';
-let judging = false, pollTimer = null, saveTimer = null, opening = null, lastResult = null;
+const fileNames = {
+  function: {cpp: 'solve.cpp', cangjie: 'solve.cj', python: 'solve.py', java: 'solve.java'},
+  full: {cpp: 'main.cpp', cangjie: 'main.cj', python: 'main.py', java: 'Main.java'}
+};
+// 评判方式与题目来源：卡片上的中文名。
+const judgeNames = {standard: '普通裁判', special: '特殊裁判', interactive: '交互裁判', function: '函数裁判'};
+const sourceNames = {luogu: '洛谷', leetcode: '力扣', codeforces: 'Codeforces', other: '自建'};
+let problem = null, language = 'cpp', mode = 'function', editor = null, statementLang = PB.store.get('judgebox-statement-lang') === 'en' ? 'en' : 'zh';
+let judging = false, pollTimer = null, saveTimer = null, recordTimer = null, opening = null, lastResult = null;
 
-const draftKey = (id, lang) => `judgebox-draft-${id}-${lang}`;
-const fileName = () => (problem?.judgeMode === 'io' ? {cpp: 'main.cpp', cangjie: 'main.cj'} : {cpp: 'solve.cpp', cangjie: 'solve.cj'})[language];
-const initialCode = () => (problem?.starter && problem.starter[language]) || templates[problem?.judgeMode === 'io' ? 'io' : 'function'][language] || '';
+const draftKey = (id, lang, kind) => `judgebox-draft-${id}-${lang}-${kind}`;
+const modesFor = lang => (problem?.modes?.[lang] || []);
+const fileName = () => fileNames[mode]?.[language] || 'solve.cpp';
+const initialCode = () => {
+  if (mode === 'function') return (problem?.starter && problem.starter[language]) || '';
+  return fullTemplates[language] || '';
+};
 const readActive = () => { try { return JSON.parse(sessionStorage.getItem(ACTIVE_KEY) || 'null'); } catch { return null; } };
 
-// ---- 诊断：函数式把 driver 一起送检，再把行号映射回选手代码 ----
+// ---- 诊断：函数式提交只有函数体，按语言补一个能编译的外壳；行号映射回选手代码 ----
 function lintSource(code, lang) {
-  if (!problem || problem.judgeMode !== 'function') return {source: code, map: line => line};
-  const driver = problem.drivers?.[lang] || '';
-  if (!driver) return {source: code, map: line => line};
-  if (lang === 'cpp') {
-    const offset = driver.split('\n').length;
-    return {source: driver + '\n' + code, map: line => line > offset ? line - offset : null};
+  const wrap = (prefix, suffix) => {
+    const lines = code.split('\n'), offset = prefix.length;
+    return {source: [...prefix, ...lines, ...suffix].join('\n'),
+      map: line => line > offset && line <= offset + lines.length ? line - offset : null};
+  };
+  if (mode !== 'function') return {source: code, map: line => line};
+  if (lang === 'java') return wrap(['import java.util.*;', 'import java.io.*;', 'import java.math.*;', '', 'public class Main {'], ['}']);
+  if (lang === 'cangjie') {
+    const pkg = problem?.package || '';
+    const hasPackage = /^\s*package\s/m.test(code);
+    const prefix = pkg && !hasPackage ? [`package ${pkg}`, ''] : [];
+    return wrap(prefix, ['', 'main(): Unit {}']);
   }
-  const userLines = code.split('\n'), driverLines = driver.split('\n');
-  const isHeader = l => /^\s*(package|import)\s/.test(l) || !l.trim() || /^\s*\/\//.test(l);
-  let cut = 0; while (cut < driverLines.length && isHeader(driverLines[cut])) cut++;
-  const have = new Set(userLines.map(l => l.trim()));
-  const imports = driverLines.slice(0, cut).filter(l => /^\s*import\s/.test(l) && !have.has(l.trim()));
-  let insertAt = 0; userLines.forEach((l, i) => { if (/^\s*(package|import)\s/.test(l)) insertAt = i + 1; });
-  const hasPackage = userLines.some(l => /^\s*package\s/.test(l));
-  const pkg = /^\s*package\s+(\S+)/m.exec(driver);
-  const prefix = hasPackage || !pkg ? [] : [`package ${pkg[1]}`];
-  const merged = [...prefix, ...userLines.slice(0, insertAt), ...imports, ...userLines.slice(insertAt), ...driverLines.slice(cut)];
-  const before = prefix.length, userEnd = before + userLines.length + imports.length;
-  return {source: merged.join('\n'), map: line => {
-    if (line <= before || line > userEnd) return null;
-    const k = line - before;
-    if (k <= insertAt) return k;
-    if (k <= insertAt + imports.length) return null;
-    return k - imports.length;
-  }};
+  return {source: code, map: line => line};
 }
 async function lint(code, lang) {
   const state = byId('pbDiagnostic');
@@ -73,39 +76,121 @@ function updateCounts() { byId('pbChars').textContent = `${byId('pbSource').valu
 function saveDraft() {
   if (!problem) return;
   const value = byId('pbSource').value;
-  if (value === initialCode()) PB.store.remove(draftKey(problem.id, language)); else PB.store.set(draftKey(problem.id, language), value);
+  const key = draftKey(problem.id, language, mode);
+  if (value === initialCode()) PB.store.remove(key); else PB.store.set(key, value);
   byId('pbSaved').textContent = '已保存'; byId('pbSaved').dataset.state = 'saved';
+  scheduleRecordSave(1400, language, mode);
+}
+// 做题代码同时落到 solveRecord/<专题>/<题目>/<语言>/<方式>/，方便平时整理。
+function setRecordState(text, state) {
+  const node = byId('pbRecordState');
+  if (!node) return;
+  node.textContent = text || ''; node.dataset.state = state || '';
+}
+function scheduleRecordSave(delay = 1400, lang = language, kind = mode) {
+  if (!problem) return;
+  clearTimeout(recordTimer);
+  const target = problem.id, sourceText = () => byId('pbSource').value;
+  recordTimer = setTimeout(async () => {
+    const source = sourceText();
+    if (!source.trim()) return;
+    try {
+      await PB.api('/api/record/save', {body: {problemId: target, language: lang, mode: kind, source}});
+      if (problem?.id === target) setRecordState(`已存入 solveRecord · ${PB.modeNames[kind] || kind}`, 'saved');
+    } catch (e) { if (e.status !== 403) setRecordState('solveRecord 保存失败：' + e.message, 'error'); }
+  }, delay);
+}
+// 语言与提交方式两个下拉框联动：切语言时如果当前方式不支持，就落到该语言支持的第一种。
+function syncSelectors() {
+  const modes = modesFor(language);
+  if (!modes.includes(mode)) mode = modes[0] || 'full';
+  const modeSelect = byId('pbMode');
+  modeSelect.replaceChildren(...modes.map(m => { const o = el('option', '', PB.modeNames[m] || m); o.value = m; return o; }));
+  modeSelect.value = mode;
+  modeSelect.disabled = judging || modes.length <= 1;
+  byId('pbLanguage').value = language;
 }
 function loadDraft() {
-  const draft = PB.store.get(draftKey(problem.id, language));
+  syncSelectors();
+  const draft = PB.store.get(draftKey(problem.id, language, mode));
   setCode(draft ?? initialCode());
   byId('pbFileName').textContent = fileName();
-  byId('pbLangLabel').textContent = PB.languageNames[language] || language;
-  const pkg = language === 'cangjie' ? PB.cangjiePackage(problem) : '';
+  byId('pbLangLabel').textContent = `${PB.languageNames[language] || language} · ${PB.modeNames[mode] || mode}`;
+  if (problem) renderJudgeCard();
+  const pkg = language === 'cangjie' && mode === 'function' ? PB.cangjiePackage(problem) : '';
   byId('pbPackage').hidden = !pkg; byId('pbPackage').textContent = pkg ? `package ${pkg}` : '';
   byId('pbPackage').title = pkg ? `仓颉提交首行必须是 package ${pkg}` : '';
   editor?.setLanguage(language);
-  if (editor) { byId('pbSource').placeholder = problem.judgeMode === 'io' ? '完整程序' : '在这里实现 solve'; }
+  if (editor) byId('pbSource').placeholder = mode === 'function' ? '在这里实现 solve' : '完整程序';
+  PB.selfTest?.render?.();
 }
 function switchLanguage(lang) {
   if (lang === language && byId('pbFileName').textContent === fileName()) return;
   clearTimeout(saveTimer); saveDraft();
   language = lang; PB.store.set('judgebox-problem-lang', lang);
-  byId('pbLanguage').value = lang;
+  const modes = modesFor(language);
+  if (!modes.includes(mode)) mode = modes[0] || 'full';
+  PB.store.set('judgebox-problem-mode', mode);
   loadDraft();
+}
+function switchMode(kind) {
+  if (kind === mode) return;
+  clearTimeout(saveTimer); saveDraft();
+  mode = kind; PB.store.set('judgebox-problem-mode', mode);
+  loadDraft();
+}
+
+// 裁判方式跟随「提交方式」：完整程序 → 普通裁判，函数式 → 函数裁判；
+// 题目本身声明为特殊 / 交互裁判时保持原样。
+function judgeKind() {
+  const declared = problem?.judgeType || 'standard';
+  if (declared === 'special' || declared === 'interactive') return declared;
+  return mode === 'function' ? 'function' : 'standard';
+}
+function renderJudgeCard() {
+  const judge = judgeKind();
+  const judgeCard = byId('pbJudgeType').closest('.pb-fact');
+  judgeCard.dataset.type = judge;
+  judgeCard.title = {standard: '逐 token 比较选手输出与标准答案', special: '题目自带 checker（SPJ）判定',
+    interactive: '交互裁判：选手程序与交互器通讯', function: '选手只实现函数，平台用题目 driver 拼接'}[judge] || '';
+  byId('pbJudgeType').textContent = judgeNames[judge] || judge;
 }
 
 // ---- 视图 ----
 function renderHeader() {
   byId('pbTitle').textContent = problem.title?.[statementLang] || problem.title?.zh || problem.id;
   byId('pbDiff').replaceWith(Object.assign(PB.diffBadge(problem.difficulty), {id: 'pbDiff'}));
-  byId('pbLimits').textContent = `time limit ${problem.limits.timeMs} ms / memory ${problem.limits.memoryMb} MiB`;
+  byId('pbTopic').textContent = problem.topic || '';
+  // 时间 / 内存 / 评判方式 / 来源：四张独立卡片
+  const limits = problem.limits || {};
+  byId('pbTimeLimit').textContent = `${limits.timeMs || '—'} ms`;
+  byId('pbMemoryLimit').textContent = `${limits.memoryMb || '—'} MiB`;
+  renderJudgeCard();
+  const src = problem.source || {};
+  const srcCard = byId('pbSourceCard').closest('.pb-fact');
+  const link = byId('pbSourceCard');
+  if (src.platform) {
+    srcCard.dataset.platform = src.platform;
+    link.textContent = `${sourceNames[src.platform] || src.platform}${src.id ? ' · ' + src.id : ''}`;
+    link.title = src.url || link.textContent;
+    if (src.url) { link.href = src.url; link.removeAttribute('aria-disabled'); }
+    else { link.removeAttribute('href'); }
+  } else {
+    delete srcCard.dataset.platform;
+    link.textContent = problem.selfJudge ? '自建题目 · 自判' : '自建题目';
+    link.removeAttribute('href');
+    link.title = problem.selfJudge ? '只有测试数据，由你自己的程序对比输入输出' : '';
+  }
   const select = byId('pbLanguage');
   const langs = (problem.judgedLanguages || []).filter(l => PB.languageNames[l]);
   select.replaceChildren(...langs.map(l => { const o = el('option', '', PB.languageNames[l]); o.value = l; return o; }));
   const preferred = PB.store.get('judgebox-problem-lang');
   language = langs.includes(preferred) ? preferred : langs[0] || 'cpp';
+  const preferredMode = PB.store.get('judgebox-problem-mode');
+  const modes = modesFor(language);
+  mode = modes.includes(preferredMode) ? preferredMode : (modes[0] || 'full');
   select.value = language;
+  renderJudgeCard();
   renderBest();
 }
 function renderBest() {
@@ -125,7 +210,11 @@ function showPane(name) {
 function notFound(id, message) {
   problem = null;
   byId('pbTitle').textContent = '题目不存在';
-  byId('pbLimits').textContent = '';
+  byId('pbTopic').textContent = '';
+  byId('pbTimeLimit').textContent = '—'; byId('pbMemoryLimit').textContent = '—';
+  byId('pbJudgeType').textContent = '—'; byId('pbSourceCard').textContent = '—';
+  byId('pbSourceCard').removeAttribute('href');
+  setRecordState('');
   const box = el('div', 'pb-not-found');
   box.append(el('p', '', message || `找不到题目 ${id}。`));
   const back = el('a', 'pb-btn', '← 返回题单'); back.href = '#/problems'; box.append(back);
@@ -138,7 +227,7 @@ async function open(id) {
   if (problem && problem.id === id) { editor?.relayout(); return; }
   if (opening === id) return;
   opening = id;
-  clearTimeout(saveTimer); if (problem) saveDraft();
+  clearTimeout(saveTimer); clearTimeout(recordTimer); if (problem) saveDraft();
   PB.history.close();
   byId('pbResult').replaceChildren(el('p', 'pb-st-blank pb-muted', '提交后在这里查看分组结果。')); lastResult = null;
   PB.dock.setResultBadge(''); PB.dock.show('test', false);
@@ -156,7 +245,7 @@ async function open(id) {
     if (opening === id) notFound(id, e.status === 404 ? `找不到题目 ${id}，可能已被删除。` : e.message);
   } finally { if (opening === id) opening = null; }
 }
-function leave() { clearTimeout(saveTimer); if (problem) saveDraft(); PB.history.close(); }
+function leave() { clearTimeout(saveTimer); if (problem) saveDraft(); clearTimeout(recordTimer); if (problem) scheduleRecordSave(0); PB.history.close(); }
 
 // ---- 提交与轮询 ----
 function lock(on) {
@@ -164,6 +253,7 @@ function lock(on) {
   byId('pbSubmit').disabled = on || !problem;
   byId('pbSubmitLabel').textContent = on ? '判题中' : '提交';
   byId('pbLanguage').disabled = on;
+  byId('pbMode').disabled = on || modesFor(language).length <= 1;
   byId('pbReset').disabled = on;
   byId('pbSelfRun').disabled = on || PB.selfTest.isRunning();
   const box = byId('pbEditor'); box.inert = on; box.classList.toggle('pb-locked', on); box.setAttribute('aria-busy', String(on));
@@ -180,9 +270,10 @@ async function submit() {
   clearTimeout(saveTimer); saveDraft();
   const source = byId('pbSource').value;
   if (!source.trim()) { PB.toast('代码为空。'); return; }
+  clearTimeout(recordTimer); scheduleRecordSave(0);
   lock(true); renderProgress({phase: '提交中'});
   try {
-    const r = await PB.api('/api/submit', {body: {problemId: problem.id, language, source}});
+    const r = await PB.api('/api/submit', {body: {problemId: problem.id, language, mode, source}});
     sessionStorage.setItem(ACTIVE_KEY, JSON.stringify({problemId: problem.id, submissionId: r.submissionId}));
     poll(r.submissionId, problem.id, true);
   } catch (e) {
@@ -317,7 +408,8 @@ function setupSplitter() {
 
 PB.problemView = {open, leave, refreshBest, submit,
   relayout: () => editor?.relayout(),
-  context: () => problem ? {language, source: byId('pbSource').value, judging} : null};
+  recordSave: () => { clearTimeout(recordTimer); return scheduleRecordSave(0); },
+  context: () => problem ? {language, mode, source: byId('pbSource').value, judging, problem} : null};
 PB.forgetProblem = id => { PB.forgetStatement?.(id); if (problem?.id === id) problem = null; };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -327,9 +419,10 @@ document.addEventListener('DOMContentLoaded', () => {
     clearTimeout(saveTimer); saveTimer = setTimeout(saveDraft, 400);
   });
   byId('pbLanguage').onchange = () => switchLanguage(byId('pbLanguage').value);
+  byId('pbMode').onchange = () => switchMode(byId('pbMode').value);
   byId('pbReset').onclick = () => {
     if (!problem || !confirm('用初始代码覆盖当前草稿？')) return;
-    PB.store.remove(draftKey(problem.id, language)); setCode(initialCode()); saveDraft();
+    PB.store.remove(draftKey(problem.id, language, mode)); setCode(initialCode()); saveDraft();
   };
   byId('pbSubmit').onclick = submit;
   byId('pbCancel').onclick = async () => { try { await PB.api('/api/cancel', {body: {}}); byId('pbProgressText').textContent = '正在取消…'; } catch (e) { PB.toast(e.message); } };

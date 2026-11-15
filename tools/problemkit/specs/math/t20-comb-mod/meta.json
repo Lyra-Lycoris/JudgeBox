@@ -1,0 +1,23 @@
+{
+  "id": "t20-comb-mod",
+  "title": {"zh": "组合数取模", "en": "Binomial Coefficient Modulo a Prime"},
+  "difficulty": 1800,
+  "topic": "数学与数论",
+  "tags": ["数学", "组合数学", "数论"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "5 2 1000000007\n", "output": "10\n"}
+  ],
+  "signature": {
+    "package": "t20_comb_mod",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "k", "type": "int"},
+      {"name": "p", "type": "int"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回 C(n, k) mod p，其中 p 是质数且 n < p"}
+  }
+}

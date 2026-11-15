@@ -11,6 +11,7 @@
   <script defer src="/editor.js"></script>
   <script defer src="/app.js"></script>
   <script defer src="/problems.js"></script>
+  <script defer src="/problemedit.js"></script>
   <script defer src="/statement.js"></script>
   <script defer src="/reveal.js"></script>
   <script defer src="/submissions.js"></script>
@@ -146,6 +147,7 @@
     <div class="pb-list-head">
       <div class="pb-list-title"><h2 id="pbListTitle">我的题单</h2><span id="pbListStats" class="pb-stats"></span></div>
       <div class="pb-actions">
+        <button id="pbNewProblem" class="pb-btn" type="button"><svg><use href="#i-plus"/></svg>新建题目</button>
         <button id="pbClearCache" class="pb-btn" type="button">清空提交缓存</button>
         <button id="pbImportButton" class="pb-btn pb-btn-primary" type="button"><svg><use href="#i-upload"/></svg>导入题包</button>
       </div>
@@ -158,7 +160,7 @@
       <svg class="pb-empty-art" aria-hidden="true"><use href="#i-folder"/></svg>
       <p class="pb-empty-text">还没有题目。导入一个题包 <code>.zip</code> 开始。</p>
       <button id="pbEmptyImport" class="pb-btn pb-btn-primary" type="button"><svg><use href="#i-upload"/></svg>导入题包</button>
-      <p class="pb-empty-help">题包是一个 zip：根目录放 <code>problem.json</code>、<code>&lt;caseId&gt;.in/.ans</code>、<code>checker.cpp</code>（SPJ，可选）、<code>main.cj</code>/<code>main.cpp</code>（函数题）与 <code>solution.*</code>。详见 <code>CreateProblemGuide/CreateProblemGuide.md</code>。也可以把 .zip 拖到这里。</p>
+      <p class="pb-empty-help">题包是一个 zip：根目录放 <code>problem.json</code>、<code>&lt;caseId&gt;.in/.ans</code>、<code>checker.cpp</code>（SPJ，可选），以及 C++/仓颉/Python/Java 四种语言各一套 <code>main.*</code>（函数式 driver）、<code>starter.*</code>、<code>solution.*</code>。详见 <code>CreateProblemGuide/CreateProblemGuide.md</code>。也可以把 .zip 拖到这里。</p>
     </div>
   </div>
   <input id="pbImportFile" class="sr-only" tabindex="-1" type="file" accept=".zip">
@@ -166,13 +168,15 @@
 <section id="pbProblemView" class="pb-view pb-problem-view" aria-labelledby="pbTitle" hidden>
   <div class="pb-toolbar">
     <a class="pb-back" href="#/problems">← 题单</a>
-    <div class="pb-toolbar-title"><h2 id="pbTitle">…</h2><span id="pbDiff" class="pb-diff"></span><span id="pbLimits" class="pb-limits"></span></div>
+    <div class="pb-toolbar-title"><h2 id="pbTitle">…</h2><span id="pbDiff" class="pb-diff"></span><span id="pbTopic" class="pb-topic-chip"></span></div>
     <div class="pb-toolbar-actions">
       <label class="sr-only" for="pbLanguage">提交语言</label><select id="pbLanguage"></select>
+      <label class="sr-only" for="pbMode">提交方式</label><select id="pbMode"></select>
       <button id="pbHistoryButton" class="pb-btn" type="button">历史</button>
       <button id="pbSubmit" class="pb-btn pb-btn-primary" type="button" title="Ctrl+Enter"><svg><use href="#i-play"/></svg><span id="pbSubmitLabel">提交</span><kbd>Ctrl ↵</kbd></button>
     </div>
   </div>
+  <div id="pbFacts" class="pb-facts" aria-label="题目标签"><div class="pb-fact" data-kind="time"><span class="pb-fact-label">时间限制</span><strong id="pbTimeLimit" class="pb-fact-value">—</strong></div><div class="pb-fact" data-kind="memory"><span class="pb-fact-label">内存限制</span><strong id="pbMemoryLimit" class="pb-fact-value">—</strong></div><div class="pb-fact" data-kind="judge"><span class="pb-fact-label">评判方式</span><strong id="pbJudgeType" class="pb-fact-value">—</strong></div><div class="pb-fact" data-kind="source"><span class="pb-fact-label">题目来源</span><a id="pbSourceCard" class="pb-fact-value" href="#" target="_blank" rel="noopener noreferrer">—</a></div></div>
   <div id="pbProgress" class="pb-progress" role="status" hidden><div class="pb-progress-track"><span id="pbProgressFill"></span></div><span id="pbProgressText">准备中</span><button id="pbCancel" class="text-button" type="button">取消判题</button></div>
   <div class="pb-mobile-tabs" role="group" aria-label="切换题面与代码"><button type="button" data-pane="statement" aria-pressed="true">题面</button><button type="button" data-pane="code" aria-pressed="false">代码</button></div>
   <div id="pbBody" class="pb-body" data-pane="statement">
@@ -204,6 +208,7 @@
             <p id="pbSelfHint" class="pb-st-hint"></p>
             <div class="pb-st-actions">
               <button id="pbSelfSamples" class="text-button" type="button">导入样例</button>
+              <button id="pbSelfCases" class="text-button" type="button">导入题目数据</button>
               <button id="pbSelfAdd" class="text-button" type="button"><svg><use href="#i-plus"/></svg>新建</button>
               <button id="pbSelfClear" class="text-button pb-st-clear" type="button">清空</button>
             </div>
@@ -214,7 +219,7 @@
       </div>
     </section>
   </div>
-  <div class="pb-statusbar"><span id="pbDiagnostic" class="diagnostic-state" role="status"></span><span id="pbLangLabel"></span><span id="pbBest"></span><span id="pbChars"></span></div>
+  <div class="pb-statusbar"><span id="pbDiagnostic" class="diagnostic-state" role="status"></span><span id="pbLangLabel"></span><span id="pbBest"></span><span id="pbRecordState" class="pb-record-state"></span><span id="pbChars"></span></div>
 </section>
 <aside id="pbHistory" class="pb-drawer" role="dialog" aria-modal="false" aria-labelledby="pbHistoryTitle" hidden>
   <div class="pb-drawer-head"><h2 id="pbHistoryTitle">提交历史</h2><button id="pbHistoryClose" class="icon-button" type="button" aria-label="关闭提交历史">✕</button></div>
@@ -222,6 +227,18 @@
   <div class="pb-drawer-foot"><button id="pbHistoryClear" class="pb-btn pb-btn-danger" type="button">清空本题记录</button></div>
 </aside>
 <dialog id="pbErrorDialog" class="pb-error-dialog" aria-labelledby="pbErrorTitle"><div class="dialog-title"><div><span class="dialog-eyebrow">导入失败</span><h2 id="pbErrorTitle">题包校验失败</h2></div><button class="close-dialog icon-button" type="button" aria-label="关闭错误详情">✕</button></div><pre id="pbErrorDetails" class="pb-error-details" tabindex="0"></pre><div class="pb-dialog-actions"><button id="pbErrorCopy" class="pb-btn" type="button">复制全部</button></div></dialog>
+<dialog id="pbEditorDialog" class="pb-editor-dialog" aria-labelledby="pbEditorTitle">
+  <form method="dialog" class="pb-editor-form" id="pbEditorForm">
+    <div class="dialog-title"><div><span class="dialog-eyebrow" id="pbEditorEyebrow">新建题目</span><h2 id="pbEditorTitle">题目编辑器</h2></div><button class="close-dialog icon-button" type="button" data-close-editor aria-label="关闭题目编辑器">✕</button></div>
+    <div id="pbEditorBody" class="pb-editor-body"></div>
+    <div class="pb-editor-foot">
+      <span id="pbEditorStatus" class="pb-editor-status" role="status"></span>
+      <button id="pbEditorVerify" class="checkbox-inline" type="button"><input id="pbEditorVerifyBox" type="checkbox" checked> 保存前自检（编译参考解并跑测试数据）</button>
+      <button class="pb-btn" type="button" data-close-editor>取消</button>
+      <button id="pbEditorSave" class="pb-btn pb-btn-primary" type="button">保存到题库</button>
+    </div>
+  </form>
+</dialog>
 <dialog id="settingsDialog"><div class="dialog-title"><div><span class="dialog-eyebrow">环境配置</span><h2>工具链设置</h2></div><button class="close-dialog icon-button" aria-label="关闭工具链设置">✕</button></div><p class="field-help">安装包已内置 C++、Python、Java、仓颉工具链，启动后自动使用，无需手动选择。以下路径仅供查看；只有内置工具缺失时才可填写完整路径。</p><div id="toolFields"></div><p id="toolsStatus" class="field-help" data-state="ready"></p><div class="settings-grid"><label>单点输出上限（KiB）<input id="outputKb" type="number" value="1024" min="1" max="16777216"></label></div><p class="field-help">上限包含 stdout 与 stderr。Java 最大堆会随内存上限调整并预留原生开销，进程总内存仍由 Job Object 限制；启动失败时可提高内存限制至 512 或 1024 MiB。</p><p id="dataDirectory" class="field-help"></p><button id="saveSettings" class="primary">保存设置</button></dialog>
 <dialog id="helpDialog"><div class="dialog-title"><div><span class="dialog-eyebrow">快速上手</span><h2>使用说明</h2></div><button class="close-dialog icon-button" aria-label="关闭使用说明">✕</button></div><div class="help-content"><h3><span>01</span>手动测试</h3><p>点击「新建测试用例」，填写输入和预期输出。勾选“比较答案”时，空文本也是有效答案；取消勾选则只运行，状态为 RUN。源程序编辑区会按语言高亮，并在停顿后检查语法错误。</p><h3><span>02</span>生成测试</h3><p>选择模板，调整数据规模与数值范围，预览格式。可以批量运行观察实际输出，或把预览数据加入手动测试并填写答案。</p><h3><span>03</span>随机对拍</h3><p>参考程序和待测程序使用同一套编辑器，会按各自的语言高亮，并在停顿后检查语法。自动为相同输入运行两个程序。首次发现差异或待测程序异常时停止，保留反例。参考程序失败会明确显示为判题错误。</p><h3>自定义输入格式</h3><p>模板会展示可编辑的 JSON。int 定义变量；array 的 count 可以引用 n；line 拼接一行多个值；repeat 重复嵌套步骤。复杂约束用 Python 脚本生成，CYaRon 可在安装后导入。</p><h3>状态与复现</h3><p>AC 正确 / WA 答案错误 / TLE 超时 / MLE 内存超限 / RE 运行异常 / CE 编译失败 / OLE 输出过量 / JE 工具、参考程序或生成器错误。保留规则、随机种子和序号即可复现同一组数据。</p><h3>阅读答案差异</h3><p>WA 详情会逐行对照预期与实际输出。空格显示为 ·，Tab 显示为 →，行尾显示为 ¶；字符差异会额外标红。下载文件仍保留原始内容。</p><h3>编辑器键位</h3><p>可在待测程序编辑器右上角切换 VS Code 或 Vim，参考程序编辑器使用同一套键位。VS Code 支持 Ctrl+D 多选、Ctrl+/ 注释、Alt+↑/↓ 移动行等常用键位；Vim 支持普通、插入、可视模式及常用移动、删除、复制和粘贴命令。拖动左右分栏的分割线即可调整宽度，刷新后仍会保留。</p><h3>本地运行约定</h3><p>源码、草稿与运行记录保存在本机。请只运行可信代码；资源限制不提供文件与网络隔离。工具链随安装包内置，无需另装编译器。关闭 JudgeBox 窗口会结束本地引擎；浏览器模式可用右上角“退出”停止。</p></div></dialog>
 <input id="sourceFile" class="sr-only" tabindex="-1" type="file" accept=".cpp,.cc,.cxx,.py,.java,.cj,.txt"><input id="workspaceFile" class="sr-only" tabindex="-1" type="file" accept=".json">

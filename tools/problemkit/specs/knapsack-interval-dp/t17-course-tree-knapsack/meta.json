@@ -1,0 +1,24 @@
+{
+  "id": "t17-course-tree-knapsack",
+  "title": {"zh": "树形背包：选 k 门课最大收益", "en": "Tree Knapsack: Pick k Courses for Maximum Profit"},
+  "difficulty": 2100,
+  "topic": "背包与区间DP",
+  "tags": ["树形DP", "背包", "动态规划"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "4 2\n0 1 1 2\n3 2 5 4\n", "output": "8\n"}
+  ],
+  "signature": {
+    "package": "t17_course_tree_knapsack",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "k", "type": "int"},
+      {"name": "parent", "type": "ints", "count": "n"},
+      {"name": "profit", "type": "ints", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回恰好选 k 门课（含先修约束）时的最大总收益"}
+  }
+}

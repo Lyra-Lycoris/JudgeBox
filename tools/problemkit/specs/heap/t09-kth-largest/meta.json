@@ -1,0 +1,21 @@
+{
+  "id": "t09-kth-largest",
+  "title": {"zh": "第 k 大的元素", "en": "K-th Largest Element"},
+  "difficulty": 1000,
+  "topic": "堆与优先队列",
+  "tags": ["堆", "排序"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "leetcode", "id": "215", "url": "https://leetcode.com/problems/kth-largest-element-in-an-array/"},
+  "samples": [{"input": "6 2\n3 2 1 5 6 4\n", "output": "5\n"}],
+  "signature": {
+    "package": "t09_kth_largest",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "k", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回数组中第 k 大的元素（k 从 1 开始，不去重）"}
+  }
+}

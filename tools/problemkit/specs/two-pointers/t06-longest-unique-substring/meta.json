@@ -1,0 +1,51 @@
+{
+  "id": "t06-longest-unique-substring",
+  "title": {
+    "zh": "最长无重复字符子串",
+    "en": "Longest Substring Without Repeating Characters"
+  },
+  "difficulty": 1000,
+  "topic": "双指针与滑动窗口",
+  "tags": [
+    "滑动窗口",
+    "双指针",
+    "字符串"
+  ],
+  "limits": {
+    "timeMs": 2000,
+    "memoryMb": 256
+  },
+  "judgeType": "function",
+  "source": {
+    "platform": "leetcode",
+    "id": "3",
+    "url": "https://leetcode.cn/problems/longest-substring-without-repeating-characters/"
+  },
+  "samples": [
+    {
+      "input": "abcabcbb\n",
+      "output": "3\n"
+    },
+    {
+      "input": "bbbbb\n",
+      "output": "1\n"
+    },
+    {
+      "input": "pwwkew\n",
+      "output": "3\n"
+    }
+  ],
+  "signature": {
+    "package": "t06_longest_unique_substring",
+    "params": [
+      {
+        "name": "s",
+        "type": "string"
+      }
+    ],
+    "returns": "int",
+    "hint": {
+      "zh": "返回最长无重复字符子串的长度"
+    }
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "id": "t19-bracket-sequences",
+  "title": {
+    "zh": "合法括号序列个数",
+    "en": "Number of Valid Bracket Sequences"
+  },
+  "difficulty": 1600,
+  "topic": "数位DP与计数DP",
+  "tags": [
+    "组合数学",
+    "数学"
+  ],
+  "limits": {
+    "timeMs": 3000,
+    "memoryMb": 256
+  },
+  "judgeType": "function",
+  "source": {
+    "platform": "other"
+  },
+  "samples": [
+    {
+      "input": "3\n",
+      "output": "5\n"
+    }
+  ],
+  "signature": {
+    "package": "t19_bracket_sequences",
+    "params": [
+      {
+        "name": "n",
+        "type": "int"
+      }
+    ],
+    "returns": "int",
+    "hint": {
+      "zh": "返回长度为 2n 的合法括号序列个数对 1000000007 取模的结果"
+    }
+  }
+}

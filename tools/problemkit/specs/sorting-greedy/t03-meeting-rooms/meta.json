@@ -1,0 +1,21 @@
+{
+  "id": "t03-meeting-rooms",
+  "title": {"zh": "会议室安排：最大同时使用数", "en": "Meeting Rooms: Maximum Concurrent Meetings"},
+  "difficulty": 1400,
+  "topic": "排序与贪心",
+  "tags": ["排序", "贪心", "双指针"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "3\n0 5 6\n10 8 9\n", "output": "3\n"}],
+  "signature": {
+    "package": "t03_meeting_rooms",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "s", "type": "ints", "count": "n"},
+      {"name": "e", "type": "ints", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回同一时刻最多有几场会议同时进行"}
+  }
+}

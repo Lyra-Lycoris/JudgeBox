@@ -1,0 +1,23 @@
+{
+  "id": "t10-relative-queries",
+  "title": {"zh": "亲戚关系查询", "en": "Relative Queries"},
+  "difficulty": 1200,
+  "topic": "并查集",
+  "tags": ["并查集"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "6 2\n1 2\n2 3\n3\n1 3\n1 4\n5 5\n", "output": "2\n"}],
+  "signature": {
+    "package": "t10_relative_queries",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "k", "type": "int"},
+      {"name": "rel", "type": "matrix", "rows": "k", "cols": "2"},
+      {"name": "q", "type": "int"},
+      {"name": "qs", "type": "matrix", "rows": "q", "cols": "2"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回有多少个询问中的两个人是亲戚"}
+  }
+}

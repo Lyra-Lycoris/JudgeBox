@@ -1,0 +1,17 @@
+{
+  "id": "t02-n-queens",
+  "title": {"zh": "n 皇后方案数", "en": "Counting N-Queens Solutions"},
+  "difficulty": 1600,
+  "topic": "枚举与暴力",
+  "tags": ["枚举"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "4\n", "output": "2\n"}],
+  "signature": {
+    "package": "t02_n_queens",
+    "params": [{"name": "n", "type": "int"}],
+    "returns": "int",
+    "hint": {"zh": "返回 n x n 棋盘上互不攻击的 n 皇后摆放方案数"}
+  }
+}

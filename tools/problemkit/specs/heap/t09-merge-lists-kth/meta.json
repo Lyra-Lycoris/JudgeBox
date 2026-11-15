@@ -1,0 +1,22 @@
+{
+  "id": "t09-merge-lists-kth",
+  "title": {"zh": "合并 k 个有序链表的第 t 小", "en": "T-th Smallest After Merging K Sorted Lists"},
+  "difficulty": 1100,
+  "topic": "堆与优先队列",
+  "tags": ["堆", "排序"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "3 3 5\n1 4 7\n2 5 8\n3 6 9\n", "output": "5\n"}],
+  "signature": {
+    "package": "t09_merge_lists_kth",
+    "params": [
+      {"name": "k", "type": "int"},
+      {"name": "m", "type": "int"},
+      {"name": "t", "type": "int"},
+      {"name": "lists", "type": "matrix", "rows": "k", "cols": "m"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回 k 个有序序列合并后的第 t 小元素"}
+  }
+}

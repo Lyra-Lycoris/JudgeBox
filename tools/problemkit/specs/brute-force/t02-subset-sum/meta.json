@@ -1,0 +1,21 @@
+{
+  "id": "t02-subset-sum",
+  "title": {"zh": "子集和可达性", "en": "Subset Sum Reachability"},
+  "difficulty": 1000,
+  "topic": "枚举与暴力",
+  "tags": ["枚举", "位运算"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "6 4\n1 2 3 4\n", "output": "YES\n"}],
+  "signature": {
+    "package": "t02_subset_sum",
+    "params": [
+      {"name": "target", "type": "int"},
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"}
+    ],
+    "returns": "bool",
+    "hint": {"zh": "判断是否存在一个子集（允许空集）其元素和恰好等于 target"}
+  }
+}

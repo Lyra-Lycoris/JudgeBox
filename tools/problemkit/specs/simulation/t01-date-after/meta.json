@@ -1,0 +1,25 @@
+{
+  "id": "t01-date-after",
+  "title": {"zh": "日期推算", "en": "Date After K Days"},
+  "difficulty": 1000,
+  "topic": "模拟与实现",
+  "tags": ["模拟", "数学"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "2024 2 28 1\n", "output": "2024-02-29\n"},
+    {"input": "1900 2 28 1\n", "output": "1900-03-01\n"}
+  ],
+  "signature": {
+    "package": "t01_date_after",
+    "params": [
+      {"name": "y", "type": "int"},
+      {"name": "m", "type": "int"},
+      {"name": "d", "type": "int"},
+      {"name": "k", "type": "int"}
+    ],
+    "returns": "string",
+    "hint": {"zh": "返回再过 k 天之后的日期，格式 YYYY-MM-DD"}
+  }
+}

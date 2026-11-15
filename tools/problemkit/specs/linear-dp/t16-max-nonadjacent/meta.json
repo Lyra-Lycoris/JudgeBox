@@ -1,0 +1,19 @@
+{
+  "id": "t16-max-nonadjacent",
+  "title": {"zh": "不相邻元素最大和", "en": "Maximum Sum of Non-Adjacent Elements"},
+  "difficulty": 1200,
+  "topic": "线性动态规划",
+  "tags": ["动态规划"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "leetcode", "id": "198", "url": "https://leetcode.cn/problems/house-robber/"},
+  "samples": [
+    {"input": "5\n2 7 9 3 1\n", "output": "12\n"}
+  ],
+  "signature": {
+    "package": "t16_max_nonadjacent",
+    "params": [{"name": "n", "type": "int"}, {"name": "a", "type": "ints", "count": "n"}],
+    "returns": "int",
+    "hint": {"zh": "返回不能同时选取相邻元素时能取得的最大和"}
+  }
+}

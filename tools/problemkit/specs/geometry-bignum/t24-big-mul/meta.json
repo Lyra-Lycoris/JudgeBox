@@ -1,0 +1,22 @@
+{
+  "id": "t24-big-mul",
+  "title": {"zh": "高精度乘法", "en": "Big Integer Multiplication"},
+  "difficulty": 1800,
+  "topic": "计算几何与高精度",
+  "tags": ["高精度"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "123456789\n987654321\n", "output": "121932631112635269\n"}
+  ],
+  "signature": {
+    "package": "t24_big_mul",
+    "params": [
+      {"name": "a", "type": "string"},
+      {"name": "b", "type": "string"}
+    ],
+    "returns": "string",
+    "hint": {"zh": "返回 a*b 的十进制字符串（不含前导零）"}
+  }
+}

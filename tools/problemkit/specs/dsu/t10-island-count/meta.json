@@ -1,0 +1,50 @@
+{
+  "id": "t10-island-count",
+  "title": {
+    "zh": "岛屿数量（并查集）",
+    "en": "Number of Islands (DSU)"
+  },
+  "difficulty": 1300,
+  "topic": "并查集",
+  "tags": [
+    "并查集",
+    "图论"
+  ],
+  "limits": {
+    "timeMs": 2000,
+    "memoryMb": 256
+  },
+  "judgeType": "function",
+  "source": {
+    "platform": "other"
+  },
+  "samples": [
+    {
+      "input": "4 5\n1 1 0 0 0\n1 1 0 0 0\n0 0 1 0 0\n0 0 0 1 1\n",
+      "output": "3\n"
+    }
+  ],
+  "signature": {
+    "package": "t10_island_count",
+    "params": [
+      {
+        "name": "n",
+        "type": "int"
+      },
+      {
+        "name": "m",
+        "type": "int"
+      },
+      {
+        "name": "g",
+        "type": "matrix",
+        "rows": "n",
+        "cols": "m"
+      }
+    ],
+    "returns": "int",
+    "hint": {
+      "zh": "返回四连通意义下 1 组成的连通块数量"
+    }
+  }
+}

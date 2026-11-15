@@ -1,0 +1,20 @@
+{
+  "id": "t15-sum-pair-dist",
+  "title": {"zh": "两两节点距离之和", "en": "Sum of All Pairwise Distances"},
+  "difficulty": 1600,
+  "topic": "树与最近公共祖先",
+  "tags": ["树", "树形DP"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "3\n1 2\n2 3\n", "output": "4\n"}],
+  "signature": {
+    "package": "t15_sum_pair_dist",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "e", "type": "ints", "count": "2*(n-1)"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回所有无序点对之间距离的总和"}
+  }
+}

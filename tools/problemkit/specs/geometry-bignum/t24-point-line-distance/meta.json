@@ -1,0 +1,28 @@
+{
+  "id": "t24-point-line-distance",
+  "title": {"zh": "点到直线距离的整数比较", "en": "Compare a Point-to-Line Distance with an Integer"},
+  "difficulty": 1100,
+  "topic": "计算几何与高精度",
+  "tags": ["计算几何", "数学"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "4\n0 0 10 0 3 4 4\n0 0 10 0 3 4 3\n0 0 10 0 5 0 0\n0 0 3 4 3 0 2\n", "output": "YES\nNO\nYES\nNO\n"}
+  ],
+  "signature": {
+    "package": "t24_point_line_distance",
+    "repeat": true,
+    "params": [
+      {"name": "x1", "type": "int"},
+      {"name": "y1", "type": "int"},
+      {"name": "x2", "type": "int"},
+      {"name": "y2", "type": "int"},
+      {"name": "px", "type": "int"},
+      {"name": "py", "type": "int"},
+      {"name": "d", "type": "int"}
+    ],
+    "returns": "bool",
+    "hint": {"zh": "返回点 (px,py) 到直线 (x1,y1)-(x2,y2) 的距离是否不超过 d"}
+  }
+}

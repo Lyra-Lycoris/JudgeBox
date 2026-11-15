@@ -1,0 +1,25 @@
+{
+  "id": "t23-inv-intervals-k",
+  "title": {"zh": "逆序对不少于 k 的区间数", "en": "Counting Subarrays with at Least k Inversions"},
+  "difficulty": 2100,
+  "topic": "分治与递归",
+  "tags": ["分治", "双指针", "树状数组"],
+  "limits": {"timeMs": 3000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "3 1\n2 1 3\n", "output": "2\n"},
+    {"input": "3 0\n5 5 5\n", "output": "6\n"},
+    {"input": "3 2\n3 2 1\n", "output": "1\n"}
+  ],
+  "signature": {
+    "package": "t23_inv_intervals_k",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "k", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回逆序对个数不少于 k 的连续子区间个数"}
+  }
+}

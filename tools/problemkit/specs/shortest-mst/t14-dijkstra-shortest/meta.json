@@ -1,0 +1,22 @@
+{
+  "id": "t14-dijkstra-shortest",
+  "title": {"zh": "单源最短路（Dijkstra）", "en": "Single Source Shortest Path (Dijkstra)"},
+  "difficulty": 1000,
+  "topic": "最短路与最小生成树",
+  "tags": ["图论", "最短路"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "luogu", "id": "P4779", "url": "https://www.luogu.com.cn/problem/P4779"},
+  "samples": [{"input": "4 5 1\n1 2 2\n1 3 5\n2 3 1\n2 4 6\n3 4 2\n", "output": "0 2 3 5\n"}],
+  "signature": {
+    "package": "t14_dijkstra_shortest",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "m", "type": "int"},
+      {"name": "s", "type": "int"},
+      {"name": "e", "type": "matrix", "rows": "m", "cols": "3"}
+    ],
+    "returns": "ints_space",
+    "hint": {"zh": "返回 s 到 1..n 号点的最短距离，不可达记为 -1"}
+  }
+}

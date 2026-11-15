@@ -95,7 +95,7 @@ function card(test, i) {
   head.append(remove);
   const grid = el('div', 'pb-st-grid');
   grid.append(
-    field('输入', test.input, problem?.judgeMode === 'function' ? '完整 stdin，首行是用例数（通常写 1）' : '程序的 stdin', v => { test.input = v; save(); }),
+    field('输入', test.input, PB.problemView?.context()?.mode === 'function' ? '完整 stdin（driver 读什么就写什么）' : '程序的 stdin', v => { test.input = v; save(); }),
     field('期望输出（可选）', test.expected, '留空则只运行不比较；填写后用本题 checker 判定', v => { test.expected = v; save(); }),
     outputPane(test.result));
   c.append(head, grid);
@@ -105,6 +105,13 @@ function card(test, i) {
 function render() {
   const panel = byId('pbSelfTestBody');
   const parts = [];
+  const ctx = PB.problemView?.context();
+  if (ctx) {
+    const pkg = ctx.language === 'cangjie' && ctx.mode === 'function' ? PB.cangjiePackage?.(problem) : '';
+    byId('pbSelfHint').textContent = ctx.mode === 'function'
+      ? `与提交相同：你的函数会和题目自带的 driver 一起编译（${PB.languageNames[ctx.language] || ctx.language} 函数式）。输入写 driver 读的完整 stdin。${pkg ? `仓颉包名 package ${pkg}。` : ''}`
+      : `当前是完整程序提交（${PB.languageNames[ctx.language] || ctx.language}）：输入就是程序的 stdin。`;
+  }
   if (lastCompile && !lastCompile.ok) {
     const box = el('div', 'pb-st-compile');
     const top = el('div', 'pb-st-compile-head');
@@ -142,7 +149,7 @@ async function run() {
   setStatus(`编译并运行 ${tests.length} 组…`, 'busy');
   const started = performance.now();
   try {
-    const r = await PB.api(`/api/problems/${encodeURIComponent(problem.id)}/run`, {body: {language: ctx.language, source: ctx.source, tests: tests.map(t => ({input: t.input, expected: t.expected}))}});
+    const r = await PB.api(`/api/problems/${encodeURIComponent(problem.id)}/run`, {body: {language: ctx.language, mode: ctx.mode, source: ctx.source, tests: tests.map(t => ({input: t.input, expected: t.expected}))}});
     lastCompile = r.compile;
     const results = r.results || [];
     tests.forEach((t, i) => { t.result = results[i] || null; });
@@ -168,16 +175,25 @@ PB.selfTest = {
     problem = p; lastCompile = null; setStatus('');
     let saved = null; try { saved = JSON.parse(PB.store.get(storeKey(p.id)) || 'null'); } catch {}
     tests = Array.isArray(saved) ? saved.slice(0, MAX_TESTS).map(t => ({input: String(t.input || ''), expected: String(t.expected || ''), result: null})) : fromSamples().slice(0, MAX_TESTS);
-    const hint = byId('pbSelfHint');
-    const pkg = PB.cangjiePackage?.(p);
-    hint.textContent = p.judgeMode === 'function'
-      ? `与提交相同：你的 solve 会和题目自带的 driver 一起编译。输入写 driver 读的完整 stdin（首行是用例数）。${pkg ? `仓颉包名 package ${pkg}。` : ''}`
-      : '输入就是程序的 stdin。';
     render();
+    // 自判题（只有测试数据）打开时直接把题目的 .in/.ans 拉进来，像调试一样看输入输出。
+    if (p.selfJudge && !Array.isArray(saved)) importCases(true);
   },
+  render,
   run,
   isRunning: () => running
 };
+
+async function importCases(silent) {
+  if (!problem) return;
+  try {
+    const r = await PB.api(`/api/problems/${encodeURIComponent(problem.id)}/cases`);
+    const list = (r.cases || []).slice(0, MAX_TESTS).map(c => ({input: norm(c.input), expected: norm(c.answer), result: null}));
+    if (!list.length) { if (!silent) setStatus('本题没有可导入的测试数据', 'warn'); return; }
+    tests = list; save(); render();
+    setStatus(`已导入 ${list.length} 组题目测试数据（${r.count ?? list.length} 组中前 ${list.length} 组）`, '');
+  } catch (e) { if (!silent) setStatus(e.message, 'bad'); }
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   setupResize();
@@ -194,7 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
   byId('pbSelfRun').onclick = run;
   byId('pbSelfAdd').onclick = () => {
     if (tests.length >= MAX_TESTS) return;
-    tests.push({input: problem?.judgeMode === 'function' ? '1\n' : '', expected: '', result: null}); save(); render();
+    tests.push({input: '', expected: '', result: null}); save(); render();
     PB.dock.show('test');
     const areas = byId('pbSelfTestBody').querySelectorAll('.pb-st-case:last-child textarea');
     areas[0]?.focus(); areas[0]?.setSelectionRange(areas[0].value.length, areas[0].value.length);
@@ -206,5 +222,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setStatus(add.length ? `已导入 ${Math.min(add.length, MAX_TESTS)} 个样例` : '样例都已经在列表里了', '');
   };
   byId('pbSelfClear').onclick = () => { if (!tests.length || !confirm('清空全部自测用例？')) return; tests = []; lastCompile = null; save(); render(); setStatus(''); };
+  byId('pbSelfCases').onclick = () => importCases(false);
 });
 })();

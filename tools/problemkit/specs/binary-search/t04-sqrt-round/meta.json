@@ -1,0 +1,17 @@
+{
+  "id": "t04-sqrt-round",
+  "title": {"zh": "平方根（保留三位小数）", "en": "Square Root Rounded to Three Decimals"},
+  "difficulty": 1800,
+  "topic": "二分与二分答案",
+  "tags": ["二分", "数学"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "7\n", "output": "2646\n"}],
+  "signature": {
+    "package": "t04_sqrt_round",
+    "params": [{"name": "x", "type": "int"}],
+    "returns": "int",
+    "hint": {"zh": "返回 floor(1000*sqrt(x) + 0.5)，即把 sqrt(x) 四舍五入到小数点后 3 位再乘以 1000"}
+  }
+}

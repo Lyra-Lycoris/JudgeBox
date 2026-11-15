@@ -1,0 +1,27 @@
+{
+  "id": "t24-collinear-points",
+  "title": {"zh": "三点共线判定", "en": "Are the Three Points Collinear?"},
+  "difficulty": 1000,
+  "topic": "计算几何与高精度",
+  "tags": ["计算几何"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "4\n0 0 1 1 2 2\n0 0 1 1 2 3\n0 0 0 5 0 -7\n-3 4 0 0 3 -4\n", "output": "YES\nNO\nYES\nYES\n"}
+  ],
+  "signature": {
+    "package": "t24_collinear_points",
+    "repeat": true,
+    "params": [
+      {"name": "x1", "type": "int"},
+      {"name": "y1", "type": "int"},
+      {"name": "x2", "type": "int"},
+      {"name": "y2", "type": "int"},
+      {"name": "x3", "type": "int"},
+      {"name": "y3", "type": "int"}
+    ],
+    "returns": "bool",
+    "hint": {"zh": "返回 (x1,y1)、(x2,y2)、(x3,y3) 三点是否共线"}
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "id": "t04-rotated-min",
+  "title": {"zh": "旋转数组的最小值", "en": "Minimum in Rotated Sorted Array"},
+  "difficulty": 1300,
+  "topic": "二分与二分答案",
+  "tags": ["二分"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "7\n4 5 6 7 0 1 2\n", "output": "0\n"}],
+  "signature": {
+    "package": "t04_rotated_min",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回旋转后数组中的最小元素"}
+  }
+}

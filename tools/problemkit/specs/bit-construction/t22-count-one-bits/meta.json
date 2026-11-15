@@ -1,0 +1,20 @@
+{
+  "id": "t22-count-one-bits",
+  "title": {"zh": "二进制中 1 的个数", "en": "Number of 1 Bits"},
+  "difficulty": 1000,
+  "topic": "位运算与构造",
+  "tags": ["位运算", "数学"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "11\n", "output": "3\n"},
+    {"input": "9223372036854775807\n", "output": "63\n"}
+  ],
+  "signature": {
+    "package": "t22_count_one_bits",
+    "params": [{"name": "n", "type": "int"}],
+    "returns": "int",
+    "hint": {"zh": "返回 n 的二进制表示中数字 1 的个数"}
+  }
+}

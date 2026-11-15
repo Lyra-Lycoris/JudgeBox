@@ -1,0 +1,21 @@
+{
+  "id": "t20-divisor-count",
+  "title": {"zh": "因数个数", "en": "Number of Divisors"},
+  "difficulty": 1300,
+  "topic": "数学与数论",
+  "tags": ["数学", "数论", "枚举"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "12\n", "output": "6\n"}
+  ],
+  "signature": {
+    "package": "t20_divisor_count",
+    "params": [
+      {"name": "n", "type": "int"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回 n 的正因数个数"}
+  }
+}

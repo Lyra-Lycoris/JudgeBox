@@ -1,0 +1,20 @@
+{
+  "id": "t15-subtree-size",
+  "title": {"zh": "子树大小统计", "en": "Subtree Size Statistics"},
+  "difficulty": 1300,
+  "topic": "树与最近公共祖先",
+  "tags": ["树", "树形DP"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "5\n1 1 2 2\n", "output": "5 3 1 1 1\n"}],
+  "signature": {
+    "package": "t15_subtree_size",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "p", "type": "ints", "count": "n-1"}
+    ],
+    "returns": "ints_space",
+    "hint": {"zh": "返回 n 个整数，第 i 个是节点 i 子树内的节点个数"}
+  }
+}

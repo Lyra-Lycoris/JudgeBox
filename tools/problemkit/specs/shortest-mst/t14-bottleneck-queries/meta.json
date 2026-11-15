@@ -1,0 +1,23 @@
+{
+  "id": "t14-bottleneck-queries",
+  "title": {"zh": "瓶颈路多组询问", "en": "Bottleneck Path Queries"},
+  "difficulty": 2300,
+  "topic": "最短路与最小生成树",
+  "tags": ["最小生成树", "最近公共祖先", "图论"],
+  "limits": {"timeMs": 3000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "luogu", "id": "P1967", "url": "https://www.luogu.com.cn/problem/P1967"},
+  "samples": [{"input": "4 5 3\n1 2 5\n2 3 4\n3 4 6\n1 3 10\n2 4 2\n1 4\n1 3\n3 4\n", "output": "5 5 4\n"}],
+  "signature": {
+    "package": "t14_bottleneck_queries",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "m", "type": "int"},
+      {"name": "q", "type": "int"},
+      {"name": "e", "type": "matrix", "rows": "m", "cols": "3"},
+      {"name": "queries", "type": "matrix", "rows": "q", "cols": "2"}
+    ],
+    "returns": "ints_space",
+    "hint": {"zh": "对每个询问返回瓶颈值：路径上最大边权的最小可能值"}
+  }
+}

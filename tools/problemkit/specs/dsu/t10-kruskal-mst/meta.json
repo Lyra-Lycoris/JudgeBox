@@ -1,0 +1,21 @@
+{
+  "id": "t10-kruskal-mst",
+  "title": {"zh": "最小生成树总权重", "en": "Minimum Spanning Tree Weight"},
+  "difficulty": 1600,
+  "topic": "并查集",
+  "tags": ["并查集", "最小生成树", "贪心"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "4 5\n1 2 1\n2 3 2\n3 4 3\n1 4 5\n1 3 4\n", "output": "6\n"}],
+  "signature": {
+    "package": "t10_kruskal_mst",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "m", "type": "int"},
+      {"name": "e", "type": "matrix", "rows": "m", "cols": "3"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回最小生成树的总权重；图不连通时返回 -1"}
+  }
+}

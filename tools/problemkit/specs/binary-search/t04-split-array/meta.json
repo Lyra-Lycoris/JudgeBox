@@ -1,0 +1,21 @@
+{
+  "id": "t04-split-array",
+  "title": {"zh": "分割数组使最大段和最小", "en": "Split Array Largest Sum"},
+  "difficulty": 1600,
+  "topic": "二分与二分答案",
+  "tags": ["二分", "贪心"],
+  "limits": {"timeMs": 3000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "5\n7 2 5 10 8\n2\n", "output": "18\n"}],
+  "signature": {
+    "package": "t04_split_array",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"},
+      {"name": "k", "type": "int"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回把数组分成 k 段非空连续子数组后，各段和的最大值的最小可能值"}
+  }
+}

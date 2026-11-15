@@ -1,0 +1,22 @@
+{
+  "id": "t18-tree-select-k",
+  "title": {"zh": "树上选 k 个点", "en": "Choose k Nodes in a Tree"},
+  "difficulty": 1600,
+  "topic": "状压DP与树形DP",
+  "tags": ["树形DP", "背包"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "6 3\n4 -1 7 2 5 -3\n1 1 2 3 3\n", "output": "16\n"}],
+  "signature": {
+    "package": "t18_tree_select_k",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "k", "type": "int"},
+      {"name": "w", "type": "ints", "count": "n"},
+      {"name": "p", "type": "ints", "count": "n-1"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回满足“选了点就必须选它的父亲”的恰好 k 个点的最大权值和"}
+  }
+}

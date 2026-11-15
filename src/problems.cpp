@@ -6,25 +6,54 @@
 #include "ziputil.hpp"
 #include "testlib_asset.hpp"
 #include <algorithm>
+#include <atomic>
 #include <cstdio>
 #include <cstdlib>
 #include <mutex>
 #include <map>
 #include <set>
 #include <string_view>
+#include <thread>
 
 namespace {
-const std::set<std::string> kFields={"schemaVersion","id","title","difficulty","tags","limits","judgeMode","statement",
-    "samples","groups","function","notes"};
+const std::set<std::string> kFields={"schemaVersion","id","title","difficulty","tags","limits","judgeMode","modes","statement",
+    "samples","groups","function","notes","topic","judgeType","source","selfJudge"};
+// 题包 v2 的固定语言顺序（也是界面下拉框的顺序）。
+const std::vector<std::string> kLanguages={"cpp","cangjie","python","java"};
+bool isLanguage(const std::string& language) { return std::find(kLanguages.begin(),kLanguages.end(),language)!=kLanguages.end(); }
+std::string extensionOf(const std::string& language) {
+    if(language=="cpp") return ".cpp";
+    if(language=="cangjie") return ".cj";
+    if(language=="python") return ".py";
+    if(language=="java") return ".java";
+    return {};
+}
+std::string languageName(const std::string& language) {
+    if(language=="cpp") return "C++";
+    if(language=="cangjie") return "仓颉";
+    if(language=="python") return "Python";
+    if(language=="java") return "Java";
+    return language;
+}
 const std::set<std::string> kTags={"模拟","枚举","排序","二分","贪心","构造","前缀和","差分","双指针","滑动窗口","哈希","栈",
     "队列","单调栈","堆","并查集","树状数组","线段树","字符串","Trie","KMP","图论","最短路","最小生成树","拓扑排序","二分图",
     "网络流","树","最近公共祖先","动态规划","背包","区间DP","状压DP","数位DP","树形DP","数学","数论","组合数学","概率期望",
     "计算几何","位运算","分治","记忆化搜索","高精度","交互"};
+// 一种语言的声明：提交方式 + 函数式 driver/starter + 参考解。
+// 只有函数式才需要 driver/starter；只声明完整式时 solution 就是完整程序。
+struct Language {
+    std::vector<std::string> modes;
+    std::string driver,starter;
+    std::vector<std::string> solution;
+    bool function() const { return std::find(modes.begin(),modes.end(),"function")!=modes.end(); }
+    bool full() const { return std::find(modes.begin(),modes.end(),"full")!=modes.end(); }
+};
 struct Structure {
     std::string id,checker;
     Json meta;
-    std::vector<std::string> drivers,solutions;
-    bool functionMode=false;
+    int version=1;
+    std::map<std::string,Language> languages;
+    std::string legacyMode;   // schemaVersion 1 的 judgeMode，仅用于兼容旧题包
 };
 struct Issues {
     std::vector<Json> details;
@@ -95,12 +124,6 @@ std::string firstLines(const std::string& log,std::size_t maxLines) {
     if(result.size()>8000) result.resize(8000);
     return result;
 }
-std::vector<std::string> unitsOf(const Json& value) {
-    std::vector<std::string> units;
-    if(value.is_string()) units.push_back(value.get<std::string>());
-    else if(value.is_array()) for(const auto& item:value) units.push_back(item.get<std::string>());
-    return units;
-}
 void mergeDetails(const Issues& issues,const std::string& message) {
     throw ApiError(400,message,{{"details",issues.details}});
 }
@@ -114,7 +137,9 @@ void validateDocument(const Json& document,Structure& structure,Issues& issues) 
     structure.meta=document;
 
     long long version=0;
-    if(!integerAt(document,"schemaVersion",version) || version!=1) error("schemaVersion 必须为 1");
+    if(!integerAt(document,"schemaVersion",version)) error("schemaVersion 缺失或不是整数");
+    else if(version!=1 && version!=2) error("schemaVersion 只能是 1（旧格式）或 2（四语言 × 两提交方式）");
+    else structure.version=static_cast<int>(version);
 
     std::string id;
     if(!stringAt(document,"id",id)) error("id 缺失或不是字符串");
@@ -157,10 +182,81 @@ void validateDocument(const Json& document,Structure& structure,Issues& issues) 
         if(!integerAt(limits,"memoryMb",memoryMb)) error("limits.memoryMb 缺失或不是整数");
         else if(memoryMb<16 || memoryMb>4096) error("limits.memoryMb 超出范围 16..4096");
     }
-    std::string mode;
-    if(!stringAt(document,"judgeMode",mode)) error("judgeMode 缺失或不是字符串");
-    else if(mode!="io" && mode!="function") error("judgeMode 只能是 io 或 function");
-    else structure.functionMode=mode=="function";
+    // ---- 专题 / 裁判方式 / 题目来源 / 自判题：题库卡片与 solveRecord 分层用 ----
+    if(document.contains("topic")) {
+        std::string topic;
+        if(!stringAt(document,"topic",topic) || trim(topic).empty()) error("topic 不能为空字符串");
+        else if(textWidth(topic)>24) error("topic 超过 24 个字符");
+    }
+    if(document.contains("judgeType")) {
+        std::string kind;
+        if(!stringAt(document,"judgeType",kind)) error("judgeType 必须是字符串");
+        else if(kind!="standard" && kind!="special" && kind!="interactive" && kind!="function")
+            error("judgeType 只能是 standard（普通）、special（特殊）、interactive（交互）或 function（函数）");
+    }
+    if(document.contains("source")) {
+        const auto& origin=document.at("source");
+        if(!origin.is_object()) error("source 必须是对象");
+        else {
+            for(auto it=origin.begin();it!=origin.end();++it)
+                if(it.key()!="platform" && it.key()!="id" && it.key()!="url") error("source 含有未知字段 "+it.key());
+            std::string platform;
+            if(!stringAt(origin,"platform",platform) || trim(platform).empty()) error("source.platform 不能为空");
+            else if(platform!="luogu" && platform!="leetcode" && platform!="codeforces" && platform!="other")
+                error("source.platform 只能是 luogu、leetcode、codeforces 或 other");
+            for(const auto* key:{"id","url"}) {
+                if(!origin.contains(key)) continue;
+                std::string text;
+                if(!stringAt(origin,key,text)) error(std::string("source.")+key+" 必须是字符串");
+                else if(textWidth(text)>200) error(std::string("source.")+key+" 超过 200 个字符");
+                else if(std::string(key)=="url" && !text.empty() && !text.starts_with("https://")) error("source.url 必须以 https:// 开头");
+            }
+        }
+    }
+    if(document.contains("selfJudge") && !document.at("selfJudge").is_boolean()) error("selfJudge 必须是布尔值");
+    bool selfJudge=document.value("selfJudge",false);
+
+    // ---- 提交方式：v2 用 modes（语言 → function/full），v1 仍用 judgeMode ----
+    if(structure.version==2) {
+        if(document.contains("judgeMode")) error("schemaVersion 2 不再使用 judgeMode，请改用 modes");
+        if(selfJudge && (!document.contains("modes") || !document.at("modes").is_object())) {
+            // 自判题只带测试数据：没有 driver 与参考解，默认四种语言都走完整程序提交。
+            for(const auto& language:kLanguages) structure.languages[language].modes={"full"};
+        } else if(!document.contains("modes") || !document.at("modes").is_object()) error("schemaVersion 2 必须提供 modes（语言 → 提交方式数组）");
+        else {
+            const auto& modes=document.at("modes");
+            if(modes.empty()) error("modes 至少要声明一种语言");
+            for(auto it=modes.begin();it!=modes.end();++it) {
+                auto language=it.key();
+                if(!isLanguage(language)) { error("modes 里的语言 "+language+" 不支持（只能是 cpp、cangjie、python、java）"); continue; }
+                if(!it.value().is_array() || it.value().empty()) { error("modes."+language+" 必须是非空数组"); continue; }
+                auto& spec=structure.languages[language];
+                for(std::size_t i=0;i<it.value().size();++i) {
+                    auto label="modes."+language+"["+std::to_string(i)+"]";
+                    if(!it.value()[i].is_string()) { error(label+" 必须是字符串"); continue; }
+                    auto mode=it.value()[i].get<std::string>();
+                    if(mode!="function" && mode!="full") { error(label+" 只能是 function 或 full"); continue; }
+                    if(selfJudge && mode=="function") { error(label+"：自判题（selfJudge）只有测试数据，不支持函数式提交"); continue; }
+                    if(std::find(spec.modes.begin(),spec.modes.end(),mode)!=spec.modes.end()) { error("modes."+language+" 重复声明了 "+mode); continue; }
+                    spec.modes.push_back(mode);
+                }
+            }
+        }
+    } else if(document.contains("modes")) {
+        error("schemaVersion 1 不支持 modes，请把 schemaVersion 改成 2");
+    } else {
+        std::string mode;
+        if(!stringAt(document,"judgeMode",mode)) error("judgeMode 缺失或不是字符串");
+        else if(mode!="io" && mode!="function") error("judgeMode 只能是 io 或 function");
+        else {
+            structure.legacyMode=mode;
+            // io：旧约定固定 C++/仓颉两种语言、完整程序提交；函数题的语言由 main.* 决定（collectPackage 填充）。
+            if(mode=="io") {
+                structure.languages["cpp"].modes={"full"};
+                structure.languages["cangjie"].modes={"full"};
+            }
+        }
+    }
 
     if(!document.contains("statement") || !document.at("statement").is_object()) error("statement 缺失或不是对象");
     else {
@@ -241,9 +337,13 @@ void validateDocument(const Json& document,Structure& structure,Issues& issues) 
         if(pointsSum!=100) error("groups 分值之和为 "+std::to_string(pointsSum)+"，应为 100");
     }
 
-    // ---- 4：function 模式（package / signature 在 json 里，driver 与 starter 来自文件） ----
-    if(structure.functionMode) {
-        if(!document.contains("function") || !document.at("function").is_object()) error("function 模式必须提供 function 段（package 与 signature）");
+    // ---- 4：函数式段（package / signature 在 json 里，driver 与 starter 来自文件） ----
+    bool needsFunction=structure.legacyMode=="function";
+    for(const auto& [language,spec]:structure.languages) if(spec.function()) needsFunction=true;
+    if(needsFunction && (!document.contains("function") || !document.at("function").is_object()))
+        error("函数式提交必须提供 function 段（package 与 signature）");
+    if(document.contains("function")) {
+        if(!document.at("function").is_object()) error("function 必须是对象");
         else {
             const auto& function=document.at("function");
             for(auto it=function.begin();it!=function.end();++it)
@@ -255,11 +355,20 @@ void validateDocument(const Json& document,Structure& structure,Issues& issues) 
             if(!function.contains("signature") || !function.at("signature").is_object()) error("function.signature 缺失或不是对象");
             else {
                 const auto& signature=function.at("signature");
-                for(auto it=signature.begin();it!=signature.end();++it)
-                    if(it.key()!="zh" && it.key()!="en") error("function.signature 含有未知字段 "+it.key());
+                for(auto it=signature.begin();it!=signature.end();++it) {
+                    if(it.key()!="zh" && it.key()!="en" && !isLanguage(it.key()))
+                        error("function.signature 含有未知字段 "+it.key());
+                }
                 for(const auto* key:{"zh","en"}) {
                     std::string text;
                     if(!stringAt(signature,key,text) || trim(text).empty()) error(std::string("function.signature.")+key+" 不能为空");
+                }
+                // 可选：按语言给出更准确的签名（cpp/cangjie/python/java），显示时优先用当前语言的那一份。
+                for(const auto& language:kLanguages) {
+                    if(!signature.contains(language)) continue;
+                    std::string text;
+                    if(!stringAt(signature,language.c_str(),text) || trim(text).empty())
+                        error("function.signature."+language+" 不能为空");
                 }
             }
         }
@@ -279,7 +388,6 @@ std::vector<ProblemCase> collectPackage(const fs::path& directory,const Json& do
         if(entry.is_directory()) error("题包 zip 不能有子目录："+utf8(entry.path().filename().wstring()));
     auto readText=[&](const fs::path& path) { return stripBom(readFile(path)); };
     auto present=[&](const std::string& name) { return fs::is_regular_file(directory/wide(name)); };
-    auto extension=[](const std::string& language) { return language=="cpp"?std::string(".cpp"):std::string(".cj"); };
 
     // checker.cpp 可选：没有就按内置 token 比较判
     if(present("checker.cpp")) {
@@ -289,57 +397,109 @@ std::vector<ProblemCase> collectPackage(const fs::path& directory,const Json& do
         else structure.checker=text;
     }
 
-    Json drivers=Json::object(),starter=Json::object(),solution=Json::object();
-    for(const auto& language:{"cpp","cangjie"}) {
-        auto name=std::string(language),main="main"+extension(name),start="starter"+extension(name);
-        bool hasMain=present(main),hasStarter=present(start);
-        if(structure.functionMode) {
-            if(!hasMain) {
-                if(hasStarter) error("有 "+start+" 但缺少 "+main+"（starter 必须和 main 成对）");
+    const bool selfJudge=document.value("selfJudge",false);
+    if(structure.version==2 && selfJudge) {
+        // 自判题：题包里只有测试数据，参考解 / driver / starter 一律可选（有也不校验）。
+        for(const auto& language:kLanguages) {
+            auto found=structure.languages.find(language);
+            if(found==structure.languages.end()) continue;
+            auto modeExt=extensionOf(language);
+            if(present("solution"+modeExt)) found->second.solution={readText(directory/wide("solution"+modeExt))};
+        }
+    } else if(structure.version==2) {
+        for(const auto& language:kLanguages) {
+            auto found=structure.languages.find(language);
+            if(found==structure.languages.end()) continue;
+            auto& spec=found->second;
+            auto name=languageName(language),modeExt=extensionOf(language);
+            auto main="main"+modeExt,start="starter"+modeExt,solution="solution"+modeExt;
+            bool hasMain=present(main),hasStarter=present(start),hasSolution=present(solution);
+            if(spec.function()) {
+                if(!hasMain) error("缺少 "+main+"（"+name+" 函数式 driver）");
+                if(!hasStarter) error("缺少 "+start+"（"+name+" 函数式 starter）");
+                if(!hasSolution) error("缺少 "+solution+"（"+name+" 函数式参考解）");
+                if(hasMain) spec.driver=readText(directory/wide(main));
+                if(hasStarter) spec.starter=readText(directory/wide(start));
+                if(hasSolution) spec.solution={readText(directory/wide(solution))};
+            } else {
+                if(hasMain) error("modes 没有声明 "+name+" 的函数式提交，但题包里有 "+main);
+                if(hasStarter) error("modes 没有声明 "+name+" 的函数式提交，但题包里有 "+start);
+                // 只声明完整式：solution.<ext> 是完整程序（自带入口），不需要 driver/starter。
+                if(!hasSolution) error("缺少 "+solution+"（"+name+" 只声明完整式提交时必须提供完整参考程序）");
+                else spec.solution={readText(directory/wide(solution))};
+            }
+            std::size_t bytes=0;
+            for(const auto& unit:spec.solution) bytes+=unit.size()+1;
+            if(bytes>512*1024) error(solution+" 超过 512 KB");
+        }
+        // v2 一种语言只能有一个 solution.<ext>；编号多文件是 v1 的旧约定。
+        for(const auto& entry:fs::directory_iterator(directory)) {
+            auto file=utf8(entry.path().filename().wstring());
+            if(!file.starts_with("solution_")) continue;
+            fs::path path=wide(file);
+            auto ext=utf8(path.extension().wstring()),stem=utf8(path.stem().wstring());
+            if(ext!=".cpp" && ext!=".cj" && ext!=".py" && ext!=".java") continue;
+            auto middle=stem.substr(std::string("solution_").size());
+            if(!middle.empty() && middle.find_first_not_of("0123456789")==std::string::npos)
+                error("schemaVersion 2 每种语言只能有一个 solution"+ext+"（不支持 solution_1 多文件）");
+        }
+    } else if(structure.legacyMode=="function") {
+        // v1 函数式：main.<ext> + starter.<ext> 决定语言，solution 是函数实现（可多文件）。
+        for(const auto& language:{"cpp","cangjie"}) {
+            auto name=std::string(language),modeExt=extensionOf(name),main="main"+modeExt,start="starter"+modeExt;
+            bool hasMain=present(main),hasStarter=present(start);
+            if(!hasMain) { if(hasStarter) error("有 "+start+" 但缺少 "+main+"（starter 必须和 main 成对）"); continue; }
+            if(!hasStarter) { error("缺少 "+start+"（函数式提交每个 driver 都要配 starter）"); continue; }
+            auto& spec=structure.languages[name];
+            spec.modes={"function"};
+            spec.driver=readText(directory/wide(main));
+            spec.starter=readText(directory/wide(start));
+        }
+        if(structure.languages.empty()) error("函数式提交至少要有一个 main.cj 或 main.cpp");
+    } else {
+        // v1 完整式：不要 main/starter；solution.<ext> 是完整程序（可多文件）。
+        for(const auto& language:{"cpp","cangjie"}) {
+            auto name=std::string(language),modeExt=extensionOf(name),main="main"+modeExt,start="starter"+modeExt;
+            if(present(main)) error("完整式（io）不需要 "+main+"（选手自己写 main）");
+            if(present(start)) error("完整式（io）不需要 "+start);
+        }
+    }
+    // v1 的参考解（多文件编号 solution_1.*…）：函数式是函数实现，完整式是完整程序。
+    if(structure.version==1) {
+        for(const auto& language:{"cpp","cangjie"}) {
+            auto name=std::string(language),modeExt=extensionOf(name);
+            std::vector<std::string> units;
+            if(present("solution"+modeExt)) units.push_back(readText(directory/wide("solution"+modeExt)));
+            else {
+                std::map<int,std::string> numbered;
+                for(const auto& entry:fs::directory_iterator(directory)) {
+                    auto file=utf8(entry.path().filename().wstring());
+                    std::string prefix="solution_";
+                    if(!file.starts_with(prefix) || !file.ends_with(modeExt) || file.size()<=prefix.size()+modeExt.size()) continue;
+                    auto middle=file.substr(prefix.size(),file.size()-prefix.size()-modeExt.size());
+                    if(middle.find_first_not_of("0123456789")!=std::string::npos) continue;
+                    numbered[std::stoi(middle)]=readText(entry.path());
+                }
+                for(const auto& [index,text]:numbered) {
+                    if(index!=static_cast<int>(units.size())+1) { error("solution_ 编号必须从 1 连续（缺 solution_"+std::to_string(units.size()+1)+modeExt+"）"); break; }
+                    units.push_back(text);
+                }
+            }
+            if(units.empty()) continue;
+            std::size_t bytes=0;
+            for(const auto& unit:units) bytes+=unit.size()+1;
+            if(bytes>512*1024) { error("solution"+modeExt+" 超过 512 KB"); continue; }
+            auto found=structure.languages.find(name);
+            if(found==structure.languages.end()) {
+                error("有 solution"+modeExt+"，但没有对应的 main"+modeExt+"（参考答案的语言必须有 driver）");
                 continue;
             }
-            if(!hasStarter) { error("缺少 "+start+"（function 模式每个 driver 都要配 starter）"); continue; }
-            drivers[name]=readText(directory/wide(main));
-            starter[name]=readText(directory/wide(start));
-            structure.drivers.push_back(name);
-        } else {
-            if(hasMain) error("io 模式不需要 "+main+"（选手自己写 main）");
-            if(hasStarter) error("io 模式不需要 "+start);
+            found->second.solution=units;
         }
     }
-    if(structure.functionMode && structure.drivers.empty()) error("function 模式至少要有一个 main.cj 或 main.cpp");
-
-    for(const auto& language:{"cpp","cangjie"}) {
-        auto name=std::string(language),ext=extension(name);
-        std::vector<std::string> units;
-        if(present("solution"+ext)) units.push_back(readText(directory/wide("solution"+ext)));
-        else {
-            std::map<int,std::string> numbered;
-            for(const auto& entry:fs::directory_iterator(directory)) {
-                auto file=utf8(entry.path().filename().wstring());
-                std::string prefix="solution_";
-                if(!file.starts_with(prefix) || !file.ends_with(ext) || file.size()<=prefix.size()+ext.size()) continue;
-                auto middle=file.substr(prefix.size(),file.size()-prefix.size()-ext.size());
-                if(middle.find_first_not_of("0123456789")!=std::string::npos) continue;
-                numbered[std::stoi(middle)]=readText(entry.path());
-            }
-            for(const auto& [index,text]:numbered) {
-                if(index!=static_cast<int>(units.size())+1) { error("solution_ 编号必须从 1 连续（缺 solution_"+std::to_string(units.size()+1)+ext+"）"); break; }
-                units.push_back(text);
-            }
-        }
-        if(units.empty()) continue;
-        std::size_t bytes=0;
-        for(const auto& unit:units) bytes+=unit.size()+1;
-        if(bytes>512*1024) { error("solution"+ext+" 超过 512 KB"); continue; }
-        if(structure.functionMode && std::find(structure.drivers.begin(),structure.drivers.end(),name)==structure.drivers.end()) {
-            error("有 solution"+ext+"，但没有对应的 main"+ext+"（参考答案的语言必须有 driver）");
-            continue;
-        }
-        solution[name]=units.size()==1?Json(units[0]):Json(units);
-        structure.solutions.push_back(name);
-    }
-    if(structure.solutions.empty()) error("缺少参考解：solution.cj 或 solution.cpp（多文件用 solution_1.cj、solution_2.cj…）");
+    bool anySolution=false;
+    for(const auto& [language,spec]:structure.languages) if(!spec.solution.empty()) anySolution=true;
+    if(!anySolution && !selfJudge) error("缺少参考解：每个声明的语言都要有 solution.<ext>（旧题包可用 solution_1.cj、solution_2.cj…）");
 
     // 用例：根目录下的 <caseId>.in / <caseId>.ans
     std::map<std::string,fs::path> inputs,answers;
@@ -379,32 +539,59 @@ std::vector<ProblemCase> collectPackage(const fs::path& directory,const Json& do
 
     structure.meta=document;
     structure.meta["checker"]=structure.checker;
-    structure.meta["solution"]=solution;
-    if(structure.functionMode) {
-        auto function=structure.meta.value("function",Json::object());
-        function["drivers"]=drivers;
-        function["starter"]=starter;
-        structure.meta["function"]=function;
+    Json function=structure.meta.value("function",Json::object());
+    if(!function.is_object()) function=Json::object();
+    Json drivers=Json::object(),starter=Json::object(),modes=Json::object(),languages=Json::array();
+    for(const auto& language:kLanguages) {
+        auto found=structure.languages.find(language);
+        if(found==structure.languages.end()) continue;
+        const auto& spec=found->second;
+        languages.push_back(language);
+        modes[language]=Json(spec.modes);
+        if(spec.function() && !spec.driver.empty()) { drivers[language]=spec.driver; starter[language]=spec.starter; }
+    }
+    function["drivers"]=drivers;
+    function["starter"]=starter;
+    structure.meta["function"]=function;
+    structure.meta["modes"]=modes;
+    structure.meta["judgedLanguages"]=languages;
+    // 裁判方式：没显式写就按题包内容推断（checker → 特殊；有函数式 → 函数；否则普通）。
+    if(!structure.meta.contains("judgeType")) {
+        std::string kind="standard";
+        if(!structure.checker.empty()) kind="special";
+        else {
+            for(const auto& [language,spec]:structure.languages) if(spec.function()) kind="function";
+        }
+        structure.meta["judgeType"]=kind;
     }
     return cases;
 }
-Program compileReference(const Json& document,const Structure& structure,const std::string& language,const fs::path& directory,const Json& tools) {
-    auto units=unitsOf(document.at("solution").at(language));
-    if(structure.functionMode) {
-        const auto& function=document.at("function");
-        auto driver=function.at("drivers").at(language).get<std::string>();
-        auto package=function.at("package").get<std::string>();
-        if(language=="cpp") return buildUnit(language,{{"Main.cpp",assembleCpp(driver,units)}},directory,tools,nullptr);
-        return buildUnit(language,assembleCangjie(driver,package,units,true),directory,tools,nullptr);
+Program compileReference(const Structure& structure,const std::string& language,const std::string& mode,
+                         const fs::path& directory,const Json& tools) {
+    const auto& spec=structure.languages.at(language);
+    const auto& units=spec.solution;
+    if(units.empty()) { Program program; program.verdict="JE"; program.message="没有参考解"; return program; }
+    auto function=structure.meta.value("function",Json::object());
+    auto package=function.value("package",std::string());
+    // 函数式参考解 = driver + 函数实现；完整式参考程序 = 同一份 driver + 实现拼成的完整程序。
+    if(mode=="function" || spec.function()) {
+        if(language=="cpp") return buildUnit(language,{{"Main.cpp",assembleCpp(spec.driver,units)}},directory,tools,nullptr);
+        if(language=="cangjie") return buildUnit(language,assembleCangjie(spec.driver,package,units,true),directory,tools,nullptr);
+        return compileProgram(assembleFullSource(language,spec.driver,units[0],package),language,directory,tools,nullptr);
     }
     if(units.size()==1) return compileProgram(units[0],language,directory,tools,nullptr);
     if(language=="cpp") return buildUnit(language,{{"Main.cpp",assembleCpp("",units)}},directory,tools,nullptr);
-    return buildUnit(language,assembleCangjie("","",units,false),directory,tools,nullptr);
+    return buildUnit(language,assembleCangjie("",package,units,false),directory,tools,nullptr);
 }
 
 // ---- 6–8：编译 checker（可选）/ driver / 用参考答案跑满分 ----
 Json verifyPackage(const Json& document,const Structure& structure,const std::vector<ProblemCase>& cases,const fs::path& workspace,const Json& tools,Issues& issues) {
     auto error=[&](std::string message) { issues.error(std::move(message)); };
+    // 自判题只有测试数据，没有参考解可跑：跳过自检（判题仍按 .ans 比较）。
+    if(document.value("selfJudge",false))
+        return {{"cases",static_cast<long long>(cases.size())},{"groups",Json::array()},{"checker","builtin"},
+                {"checkerCompiled",false},{"drivers",Json::object()},{"solutions",Json::object()},{"full",Json::object()},
+                {"selfJudge",true}};
     auto caseDirectory=workspace/"cases";
     fs::create_directories(caseDirectory);
     std::map<std::string,std::pair<fs::path,fs::path>> paths;
@@ -426,62 +613,93 @@ Json verifyPackage(const Json& document,const Structure& structure,const std::ve
             return Json::object();
         }
     }
-    Json driverStatus=Json::object();
-    if(structure.functionMode) {
-        for(const auto& language:structure.drivers) {
-            const auto& function=document.at("function");
-            auto driver=function.at("drivers").at(language).get<std::string>();
-            auto starter=function.at("starter").at(language).get<std::string>();
-            auto package=function.at("package").get<std::string>();
-            Program program;
-            if(language=="cpp") program=buildUnit(language,{{"Main.cpp",assembleCpp(driver,{starter})}},workspace/L"driver-cpp",tools,nullptr);
-            else program=buildUnit(language,assembleCangjie(driver,package,{starter},true),workspace/L"driver-cangjie",tools,nullptr);
-            driverStatus[language]=program.verdict=="AC";
-            if(program.verdict!="AC") error("drivers."+language+" 编译失败（前 20 行）：\n"+firstLines(program.log,20));
-        }
-    }
-    Json solutions=Json::object(),groupStatus=Json::array();
+    Json driverStatus=Json::object(),solutions=Json::object(),fullStatus=Json::object(),groupStatus=Json::array();
     long long timeMs=document.at("limits").value("timeMs",2000LL);
     long long memoryMb=document.at("limits").value("memoryMb",512LL);
-    for(const auto& language:structure.solutions) {
-        auto directory=workspace/wide("solution-"+language);
-        auto program=compileReference(document,structure,language,directory,tools);
-        if(program.verdict!="AC") {
-            error("参考答案（"+language+"）编译失败（前 20 行）：\n"+firstLines(program.log,20));
-            continue;
-        }
-        long long score=0; std::string firstFailure,firstGroup,firstCase,firstMessage;
-        Json groupsHere=Json::array();
+    auto function=document.value("function",Json::object());
+    auto package=function.value("package",std::string());
+    struct RunResult {
+        long long score=0;
+        std::string verdict="AC",firstGroup,firstCase,message;
+        Json groups=Json::array();
+    };
+    auto runAll=[&](const Program& program,const std::string& label) {
+        RunResult result;
         for(const auto& group:document.at("groups")) {
             bool passed=true;
             auto groupName=group.at("name").get<std::string>();
             for(const auto& caseItem:group.at("cases")) {
                 auto id=caseItem.get<std::string>();
-                auto runDirectory=workspace/"run"/wide(language+"-"+id);
+                auto runDirectory=workspace/wide("run-"+label+"-"+id);
                 fs::create_directories(runDirectory);
                 CaseFile file{id,groupName,paths[id].first,paths[id].second,fs::file_size(paths[id].second)};
                 auto judgement=judgeCase(program,runDirectory,file,custom?&checker:nullptr,timeMs,memoryMb,nullptr);
                 if(judgement.verdict!="AC") {
                     passed=false;
-                    if(firstFailure.empty()) { firstFailure=judgement.verdict; firstGroup=groupName; firstCase=id; firstMessage=judgement.message; }
+                    if(result.verdict=="AC") { result.verdict=judgement.verdict; result.firstGroup=groupName; result.firstCase=id; result.message=judgement.message; }
                     break;
                 }
             }
-            groupsHere.push_back({{"name",groupName},{"points",group.at("points")},{"passed",passed}});
-            if(passed) score+=group.at("points").get<long long>();
+            result.groups.push_back({{"name",groupName},{"points",group.at("points")},{"passed",passed}});
+            if(passed) result.score+=group.at("points").get<long long>();
         }
-        solutions[language]={{"score",score},{"verdict",firstFailure.empty()?"AC":firstFailure}};
-        if(groupStatus.empty()) groupStatus=groupsHere;
-        if(score!=100) {
-            if(!firstFailure.empty()) {
-                auto detail=firstMessage.empty()?std::string():("："+firstMessage.substr(0,600));
-                error("参考答案未满分：组 "+firstGroup+" 未通过（用例 "+firstCase+" "+firstFailure+"）"+detail);
-            } else error("参考答案未满分：得分 "+std::to_string(score)+"，应为 100");
+        return result;
+    };
+    auto reportScore=[&](const std::string& language,const RunResult& result,bool full) {
+        if(result.score==100) return;
+        auto prefix=std::string(full?"完整式参考答案未满分（":"参考答案未满分（")+languageName(language)+"）";
+        if(result.verdict!="AC") {
+            auto detail=result.message.empty()?std::string():("："+result.message.substr(0,600));
+            error(prefix+"：组 "+result.firstGroup+" 未通过（用例 "+result.firstCase+" "+result.verdict+"）"+detail);
+        } else error(prefix+"：得分 "+std::to_string(result.score)+"，应为 100");
+    };
+    for(const auto& language:kLanguages) {
+        auto found=structure.languages.find(language);
+        if(found==structure.languages.end()) continue;
+        const auto& spec=found->second;
+        if(spec.solution.empty()) continue;   // v1 完整式题可能没有该语言的参考解
+        if(spec.function()) {
+            auto program=buildUnit(language,assembleFunction(language,spec.driver,spec.starter,package),
+                                   workspace/wide("driver-"+language),tools,nullptr);
+            driverStatus[language]=program.verdict=="AC";
+            if(program.verdict!="AC") error("drivers."+language+" 编译失败（前 20 行）：\n"+firstLines(program.log,20));
+            auto reference=compileReference(structure,language,"function",workspace/wide("solution-"+language),tools);
+            if(reference.verdict!="AC") {
+                error("参考答案（"+languageName(language)+"）编译失败（前 20 行）：\n"+firstLines(reference.log,20));
+            } else {
+                auto result=runAll(reference,"function-"+language);
+                solutions[language]={{"score",result.score},{"verdict",result.verdict}};
+                if(groupStatus.empty()) groupStatus=result.groups;
+                reportScore(language,result,false);
+            }
+        }
+        if(spec.full()) {
+            // C++ / Python / Java 的函数式参考程序就是完整程序（同一个源文件），成绩直接沿用；
+            // 仓颉函数式是 main.cj + solve.cj 两个文件，完整式要合并成一个文件后单独跑。
+            bool reuse=spec.function() && language!="cangjie" && solutions.contains(language);
+            if(reuse) {
+                bool perfect=solutions.at(language).value("score",0LL)==100;
+                fullStatus[language]=perfect;
+                if(!perfect) error("完整式参考答案未满分（"+languageName(language)+"）");
+            } else {
+                auto reference=compileReference(structure,language,"full",workspace/wide("full-"+language),tools);
+                if(reference.verdict!="AC") {
+                    error("完整式参考答案（"+languageName(language)+"）编译失败（前 20 行）：\n"+firstLines(reference.log,20));
+                    continue;
+                }
+                auto result=runAll(reference,"full-"+language);
+                fullStatus[language]=result.score==100;
+                if(!spec.function()) {
+                    solutions[language]={{"score",result.score},{"verdict",result.verdict}};
+                    if(groupStatus.empty()) groupStatus=result.groups;
+                }
+                reportScore(language,result,true);
+            }
         }
     }
     return {{"cases",static_cast<long long>(cases.size())},{"groups",groupStatus},
             {"checker",custom?"custom":"builtin"},{"checkerCompiled",custom},
-            {"drivers",driverStatus},{"solutions",solutions}};
+            {"drivers",driverStatus},{"solutions",solutions},{"full",fullStatus}};
 }
 
 bool decodeBase64(const std::string& text,std::string& bytes) {
@@ -543,11 +761,30 @@ void summarize(const Json& meta,const std::string& id,Json& item) {
     long long total=0;
     if(meta.contains("groups") && meta.at("groups").is_array())
         for(const auto& group:meta.at("groups")) total+=group.value("points",0LL);
+    // 题单卡片直接读 zip 里的 problem.json，没有经过 collectPackage；
+    // 语言顺序就按 modes 的键推出来（v1 旧题包没有 modes，卡片不展示语言）。
+    Json modes=meta.value("modes",Json::object());
+    Json languages=Json::array();
+    for(const auto& language:kLanguages) if(modes.contains(language)) languages.push_back(language);
+    std::string judgeType=meta.value("judgeType",std::string());
+    if(judgeType.empty()) {
+        judgeType="standard";
+        for(auto it=modes.begin();it!=modes.end();++it)
+            if(it.value().is_array())
+                for(const auto& mode:it.value())
+                    if(mode.is_string() && mode.get<std::string>()=="function") judgeType="function";
+    }
     item={{"id",id},{"title",meta.value("title",Json::object())},{"difficulty",meta.value("difficulty",0LL)},
-          {"tags",meta.value("tags",Json::array())},{"judgeMode",meta.value("judgeMode",std::string())},
+          {"tags",meta.value("tags",Json::array())},
+          {"modes",modes},
+          {"judgedLanguages",languages},
           {"limits",{{"timeMs",meta.contains("limits")?meta.at("limits").value("timeMs",0LL):0LL},
                      {"memoryMb",meta.contains("limits")?meta.at("limits").value("memoryMb",0LL):0LL}}},
-          {"totalPoints",total}};
+          {"totalPoints",total},
+          {"topic",meta.value("topic",std::string())},
+          {"judgeType",judgeType},
+          {"source",meta.value("source",Json::object())},
+          {"selfJudge",meta.value("selfJudge",false)}};
 }
 }
 
@@ -584,7 +821,60 @@ struct DatabaseFile { fs::path path; Json document; };
 struct CacheEntry { std::string stamp; Json document; };
 std::mutex databaseMutex;
 std::map<std::wstring,CacheEntry> databaseCache;
+bool databaseIndexLoaded=false;
+// 跨进程的元数据索引：把每个 zip 的 problem.json 与其 stamp 一起存成
+// .cache/problemdb/index-<题库路径哈希>.json，下次启动只读这一个文件，不再逐个 spawn tar.exe。
+// 文件名带题库路径哈希，切换题库（JUDGEBOX_PROBLEM_DATABASE / 不同 exe 目录）互不干扰。
+fs::path databaseIndexFile() {
+    return executableDirectory()/L".cache"/L"problemdb"/wide("index-"+hexOf(utf8(problemDatabase().wstring()))+".json");
+}
+void loadDatabaseIndex() {
+    databaseIndexLoaded=true;
+    auto path=databaseIndexFile();
+    std::error_code error;
+    if(!fs::is_regular_file(path,error)) return;
+    try {
+        auto document=Json::parse(readFile(path));
+        if(document.value("version",0)!=1) return;
+        auto entries=document.value("entries",Json::object());
+        if(!entries.is_object()) return;
+        for(auto it=entries.begin();it!=entries.end();++it) {
+            auto stamp=it.value().value("stamp",std::string());
+            auto problem=it.value().value("document",Json::object());
+            if(stamp.empty() || !problem.is_object()) continue;
+            databaseCache[wide(it.key())]={stamp,problem};
+        }
+    } catch(...) {
+        databaseCache.clear();   // 索引坏了就当没有，重新读一遍题包
+    }
+}
+void saveDatabaseIndex(const std::vector<fs::path>& paths) {
+    Json entries=Json::object();
+    {
+        std::lock_guard lock(databaseMutex);
+        for(const auto& path:paths) {
+            auto found=databaseCache.find(path.filename().wstring());
+            if(found==databaseCache.end()) continue;
+            entries[utf8(path.filename().wstring())]={{"stamp",found->second.stamp},{"document",found->second.document}};
+        }
+        databaseCache.clear();   // 只保留当前题库目录里还有的题包，索引不会越滚越大
+        for(auto it=entries.begin();it!=entries.end();++it)
+            databaseCache[wide(it.key())]={it.value().value("stamp",std::string()),it.value().at("document")};
+    }
+    auto path=databaseIndexFile();
+    std::error_code error;
+    fs::create_directories(path.parent_path(),error);
+    auto temporary=path;
+    temporary+=L".tmp";
+    try {
+        Json index={{"version",1},{"entries",entries}};
+        writeFile(temporary,index.dump(-1,' ',false,Json::error_handler_t::replace));
+        fs::rename(temporary,path,error);
+        if(error) { error.clear(); fs::remove(path,error); fs::rename(temporary,path,error); }
+    } catch(...) { std::error_code cleanup; fs::remove(temporary,cleanup); }
+}
 // 题库目录里的每个 zip 就是一道题；标题/难度等元数据全部来自包里的 problem.json。
+// 命中索引/内存缓存的题只做一次 stat；没命中的用多线程并行读（每个 zip 一次 tar.exe）。
 std::vector<DatabaseFile> scanDatabase() {
     std::vector<DatabaseFile> files;
     std::error_code error;
@@ -594,23 +884,54 @@ std::vector<DatabaseFile> scanDatabase() {
     for(const auto& entry:fs::directory_iterator(root,error))
         if(entry.is_regular_file() && entry.path().extension()==L".zip") paths.push_back(entry.path());
     std::sort(paths.begin(),paths.end());
-    for(const auto& path:paths) {
-        try {
-            std::lock_guard lock(databaseMutex);
-            auto key=path.wstring();
-            auto stamp=stampOf(path);
-            auto found=databaseCache.find(key);
-            if(found!=databaseCache.end() && !stamp.empty() && found->second.stamp==stamp) {
-                files.push_back({path,found->second.document});
-                continue;
+    {
+        std::lock_guard lock(databaseMutex);
+        if(!databaseIndexLoaded) loadDatabaseIndex();
+    }
+    std::vector<CacheEntry> resolved(paths.size());
+    std::vector<std::size_t> misses;
+    for(std::size_t index=0;index<paths.size();++index) {
+        auto stamp=stampOf(paths[index]);
+        std::lock_guard lock(databaseMutex);
+        auto found=databaseCache.find(paths[index].filename().wstring());
+        if(!stamp.empty() && found!=databaseCache.end() && found->second.stamp==stamp) resolved[index]=found->second;
+        else misses.push_back(index);
+    }
+    if(!misses.empty()) {
+        // 冷启动（或新增/改过题包）：并行解出 problem.json，避免 200 多次串行 spawn。
+        std::atomic<std::size_t> cursor{0};
+        std::mutex errorMutex;
+        auto workers=static_cast<std::size_t>(std::max(1u,std::min(8u,std::thread::hardware_concurrency())));
+        workers=std::min(workers,misses.size());
+        auto work=[&]() {
+            for(;;) {
+                auto slot=cursor.fetch_add(1);
+                if(slot>=misses.size()) return;
+                auto index=misses[slot];
+                try {
+                    auto document=readZipDocument(paths[index]);
+                    resolved[index]={stampOf(paths[index]),std::move(document)};
+                } catch(const std::exception& e) {
+                    std::lock_guard lock(errorMutex);
+                    std::fprintf(stderr,"JudgeBox: 跳过无法读取的题包 %s：%s\n",
+                                 utf8(paths[index].filename().wstring()).c_str(),e.what());
+                }
             }
-            auto document=readZipDocument(path);
-            CacheEntry entry; entry.stamp=stamp; entry.document=document;
-            databaseCache[key]=entry;
-            files.push_back({path,std::move(document)});
-        } catch(const std::exception& e) {
-            std::fprintf(stderr,"JudgeBox: 跳过无法读取的题包 %s：%s\n",utf8(path.filename().wstring()).c_str(),e.what());
+        };
+        std::vector<std::thread> pool;
+        for(std::size_t i=1;i<workers;++i) pool.emplace_back(work);
+        work();
+        for(auto& thread:pool) thread.join();
+        for(auto index:misses) {
+            if(resolved[index].stamp.empty()) continue;
+            std::lock_guard lock(databaseMutex);
+            databaseCache[paths[index].filename().wstring()]=resolved[index];
         }
+        saveDatabaseIndex(paths);
+    }
+    for(std::size_t index=0;index<paths.size();++index) {
+        if(resolved[index].stamp.empty()) continue;
+        files.push_back({paths[index],std::move(resolved[index].document)});
     }
     return files;
 }
@@ -725,18 +1046,15 @@ Json loadProblem(const fs::path& dataDir,const std::string& id) {
             auto caseCount=group.contains("cases") && group.at("cases").is_array()?group.at("cases").size():0;
             groups.push_back({{"name",group.at("name")},{"points",group.at("points")},{"cases",group.at("cases")},{"caseCount",static_cast<long long>(caseCount)}});
         }
-    Json languages=Json::array();
-    if(meta.value("judgeMode",std::string())=="function") {
-        auto drivers=function.value("drivers",Json::object());
-        for(const auto* language:{"cpp","cangjie"}) if(drivers.contains(language)) languages.push_back(language);
-    } else { languages.push_back("cpp"); languages.push_back("cangjie"); }
     item.update({{"statement",meta.value("statement",Json::object())},
                  {"samples",meta.value("samples",Json::array())},
                  {"signature",function.value("signature",Json::object())},
                  {"starter",function.value("starter",Json::object())},
                  {"drivers",function.value("drivers",Json::object())},
+                 {"package",function.value("package",std::string())},
                  {"groups",groups},
-                 {"judgedLanguages",languages}});
+                 {"modes",meta.value("modes",Json::object())},
+                 {"judgedLanguages",meta.value("judgedLanguages",Json::array())}});
     return item;
 }
 
@@ -745,6 +1063,229 @@ Json problemMeta(const std::string& id) {
     fs::path file; Json document;
     if(!findDatabaseFile(id,file,document)) throw ApiError(404,"题目不存在");
     return loadNormalized(file,document,false).meta;
+}
+
+namespace {
+const std::set<std::string> kPackageFiles={"checker.cpp","main.cpp","starter.cpp","solution.cpp","main.cj","starter.cj",
+    "solution.cj","main.py","starter.py","solution.py","main.java","starter.java","solution.java"};
+// 把请求里的 cases 写成 <id>.in / <id>.ans，并给出分组（没给 groups 就自动均分）。
+Json writeCases(const fs::path& directory,const Json& cases,const Json& requestedGroups,Issues& issues) {
+    if(!cases.is_array()) { issues.error("cases 必须是数组"); return Json::array(); }
+    std::error_code ignored;
+    for(const auto& entry:fs::directory_iterator(directory,ignored)) {
+        if(!entry.is_regular_file()) continue;
+        auto ext=utf8(entry.path().extension().wstring());
+        if(ext==".in" || ext==".ans") fs::remove(entry.path(),ignored);
+    }
+    std::vector<std::string> ids;
+    std::size_t index=0;
+    for(const auto& item:cases) {
+        auto label="cases["+std::to_string(index)+"]";
+        if(!item.is_object()) { issues.error(label+" 必须是对象"); ++index; continue; }
+        std::string id;
+        if(item.contains("id") && item.at("id").is_string()) id=item.at("id").get<std::string>();
+        else { char buffer[16]; std::snprintf(buffer,sizeof buffer,"%02zu",index+1); id=buffer; }
+        if(!validCaseId(id)) { issues.error("用例 id "+id+" 格式不合法"); ++index; continue; }
+        auto input=item.value("input",std::string());
+        auto answer=item.value("answer",item.value("output",std::string()));
+        if(trim(answer).empty()) { issues.error("用例 "+id+" 的预期输出为空（.ans 不能是空文件）"); ++index; continue; }
+        if(input.size()>4*1024*1024) { issues.error("用例 "+id+" 的输入超过 4 MiB"); ++index; continue; }
+        if(answer.size()>4*1024*1024) { issues.error("用例 "+id+" 的预期输出超过 4 MiB"); ++index; continue; }
+        if(!input.empty() && input.back()!='\n') input+='\n';
+        if(answer.back()!='\n') answer+='\n';
+        writeFile(directory/wide(id+".in"),input);
+        writeFile(directory/wide(id+".ans"),answer);
+        ids.push_back(id);
+        ++index;
+    }
+    if(ids.empty()) { issues.error("至少需要一个测试用例"); return Json::array(); }
+    if(requestedGroups.is_array() && !requestedGroups.empty()) return requestedGroups;
+    Json groups=Json::array();
+    if(ids.size()==1) {
+        Json single=Json::array(); single.push_back(ids[0]);
+        groups.push_back({{"name","sample"},{"points",100},{"cases",single}});
+        return groups;
+    }
+    Json sampleCases=Json::array(); sampleCases.push_back(ids[0]);
+    groups.push_back({{"name","sample"},{"points",1},{"cases",sampleCases}});
+    std::vector<std::string> rest(ids.begin()+1,ids.end());
+    const int parts=rest.size()>=3?3:static_cast<int>(rest.size());
+    const char* names[3]={"easy","medium","hard"};
+    int remainingPoints=99;
+    std::size_t cursor=0;
+    for(int part=0;part<parts;++part) {
+        auto count=rest.size()/parts+(static_cast<std::size_t>(part)<rest.size()%parts?1:0);
+        Json list=Json::array();
+        for(std::size_t i=0;i<count && cursor<rest.size();++i) list.push_back(rest[cursor++]);
+        int points=part==parts-1?remainingPoints:remainingPoints/(parts-part);
+        remainingPoints-=points;
+        groups.push_back({{"name",parts==1?"main":names[part]},{"points",points},{"cases",list}});
+    }
+    return groups;
+}
+void listPackageFiles(const fs::path& directory,Json& files) {
+    files=Json::object();
+    std::error_code error;
+    for(const auto& entry:fs::directory_iterator(directory,error)) {
+        if(!entry.is_regular_file()) continue;
+        auto name=utf8(entry.path().filename().wstring());
+        if(!kPackageFiles.contains(name)) continue;
+        if(entry.file_size()>600*1024) continue;
+        files[name]=stripBom(readFile(entry.path()));
+    }
+}
+Json packageCases(const fs::path& directory,const Json& document) {
+    Json cases=Json::array();
+    std::size_t total=0;
+    if(!document.contains("groups") || !document.at("groups").is_array()) return cases;
+    for(const auto& group:document.at("groups")) {
+        if(!group.contains("cases") || !group.at("cases").is_array()) continue;
+        for(const auto& item:group.at("cases")) {
+            auto id=item.get<std::string>();
+            auto inputPath=directory/wide(id+".in"),answerPath=directory/wide(id+".ans");
+            if(!fs::is_regular_file(inputPath) || !fs::is_regular_file(answerPath)) continue;
+            auto inputSize=fs::file_size(inputPath),answerSize=fs::file_size(answerPath);
+            if(total+inputSize+answerSize>8ULL*1024*1024) continue;
+            total+=inputSize+answerSize;
+            cases.push_back({{"id",id},{"group",group.value("name",std::string())},
+                             {"input",stripBom(readFile(inputPath))},{"answer",stripBom(readFile(answerPath))}});
+        }
+    }
+    return cases;
+}
+}
+Json saveProblem(const fs::path& dataDir,const Json& request) {
+    auto id=request.value("id",std::string());
+    if(!validId(id)) throw ApiError(400,"id 格式不合法：需匹配 ^[a-z0-9][a-z0-9-]{1,47}$");
+    const bool edit=request.value("edit",false);
+    Workspace workspace(executableDirectory()/L".cache"/L"save"/wide(std::to_string(GetTickCount64())+"-"+std::to_string(GetCurrentThreadId())));
+    auto package=workspace.path/"package";
+    fs::create_directories(package);
+    Json document=Json::object();
+    if(edit) {
+        fs::path file; Json existing;
+        if(!findDatabaseFile(id,file,existing)) throw ApiError(404,"题目不存在");
+        // 题库里的 zip 名带中文，而 tar.exe 的 argv 走 ANSI：先复制到工作目录的 ASCII 路径再解压。
+        auto alias=workspace.path/"source.zip";
+        std::error_code copyError;
+        fs::copy_file(file,alias,fs::copy_options::overwrite_existing,copyError);
+        if(copyError) throw ApiError(500,"无法读取旧题包："+copyError.message());
+        extractZip(alias,package);
+        if(!fs::is_regular_file(package/L"problem.json")) {
+            fs::path found; int count=0;
+            for(const auto& entry:fs::directory_iterator(package))
+                if(entry.is_directory() && fs::is_regular_file(entry.path()/L"problem.json")) { found=entry.path(); ++count; }
+            if(count==1) package=found;
+        }
+        if(!fs::is_regular_file(package/L"problem.json")) throw ApiError(500,"旧题包解压后找不到 problem.json");
+        document=Json::parse(stripBom(readFile(package/L"problem.json")));
+    } else {
+        document={{"schemaVersion",2},{"id",id}};
+    }
+    // 元数据按字段覆盖：title/limits/statement/function 允许只传一部分（深度合并），其余整体替换。
+    for(const auto* key:{"title","difficulty","tags","limits","statement","samples","modes","function","notes","topic","judgeType","source","selfJudge"}) {
+        if(!request.contains(key)) continue;
+        auto mergeable=std::string(key)=="title" || std::string(key)=="limits" || std::string(key)=="statement" || std::string(key)=="function";
+        if(mergeable && document.contains(key) && document[key].is_object() && request.at(key).is_object()) document[key].update(request.at(key));
+        else document[key]=request.at(key);
+    }
+    document["schemaVersion"]=2;
+    document["id"]=id;
+    if(!document.contains("topic")) document["topic"]=request.value("topic",std::string("未分类"));
+
+    Issues issues;
+    if(request.contains("files")) {
+        if(!request.at("files").is_object()) issues.error("files 必须是对象（文件名 → 内容）");
+        else for(auto it=request.at("files").begin();it!=request.at("files").end();++it) {
+            auto name=it.key();
+            if(!kPackageFiles.contains(name)) { issues.error("files 里不支持的文件名 "+name); continue; }
+            if(!it.value().is_string()) { issues.error("files."+name+" 必须是字符串"); continue; }
+            writeFile(package/wide(name),it.value().get<std::string>());
+        }
+        if(!issues.empty()) mergeDetails(issues,"题目保存失败");
+    }
+    if(request.contains("cases")) {
+        auto groups=writeCases(package,request.at("cases"),request.value("groups",Json::array()),issues);
+        if(!issues.empty()) mergeDetails(issues,"题目保存失败");
+        document["groups"]=groups;
+    } else if(!edit) throw ApiError(400,"新建题目需要提供 cases（测试数据）");
+    // 没有声明 modes 又没有参考解：按“只带测试数据、由自己程序自判”的题处理。
+    bool hasSolution=false;
+    if(!document.contains("modes")) {
+        hasSolution=fs::is_regular_file(package/L"solution.cpp") || fs::is_regular_file(package/L"solution.cj") ||
+                    fs::is_regular_file(package/L"solution.py") || fs::is_regular_file(package/L"solution.java");
+        document["selfJudge"]=!hasSolution;
+        Json defaults=Json::object();
+        for(const auto& language:kLanguages) defaults[language]=Json::array({"full"});
+        document["modes"]=defaults;
+    }
+    if(document.value("selfJudge",false)) {
+        // 自判题没有 driver：把所有语言的提交方式收敛到完整程序。
+        Json modes=Json::object();
+        for(const auto& language:kLanguages) modes[language]=Json::array({"full"});
+        document["modes"]=modes;
+    }
+    writeFile(package/L"problem.json",document.dump(2)+"\n");
+    auto archive=workspace.path/"package.zip";
+    createZip(archive,package);
+    Json result=importProblem(dataDir,{{"zipPath",utf8(archive.wstring())}});
+    result["edit"]=edit;
+    result["selfJudge"]=document.value("selfJudge",false);
+    return result;
+}
+
+Json packageDetail(const fs::path& dataDir,const std::string& id) {
+    (void)dataDir;
+    if(!validId(id)) throw ApiError(404,"题目不存在");
+    fs::path file; Json document;
+    if(!findDatabaseFile(id,file,document)) throw ApiError(404,"题目不存在");
+    auto root=extractedRoot(file);
+    Json files; listPackageFiles(root,files);
+    return {{"id",id},{"file",utf8(file.filename().wstring())},{"meta",document},{"files",files},
+            {"cases",packageCases(root,document)}};
+}
+
+Json problemCases(const fs::path& dataDir,const std::string& id) {
+    (void)dataDir;
+    if(!validId(id)) throw ApiError(404,"题目不存在");
+    fs::path file; Json document;
+    if(!findDatabaseFile(id,file,document)) throw ApiError(404,"题目不存在");
+    auto root=extractedRoot(file);
+    auto cases=packageCases(root,document);
+    return {{"id",id},{"cases",cases},{"count",static_cast<long long>(cases.size())}};
+}
+
+// 题库编辑器用：从本地目录里收集成对的 .in / .ans，直接当成新题的测试数据。
+Json scanCaseDirectory(const std::string& directory) {
+    auto text=trim(directory);
+    if(text.empty()) throw ApiError(400,"请填写数据目录的绝对路径");
+    auto root=fs::path(wide(text));
+    std::error_code error;
+    if(!fs::is_directory(root,error)) throw ApiError(404,"目录不存在："+text);
+    std::map<std::string,fs::path> inputs,answers;
+    for(const auto& entry:fs::directory_iterator(root,error)) {
+        if(!entry.is_regular_file()) continue;
+        auto name=utf8(entry.path().stem().wstring());
+        auto ext=utf8(entry.path().extension().wstring());
+        if(ext==".in") inputs[name]=entry.path();
+        else if(ext==".ans") answers[name]=entry.path();
+    }
+    std::vector<std::string> ids;
+    for(const auto& [id,path]:inputs) { (void)path; if(answers.contains(id)) ids.push_back(id); }
+    std::sort(ids.begin(),ids.end());
+    Json cases=Json::array();
+    std::size_t total=0;
+    for(const auto& id:ids) {
+        if(cases.size()>=200) break;
+        auto inputSize=fs::file_size(inputs[id],error);
+        auto answerSize=fs::file_size(answers[id],error);
+        if(error || total+inputSize+answerSize>16ULL*1024*1024) continue;
+        if(inputSize>4ULL*1024*1024 || answerSize>4ULL*1024*1024) continue;
+        total+=inputSize+answerSize;
+        cases.push_back({{"id",id},{"input",stripBom(readFile(inputs[id]))},{"answer",stripBom(readFile(answers[id]))}});
+    }
+    if(cases.empty()) throw ApiError(400,"目录里没有成对的 .in / .ans 文件");
+    return {{"directory",text},{"cases",cases},{"count",static_cast<long long>(cases.size())}};
 }
 
 Json importProblem(const fs::path& dataDir,const Json& request) {

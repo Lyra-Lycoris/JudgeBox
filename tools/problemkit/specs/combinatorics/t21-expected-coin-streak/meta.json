@@ -1,0 +1,20 @@
+{
+  "id": "t21-expected-coin-streak",
+  "title": {"zh": "凑齐连续 n 次正面的期望抛掷次数", "en": "Expected Tosses for n Consecutive Heads"},
+  "difficulty": 1300,
+  "topic": "组合数学与概率期望",
+  "tags": ["概率期望", "数学"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "2\n", "output": "6\n"},
+    {"input": "1\n", "output": "2\n"}
+  ],
+  "signature": {
+    "package": "t21_expected_coin_streak",
+    "params": [{"name": "n", "type": "int"}],
+    "returns": "int",
+    "hint": {"zh": "返回首次出现连续 n 次正面所需抛掷次数的期望 E_n 对 1000000007 取模的结果（E_n 一定是整数）"}
+  }
+}

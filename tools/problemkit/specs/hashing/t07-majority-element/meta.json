@@ -1,0 +1,20 @@
+{
+  "id": "t07-majority-element",
+  "title": {"zh": "出现次数超过一半的数", "en": "Majority Element"},
+  "difficulty": 1200,
+  "topic": "哈希与计数",
+  "tags": ["哈希", "贪心"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "7\n2 2 1 1 1 2 2\n", "output": "2\n"}],
+  "signature": {
+    "package": "t07_majority_element",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回出现次数严格大于 n/2 的那个数（保证存在）"}
+  }
+}

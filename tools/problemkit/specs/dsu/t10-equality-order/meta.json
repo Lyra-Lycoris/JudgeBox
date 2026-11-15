@@ -1,0 +1,21 @@
+{
+  "id": "t10-equality-order",
+  "title": {"zh": "等式与不等式约束", "en": "Equality and Order Constraints"},
+  "difficulty": 2100,
+  "topic": "并查集",
+  "tags": ["并查集", "拓扑排序", "图论"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "4 4\n0 1 2\n1 2 3\n0 3 4\n1 1 4\n", "output": "YES\n"}],
+  "signature": {
+    "package": "t10_equality_order",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "k", "type": "int"},
+      {"name": "cons", "type": "matrix", "rows": "k", "cols": "3"}
+    ],
+    "returns": "bool",
+    "hint": {"zh": "返回是否存在同时满足所有等式与严格不等式的整数赋值"}
+  }
+}

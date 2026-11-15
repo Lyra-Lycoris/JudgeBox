@@ -1,0 +1,23 @@
+{
+  "id": "t05-range-sum-queries",
+  "title": {"zh": "区间和查询", "en": "Range Sum Queries"},
+  "difficulty": 1000,
+  "topic": "前缀和与差分",
+  "tags": ["前缀和"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "2\n3\n1 2 3\n1 3\n4\n-1 5 -2 4\n2 3\n", "output": "6\n3\n"}],
+  "signature": {
+    "package": "t05_range_sum_queries",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"},
+      {"name": "l", "type": "int"},
+      {"name": "r", "type": "int"}
+    ],
+    "returns": "int",
+    "repeat": true,
+    "hint": {"zh": "返回每组数据中 a[l..r] 的元素和，输入有多组"}
+  }
+}

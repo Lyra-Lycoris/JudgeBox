@@ -1,0 +1,21 @@
+{
+  "id": "t04-ship-capacity",
+  "title": {"zh": "最小运载容量", "en": "Minimum Ship Capacity"},
+  "difficulty": 1200,
+  "topic": "二分与二分答案",
+  "tags": ["二分", "贪心"],
+  "limits": {"timeMs": 3000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "10\n1 2 3 4 5 6 7 8 9 10\n5\n", "output": "15\n"}],
+  "signature": {
+    "package": "t04_ship_capacity",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "w", "type": "ints", "count": "n"},
+      {"name": "d", "type": "int"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回在 d 天内按顺序运完所有货物所需的最小单日运载容量"}
+  }
+}

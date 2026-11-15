@@ -1,0 +1,20 @@
+{
+  "id": "t11-inversion-pairs",
+  "title": {"zh": "逆序对计数", "en": "Inversion Counting"},
+  "difficulty": 1200,
+  "topic": "树状数组与线段树",
+  "tags": ["树状数组", "分治"],
+  "limits": {"timeMs": 3000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "5\n5 4 3 2 1\n", "output": "10\n"}],
+  "signature": {
+    "package": "t11_inversion_pairs",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回满足 i < j 且 a[i] > a[j] 的数对个数"}
+  }
+}

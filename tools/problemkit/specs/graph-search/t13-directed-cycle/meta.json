@@ -1,0 +1,24 @@
+{
+  "id": "t13-directed-cycle",
+  "title": {"zh": "有向图判环", "en": "Cycle Detection in a Directed Graph"},
+  "difficulty": 1600,
+  "topic": "图论与搜索",
+  "tags": ["图论", "拓扑排序"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "6 5\n1 2\n2 3\n3 1\n4 5\n5 6\n", "output": "3\n"},
+    {"input": "2 1\n1 1\n", "output": "1\n"}
+  ],
+  "signature": {
+    "package": "t13_directed_cycle",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "m", "type": "int"},
+      {"name": "e", "type": "matrix", "rows": "m", "cols": "2"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回位于至少一个有向环上的顶点个数，无环返回 0"}
+  }
+}

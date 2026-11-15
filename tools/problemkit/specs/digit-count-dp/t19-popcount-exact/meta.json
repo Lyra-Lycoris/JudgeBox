@@ -1,0 +1,21 @@
+{
+  "id": "t19-popcount-exact",
+  "title": {"zh": "二进制中 1 的个数恰好为 k", "en": "Numbers with Exactly k Set Bits"},
+  "difficulty": 1800,
+  "topic": "数位DP与计数DP",
+  "tags": ["数位DP", "位运算"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "1 16 1\n", "output": "5\n"}],
+  "signature": {
+    "package": "t19_popcount_exact",
+    "params": [
+      {"name": "l", "type": "int"},
+      {"name": "r", "type": "int"},
+      {"name": "k", "type": "int"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回 [l, r] 中二进制表示恰好含 k 个 1 的整数个数"}
+  }
+}

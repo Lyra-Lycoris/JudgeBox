@@ -1,0 +1,23 @@
+{
+  "id": "t26-2d-bit-submatrix",
+  "title": {"zh": "二维树状数组：单点修改与子矩阵求和", "en": "2D Fenwick Tree: Point Update and Submatrix Sum"},
+  "difficulty": 1900,
+  "topic": "高级数据结构与分块",
+  "tags": ["树状数组", "前缀和"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "3 4\n1 2 3 4\n5 6 7 8\n9 10 11 12\n4\n2 1 1 2 2\n1 2 2 100 0\n2 1 1 2 2\n2 2 2 3 4\n", "output": "14 114 154\n"}],
+  "signature": {
+    "package": "t26_2d_bit_submatrix",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "m", "type": "int"},
+      {"name": "a", "type": "matrix", "rows": "n", "cols": "m"},
+      {"name": "q", "type": "int"},
+      {"name": "ops", "type": "matrix", "rows": "q", "cols": "5"}
+    ],
+    "returns": "ints_space",
+    "hint": {"zh": "按顺序返回每次子矩阵求和询问的答案"}
+  }
+}

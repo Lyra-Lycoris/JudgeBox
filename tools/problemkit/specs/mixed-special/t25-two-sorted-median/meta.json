@@ -1,0 +1,24 @@
+{
+  "id": "t25-two-sorted-median",
+  "title": {"zh": "两个有序序列的中位数", "en": "Median of Two Sorted Arrays"},
+  "difficulty": 1600,
+  "topic": "综合思维与特殊裁判",
+  "tags": ["二分", "分治"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "2\n1 3\n1\n2\n", "output": "4\n"}
+  ],
+  "signature": {
+    "package": "t25_two_sorted_median",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "a", "type": "ints", "count": "n"},
+      {"name": "m", "type": "int"},
+      {"name": "b", "type": "ints", "count": "m"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回合并后有序数组中中间两个元素之和（长度为奇数时就是中位数的两倍）"}
+  }
+}

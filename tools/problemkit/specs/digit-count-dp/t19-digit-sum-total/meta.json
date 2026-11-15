@@ -1,0 +1,20 @@
+{
+  "id": "t19-digit-sum-total",
+  "title": {"zh": "区间数位和", "en": "Total Digit Sum in a Range"},
+  "difficulty": 1100,
+  "topic": "数位DP与计数DP",
+  "tags": ["数位DP", "动态规划"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "1 10\n", "output": "46\n"}],
+  "signature": {
+    "package": "t19_digit_sum_total",
+    "params": [
+      {"name": "l", "type": "int"},
+      {"name": "r", "type": "int"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回 [l, r] 中所有整数数位之和的总和"}
+  }
+}

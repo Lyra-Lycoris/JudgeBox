@@ -1,0 +1,22 @@
+{
+  "id": "t25-bracket-depth",
+  "title": {"zh": "构造最大嵌套深度为 k 的括号序列", "en": "Construct a Bracket Sequence with Nesting Depth k"},
+  "difficulty": 1200,
+  "topic": "综合思维与特殊裁判",
+  "tags": ["构造", "字符串"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "special",
+  "source": {"platform": "other"},
+  "samples": [
+    {"input": "6 2\n", "output": "(())()\n"}
+  ],
+  "signature": {
+    "package": "t25_bracket_depth",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "k", "type": "int"}
+    ],
+    "returns": "string",
+    "hint": {"zh": "返回任意一个长度为 n、最大嵌套深度为 k 的合法括号序列；本题使用特殊评判"}
+  }
+}

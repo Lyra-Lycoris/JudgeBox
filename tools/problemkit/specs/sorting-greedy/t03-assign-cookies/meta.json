@@ -1,0 +1,22 @@
+{
+  "id": "t03-assign-cookies",
+  "title": {"zh": "分配饼干", "en": "Assign Cookies"},
+  "difficulty": 1100,
+  "topic": "排序与贪心",
+  "tags": ["排序", "贪心", "双指针"],
+  "limits": {"timeMs": 2000, "memoryMb": 256},
+  "judgeType": "function",
+  "source": {"platform": "other"},
+  "samples": [{"input": "2\n1 2\n3\n1 2 3\n", "output": "2\n"}],
+  "signature": {
+    "package": "t03_assign_cookies",
+    "params": [
+      {"name": "n", "type": "int"},
+      {"name": "g", "type": "ints", "count": "n"},
+      {"name": "m", "type": "int"},
+      {"name": "s", "type": "ints", "count": "m"}
+    ],
+    "returns": "int",
+    "hint": {"zh": "返回最多能满足的孩子个数"}
+  }
+}
